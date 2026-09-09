@@ -6,7 +6,8 @@ import Image from "next/image";
 import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Eye, EyeOff, Fingerprint, Loader2, Lock, User, ShieldCheck, ChevronDown,
+  AlertTriangle, Database, Eye, EyeOff, Fingerprint, GitBranch, Loader2, Lock, User, Users,
+  ShieldCheck, ChevronDown,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, MINISTERE_NOM, ROLE_LABELS } from "@/lib/referentiels";
 import { LOGIN_BG_URL, LOGIN_VIDEO_URL } from "@/lib/assets";
@@ -20,6 +21,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+const ATOUTS = [
+  { icon: Users, titre: "Dossier agent unique", texte: "Dossier administratif centralisé et historisé" },
+  { icon: GitBranch, titre: "Workflows dématérialisés", texte: "Nominations et mutations validées en ligne" },
+  { icon: Database, titre: "Cache navigateur IndexedDB", texte: "Consultation même en connectivité dégradée" },
+  { icon: ShieldCheck, titre: "Sécurité & traçabilité", texte: "RBAC et journalisation complète des accès" },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -206,6 +214,16 @@ export default function LoginPage() {
         <p className="mt-5 text-center text-[11px] text-white/40">
           Protégé par chiffrement quantique · Certifié ISO 27001
         </p>
+
+        <div className="mt-7 grid grid-cols-2 gap-2.5">
+          {ATOUTS.map((a) => (
+            <div key={a.titre} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <a.icon className="h-4 w-4 text-[#00B4D8]" />
+              <div className="mt-2 text-[11px] font-semibold leading-tight text-white/85">{a.titre}</div>
+              <div className="mt-1 text-[10px] leading-relaxed text-white/45">{a.texte}</div>
+            </div>
+          ))}
+        </div>
 
         <div className="my-6 flex items-center gap-3">
           <Separator className="flex-1 bg-white/15" />

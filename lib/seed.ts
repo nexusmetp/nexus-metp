@@ -11,7 +11,7 @@
 
 import {
   ENTITES, ETABLISSEMENTS, DEPARTEMENTS, GRADES, CORPS, CIRCUIT_ACTE, TYPES_ACTE,
-  entiteById, enfantsDe, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
+  entiteById, enfantsDe, descendantsDe, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
 } from "@/lib/referentiels";
 import type {
   Acte, Affectation, Agent, BesoinPersonnel, CategoriePersonnel, EntreeJournal,
@@ -360,6 +360,28 @@ export function buildDataset(): Dataset {
     { id: "USR-009", email: "etablissement@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Prosper BANZOUZI", role: "CHEF_ETABLISSEMENT", entiteId: "ENT-DD-02", fonction: "Proviseur — lycée technique", actif: true },
     { id: "USR-010", email: "agent@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: `${agents[0].prenom} ${agents[0].nom}`, role: "AGENT", entiteId: "ENT-SPC-BRM", agentId: agents[0].id, fonction: "Agent — portail libre-service", actif: true },
   ];
+
+  /* Un compte est d'abord un agent du ministère : son dossier personnel existe
+     quel que soit son rôle (§07). On rattache chaque utilisateur à un agent en
+     poste dans son périmètre, que l'on renomme pour que le dossier soit le sien. */
+  const dejaPris = new Set(utilisateurs.map((u) => u.agentId).filter(Boolean) as string[]);
+  for (const u of utilisateurs) {
+    if (u.agentId) continue;
+    const perimetre = new Set(descendantsDe(u.entiteId).map((e) => e.id));
+    const libre = (a: Affectation) => a.dateFin === null && !dejaPris.has(a.agentId);
+    const aff =
+      affectations.find((a) => libre(a) && perimetre.has(a.entiteId)) ??
+      affectations.find(libre);
+    if (!aff) continue;
+    const agent = agents.find((a) => a.id === aff.agentId);
+    if (!agent) continue;
+    const [prenom, ...patronyme] = u.nomComplet.split(" ");
+    agent.prenom = prenom;
+    agent.nom = patronyme.join(" ") || agent.nom;
+    aff.fonction = u.fonction;
+    u.agentId = agent.id;
+    dejaPris.add(agent.id);
+  }
 
   /* ---------- Journal d'audit : en ajout seul, rattaché aux actes ---------- */
   const journal: EntreeJournal[] = Array.from({ length: 90 }, (_, i) => {

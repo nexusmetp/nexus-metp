@@ -437,32 +437,40 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   ADMIN_SYSTEME: {
     dgarh: "R", organigramme: "W", referentiels: "W", administration: "W", journal: "R",
+    "mon-dossier": "W",
   },
   DIRECTEUR_GENERAL: {
     dgarh: "W", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", referentiels: "R", documents: "R",
     rapports: "W", journal: "R",
+    "mon-dossier": "W",
   },
   DIRECTEUR_CENTRAL: {
     dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", referentiels: "R", documents: "R", rapports: "R",
+    "mon-dossier": "W",
   },
   CHEF_SERVICE: {
     dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "R", rapports: "R",
+    "mon-dossier": "W",
   },
   CHEF_BUREAU: {
     dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "W",
+    "mon-dossier": "W",
   },
   AGENT_INSTRUCTEUR: {
     organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W",
+    "mon-dossier": "W",
   },
   DIRECTEUR_DEPARTEMENTAL: {
     organigramme: "R", agents: "R", actes: "R", conges: "R", besoins: "W", documents: "R", rapports: "R",
+    "mon-dossier": "W",
   },
   CHEF_ETABLISSEMENT: {
     organigramme: "R", agents: "R", besoins: "W", documents: "R",
+    "mon-dossier": "W",
   },
   AGENT: {
     "mon-dossier": "W", conges: "R", formations: "R", documents: "R", organigramme: "R",

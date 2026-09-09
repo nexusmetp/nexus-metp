@@ -5,7 +5,7 @@ import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
 /** v3 : ajout du niveau établissement (§10). v2 : passage au modèle événementiel du cahier (§15). */
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",

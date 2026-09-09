@@ -6,12 +6,13 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  ArrowRight, Eye, EyeOff, Fingerprint, Loader2, Lock, Mail, ShieldCheck, Database, Users, GitBranch, ChevronDown,
+  AlertTriangle, Eye, EyeOff, Fingerprint, Loader2, Lock, User, ShieldCheck, Database, Users, GitBranch, ChevronDown,
 } from "lucide-react";
 import { APP_NAME, APP_TAGLINE, LOGO_URL, MINISTERE_NOM, ROLE_LABELS } from "@/lib/referentiels";
 import { useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -126,7 +127,7 @@ export default function LoginPage() {
       </div>
 
       {/* Formulaire */}
-      <div className="flex items-center justify-center bg-background px-6 py-12">
+      <div className="flex items-center justify-center bg-muted/30 px-4 py-10 sm:px-6 sm:py-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 lg:hidden">
             <div className="relative h-12 w-12 overflow-hidden rounded-full border">
@@ -138,68 +139,108 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Badge variant="outline" className="mb-4 border-primary/30 bg-primary/5 text-primary">
-            <Fingerprint className="mr-1.5 h-3 w-3" /> Accès sécurisé
-          </Badge>
-          <h1 className="text-3xl font-bold tracking-tight">Connexion à la plateforme</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Utilisez votre adresse professionnelle <span className="font-medium text-foreground">@metp.gouv.cg</span>. Vos droits sont déterminés automatiquement par votre profil.
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+            <Badge variant="outline" className="border-border bg-muted/50 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <Lock className="mr-1.5 h-3 w-3" /> Chiffré AES-256
+            </Badge>
+            <Badge variant="outline" className="border-primary/30 bg-primary/5 text-[10px] uppercase tracking-wider text-primary">
+              <Fingerprint className="mr-1.5 h-3 w-3" /> Habilitation niveau 5
+            </Badge>
+          </div>
+
+          <Card className="rounded-2xl border-border/70 shadow-xl shadow-primary/5">
+            <CardHeader className="space-y-1.5 pb-6 text-center">
+              <CardTitle className="text-2xl font-bold tracking-tight">Terminal d&apos;Accès</CardTitle>
+              <CardDescription>Entrez vos identifiants pour accéder au système</CardDescription>
+            </CardHeader>
+
+            <CardContent className="pb-6">
+              <form onSubmit={submit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-semibold">Adresse Email</Label>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="prenom.nom@metp.gouv.cg"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-11 border-transparent bg-muted/60 pl-9 focus-visible:border-input focus-visible:bg-background"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-semibold">Mot de passe</Label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={show ? "text" : "password"}
+                      required
+                      autoComplete="current-password"
+                      placeholder="••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-11 border-transparent bg-muted/60 pl-9 pr-10 focus-visible:border-input focus-visible:bg-background"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShow((s) => !s)}
+                      aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    >
+                      {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="remember" defaultChecked />
+                    <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground">
+                      Se souvenir de moi
+                    </Label>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline"
+                    onClick={() => toast.info("Procédure DGARH", { description: "La réinitialisation est effectuée par la Direction des Ressources Humaines." })}
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                </div>
+
+                <Button type="submit" className="h-11 w-full text-sm font-semibold uppercase tracking-wide" disabled={pending || isLoading}>
+                  {pending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authentification…</>
+                  ) : (
+                    <><ShieldCheck className="mr-2 h-4 w-4" /> Accéder au système</>
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-amber-600">Avis de sécurité</div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Toutes les tentatives d&apos;accès sont enregistrées et surveillées. L&apos;accès non autorisé est
+                      interdit et sera poursuivi dans toute la mesure du droit.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <p className="mt-5 text-center text-[11px] text-muted-foreground/80">
+            Protégé par chiffrement quantique · Certifié ISO 27001
           </p>
-
-          <form onSubmit={submit} className="mt-8 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email">Adresse professionnelle</Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="prenom.nom@metp.gouv.cg"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 pl-9"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Mot de passe</Label>
-                <button type="button" className="text-xs text-primary hover:underline" onClick={() => toast.info("Procédure DGARH", { description: "La réinitialisation est effectuée par la Direction des Ressources Humaines." })}>
-                  Mot de passe oublié ?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={show ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 pl-9 pr-10"
-                />
-                <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox id="remember" defaultChecked />
-              <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground">
-                Conserver ma session sur cet appareil
-              </Label>
-            </div>
-
-            <Button type="submit" className="h-11 w-full text-base" disabled={pending || isLoading}>
-              {pending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authentification…</> : <>Se connecter <ArrowRight className="ml-2 h-4 w-4" /></>}
-            </Button>
-          </form>
 
           <div className="my-6 flex items-center gap-3">
             <Separator className="flex-1" />

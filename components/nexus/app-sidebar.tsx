@@ -4,41 +4,50 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, Users, GitBranch, CalendarDays, GraduationCap, Star, Gavel, Network,
-  Library, FolderOpen, BarChart3, Settings, UserCircle, ChevronLeft,
+  Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap,
+  Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
+  UserCircle, ChevronLeft,
 } from "lucide-react";
-import { APP_NAME, LOGO_URL, ROLE_LABELS, can, type ModuleKey } from "@/lib/referentiels";
+import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type NavItem = { href: string; label: string; icon: any; mod: ModuleKey };
+type NavItem = {
+  href: string; label: string; icon: any; mod: ModuleKey;
+  /** false = module au cahier mais pas encore implémenté : affiché, non cliquable. */
+  pret?: boolean;
+};
 
-const GROUPS: { titre: string; items: NavItem[] }[] = [
+const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
-    titre: "Pilotage",
+    titre: "Direction générale",
     items: [
-      { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, mod: "dashboard" },
-      { href: "/rapports", label: "Rapports & KPI", icon: BarChart3, mod: "rapports" },
+      { href: "/dgarh", label: "Espace DGARH", icon: Building2, mod: "dgarh", pret: true },
+      { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
+      { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
+      { href: "/dgarh/actes", label: "Actes", icon: FileCheck2, mod: "actes", pret: true },
     ],
   },
   {
-    titre: "Ressources humaines",
+    titre: "Gestion du personnel",
     items: [
-      { href: "/agents", label: "Agents", icon: Users, mod: "agents" },
-      { href: "/carrieres", label: "Carrières & Actes", icon: GitBranch, mod: "carrieres" },
-      { href: "/conges", label: "Congés & Absences", icon: CalendarDays, mod: "conges" },
-      { href: "/formations", label: "Formation continue", icon: GraduationCap, mod: "formations" },
-      { href: "/evaluations", label: "Évaluations", icon: Star, mod: "evaluations" },
-      { href: "/discipline", label: "Discipline", icon: Gavel, mod: "discipline" },
+      { href: "/carrieres", label: "Carrières", icon: GitBranch, mod: "carrieres" },
+      { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges" },
+      { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations" },
+      { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux" },
     ],
   },
   {
-    titre: "Organisation",
+    titre: "Déconcentration",
+    items: [{ href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins" }],
+  },
+  {
+    titre: "Ressources",
     items: [
-      { href: "/organigramme", label: "Organigramme", icon: Network, mod: "organigramme" },
       { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels" },
-      { href: "/documents", label: "GED documentaire", icon: FolderOpen, mod: "documents" },
+      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents" },
+      { href: "/rapports", label: "Rapports", icon: BarChart3, mod: "rapports" },
     ],
   },
   {
@@ -47,25 +56,33 @@ const GROUPS: { titre: string; items: NavItem[] }[] = [
   },
   {
     titre: "Système",
-    items: [{ href: "/administration", label: "Administration", icon: Settings, mod: "administration" }],
+    items: [
+      { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal" },
+      { href: "/administration", label: "Administration", icon: Settings, mod: "administration" },
+    ],
   },
 ];
+
+function useGroupesAutorises() {
+  const user = useAuth((s) => s.user);
+  if (!user) return [];
+  return GROUPES
+    .map((g) => ({ ...g, items: g.items.filter((i) => peut(user.role, i.mod)) }))
+    .filter((g) => g.items.length > 0);
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
   const user = useAuth((s) => s.user);
   const { sidebarOpen, toggleSidebar } = useUi();
+  const groupes = useGroupesAutorises();
   if (!user) return null;
-
-  const groups = GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => can(user.role, i.mod)) })).filter(
-    (g) => g.items.length > 0
-  );
 
   return (
     <aside
       className={cn(
         "sticky top-0 z-30 hidden h-screen shrink-0 flex-col border-r bg-sidebar transition-[width] duration-300 lg:flex",
-        sidebarOpen ? "w-[268px]" : "w-[76px]"
+        sidebarOpen ? "w-[272px]" : "w-[76px]"
       )}
     >
       <div className="flex h-16 items-center gap-3 border-b px-4">
@@ -75,31 +92,56 @@ export function AppSidebar() {
         {sidebarOpen && (
           <div className="min-w-0">
             <div className="truncate text-sm font-extrabold tracking-tight">{APP_NAME}</div>
-            <div className="truncate text-[9px] uppercase tracking-[0.18em] text-muted-foreground">SIRH • DGARH</div>
+            <div className="truncate text-[9px] uppercase tracking-[0.18em] text-muted-foreground">SIRH · DGARH</div>
           </div>
         )}
       </div>
 
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-6">
-          {groups.map((g) => (
+        <nav className="space-y-5">
+          {groupes.map((g) => (
             <div key={g.titre}>
               {sidebarOpen && (
-                <div className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
                   {g.titre}
                 </div>
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {g.items.map((i) => {
-                  const active = pathname === i.href || pathname.startsWith(i.href + "/");
+                  const actif = pathname === i.href || pathname.startsWith(i.href + "/");
+                  const base = "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition";
+
+                  // Module prévu au cahier mais non implémenté : on l'affiche sans
+                  // y mener, plutôt que d'envoyer sur une 404.
+                  if (!i.pret) {
+                    return (
+                      <div
+                        key={i.href}
+                        title={`${i.label} — module non encore implémenté`}
+                        aria-disabled="true"
+                        className={cn(base, "cursor-not-allowed text-sidebar-foreground/35", !sidebarOpen && "justify-center px-0")}
+                      >
+                        <i.icon className="h-[18px] w-[18px] shrink-0" />
+                        {sidebarOpen && (
+                          <>
+                            <span className="truncate">{i.label}</span>
+                            <span className="ml-auto rounded border border-current/25 px-1 text-[8.5px] font-semibold uppercase tracking-wider opacity-70">
+                              à venir
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={i.href}
                       href={i.href}
                       title={i.label}
                       className={cn(
-                        "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition",
-                        active
+                        base,
+                        actif
                           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
                           : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                         !sidebarOpen && "justify-center px-0"
@@ -138,14 +180,22 @@ export function AppSidebar() {
 export function MobileNav() {
   const pathname = usePathname();
   const user = useAuth((s) => s.user);
+  const groupes = useGroupesAutorises();
   if (!user) return null;
-  const items = GROUPS.flatMap((g) => g.items).filter((i) => can(user.role, i.mod)).slice(0, 5);
+  const items = groupes.flatMap((g) => g.items).filter((i) => i.pret).slice(0, 5);
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur lg:hidden">
       {items.map((i) => {
-        const active = pathname.startsWith(i.href);
+        const actif = pathname === i.href || pathname.startsWith(i.href + "/");
         return (
-          <Link key={i.href} href={i.href} className={cn("flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]", active ? "text-primary" : "text-muted-foreground")}>
+          <Link
+            key={i.href}
+            href={i.href}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]",
+              actif ? "text-primary" : "text-muted-foreground"
+            )}
+          >
             <i.icon className="h-5 w-5" />
             <span className="truncate px-1">{i.label.split(" ")[0]}</span>
           </Link>

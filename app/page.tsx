@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { APP_NAME, APP_TAGLINE, LOGO_URL, MINISTERE_NOM } from "@/lib/referentiels";
+import { APP_NAME, APP_TAGLINE, LOGO_URL, MINISTERE_NOM, pageAccueil } from "@/lib/referentiels";
 import { ensureSeed } from "@/lib/db";
 import { useAuth } from "@/lib/store";
 import { Progress } from "@/components/ui/progress";
@@ -45,7 +45,7 @@ export default function SplashPage() {
   useEffect(() => {
     setEtape(Math.min(ETAPES.length - 1, Math.floor((progress / 100) * ETAPES.length)));
     if (progress >= 100) {
-      const t = setTimeout(() => router.replace(user ? "/dashboard" : "/login"), 700);
+      const t = setTimeout(() => router.replace(user ? pageAccueil(user.role) : "/login"), 700);
       return () => clearTimeout(t);
     }
   }, [progress, router, user]);

@@ -9,7 +9,7 @@ import {
   AlertTriangle, Database, Eye, EyeOff, Fingerprint, GitBranch, Loader2, Lock, User, Users,
   ShieldCheck, ChevronDown,
 } from "lucide-react";
-import { APP_NAME, LOGO_URL, MINISTERE_NOM, ROLE_LABELS } from "@/lib/referentiels";
+import { APP_NAME, LOGO_URL, MINISTERE_NOM, ROLE_LABELS, pageAccueil } from "@/lib/referentiels";
 import { LOGIN_BG_URL, LOGIN_VIDEO_URL } from "@/lib/assets";
 import { useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
@@ -45,7 +45,7 @@ export default function LoginPage() {
   const fondAnime = Boolean(LOGIN_VIDEO_URL) && !reduceMotion && !videoKo;
 
   useEffect(() => {
-    if (user) router.replace(user.role === "AGENT" ? "/mon-dossier" : "/dashboard");
+    if (user) router.replace(pageAccueil(user.role));
   }, [user, router]);
 
   const submit = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ export default function LoginPage() {
     }
     login(found);
     toast.success(`Bienvenue, ${found.nomComplet}`, { description: ROLE_LABELS[found.role] });
-    router.replace(found.role === "AGENT" ? "/mon-dossier" : "/dashboard");
+    router.replace(pageAccueil(found.role));
   };
 
   const useDemo = (mail: string) => {

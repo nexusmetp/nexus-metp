@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { Bell, LogOut, Moon, RefreshCw, Search, Sun, User } from "lucide-react";
+import { Bell, LogOut, Moon, RefreshCw, Search, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/store";
 import { ROLE_LABELS, entiteById } from "@/lib/referentiels";
@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
-import { initials } from "@/lib/format";
+import { initiales } from "@/lib/format";
 
 export function Topbar() {
   const router = useRouter();
@@ -92,7 +92,7 @@ export function Topbar() {
             <button className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 transition hover:bg-accent">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary text-xs font-bold text-primary-foreground">
-                  {initials(user.nomComplet.split(" ")[0], user.nomComplet.split(" ").slice(-1)[0])}
+                  {initiales(user.nomComplet.split(" ")[0], user.nomComplet.split(" ").slice(-1)[0])}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left md:block">
@@ -107,9 +107,6 @@ export function Topbar() {
               <div className="text-xs font-normal text-muted-foreground">{user.fonction}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/mon-dossier")}>
-              <User className="mr-2 h-4 w-4" /> Mon espace
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
                 reset.mutate(undefined, {
@@ -144,7 +141,7 @@ export function Topbar() {
                 value={`${a.prenom} ${a.nom} ${a.matricule}`}
                 onSelect={() => {
                   setOpen(false);
-                  router.push(`/agents/${a.id}`);
+                  router.push(`/dgarh/agents/${a.id}`);
                 }}
               >
                 <span className="font-medium">{a.prenom} {a.nom}</span>

@@ -51,22 +51,3 @@ export const useUi = create<UiState>()(
     { name: "nexus-metp-ui" }
   )
 );
-
-interface FilterState {
-  q: string;
-  entiteId: string;
-  categorie: string;
-  statut: string;
-  etat: string;
-  page: number;
-  set: (p: Partial<Omit<FilterState, "set" | "reset">>) => void;
-  reset: () => void;
-}
-
-const filterInit = { q: "", entiteId: "all", categorie: "all", statut: "all", etat: "all", page: 1 };
-
-export const useAgentFilters = create<FilterState>((set) => ({
-  ...filterInit,
-  set: (p) => set((s) => ({ ...s, ...p, page: p.page ?? 1 })),
-  reset: () => set(filterInit),
-}));

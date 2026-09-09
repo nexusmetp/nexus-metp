@@ -1,248 +1,392 @@
-import { ENTITES, GRADES, DEPARTEMENTS, gradeById } from "@/lib/referentiels";
+/**
+ * Jeu de données de démonstration.
+ *
+ * Construit selon le principe du cahier §08 : rien n'existe dans un dossier
+ * qui ne résulte d'un acte. Chaque situation de carrière, chaque affectation
+ * et chaque position porte l'identifiant de l'acte qui l'a produite.
+ *
+ * Données fictives. Les personnes, matricules et références d'actes sont
+ * générés ; seule l'organisation reflète le référentiel.
+ */
+
+import {
+  ENTITES, DEPARTEMENTS, GRADES, CORPS, CIRCUIT_ACTE, TYPES_ACTE,
+  entiteById, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
+} from "@/lib/referentiels";
 import type {
-  Acte, Agent, Categorie, DemandeConge, Entite, JournalEntry, Notification, Poste, Utilisateur,
+  Acte, Affectation, Agent, BesoinPersonnel, CategoriePersonnel, EntreeJournal,
+  EtapeActe, Notification, Position, Poste, SituationCarriere, StatutActe, TypeActe,
+  Utilisateur,
 } from "@/lib/types";
 
-/* ---------- PRNG déterministe (données fictives stables) ---------- */
-let seed = 20260706;
+/* ---------- PRNG déterministe ---------- */
+let graine = 20260909;
 const rnd = () => {
-  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-  return seed / 0x7fffffff;
+  graine = (graine * 1103515245 + 12345) & 0x7fffffff;
+  return graine / 0x7fffffff;
 };
-const pick = <T,>(arr: T[]): T => arr[Math.floor(rnd() * arr.length)];
+const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
 const int = (min: number, max: number) => Math.floor(rnd() * (max - min + 1)) + min;
+const chance = (p: number) => rnd() < p;
 const pad = (n: number, l = 6) => String(n).padStart(l, "0");
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+const dateEntre = (a: number, b: number) => iso(new Date(int(a, b), int(0, 11), int(1, 28)));
+const plusJours = (d: string, j: number) => iso(new Date(new Date(d).getTime() + j * 864e5));
 
 const NOMS = ["MABIALA","NGOMA","OKEMBA","BOUITY","MALONGA","TCHIKAYA","NGATSE","MOUKALA","BIKINDOU","SAMBA","LOEMBA","NKOUNKOU","MASSAMBA","ONDONGO","IBARA","BAKALA","MOUANDA","KIMBEMBE","NIANGA","OBAMBI","MPASSI","GANGA","BANZOUZI","MOUYABI","NKODIA","TSIBA","OKO","MABIKA","BOUNDA","MAKAYA","ELENGA","ONDZE","KOUMBA","BANTSIMBA","MILANDOU","NGOULOU","MAVOUNGOU","ITOUA","AKOUALA","DZON"];
 const PRENOMS_M = ["Jean-Baptiste","Serge","Alphonse","Rodrigue","Christian","Pascal","Gildas","Frédéric","Aurélien","Brice","Dieudonné","Emmanuel","Ghislain","Hervé","Jonas","Landry","Marcel","Noël","Olivier","Prosper","Sylvain","Thierry","Ulrich","Victor"];
 const PRENOMS_F = ["Clarisse","Ghislaine","Nadège","Sylvie","Berthe","Chanceline","Delphine","Edwige","Flore","Grace","Huguette","Inès","Josiane","Lydie","Mireille","Nathalie","Ornella","Patricia","Rachel","Sandrine","Thérèse","Yolande"];
-const COMPETENCES = ["Gestion de la paie","SIRH","Droit de la fonction publique","Excel avancé","Archivage","Gestion de projet","Comptabilité publique","Pilotage RH","Ingénierie de formation","Rédaction administrative","Statistiques","Passation de marchés"];
+const VILLES = DEPARTEMENTS.map((d) => d.chefLieu);
+const ETABS = ["Université Marien Ngouabi","ENAM Brazzaville","Lycée technique 1er-Mai","Institut supérieur de gestion","ENS Brazzaville","Université Denis Sassou Nguesso"];
+const DIPLOMES = ["Licence en gestion des ressources humaines","Master en administration publique","BTS comptabilité","Ingénieur en génie civil","Master en droit public","DUT informatique","Baccalauréat technique","BEP industriel"];
+const COMPETENCES = ["Gestion de la paie","SIRH","Droit de la fonction publique","Archivage","Gestion de projet","Comptabilité publique","Ingénierie de formation","Rédaction administrative","Statistiques","Passation de marchés"];
 const LANGUES = ["Français","Lingala","Kituba","Anglais","Portugais"];
-const ETABS = ["Université Marien Ngouabi","ENAM Brazzaville","Lycée Technique 1er Mai","Institut Supérieur de Gestion","ENS Brazzaville","Université Denis Sassou Nguesso"];
-const DIPLOMES = ["Licence en GRH","Master en Administration Publique","BTS Comptabilité","Ingénieur en Génie Civil","Master en Droit Public","DUT Informatique","Baccalauréat Technique","BEP Industriel"];
-const FORMATIONS = ["Dématérialisation des procédures RH","Statut Général de la Fonction Publique","Pilotage par les KPI","Cybersécurité des données RH","Management d'équipe","Gestion des marchés publics"];
+const DISCIPLINES = ["Génie civil","Électrotechnique","Mécanique","Comptabilité","Secrétariat","Informatique","Froid et climatisation","Hôtellerie-restauration","Agriculture"];
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
-const dateBetween = (y1: number, y2: number) => iso(new Date(int(y1, y2), int(0, 11), int(1, 28)));
+/* ---------- Répartition des effectifs ---------- */
 
-/* ---------- Postes ---------- */
-const POSTE_MODELES: { intitule: string; niveau: Poste["niveau"]; grade: string }[] = [
-  { intitule: "Directeur Général", niveau: "Stratégique", grade: "GR-A3" },
-  { intitule: "Directeur Central", niveau: "Stratégique", grade: "GR-A4" },
-  { intitule: "Chef de Service Personnel", niveau: "Encadrement", grade: "GR-B1" },
-  { intitule: "Chef de Service Administratif", niveau: "Encadrement", grade: "GR-B2" },
-  { intitule: "Gestionnaire des Carrières", niveau: "Exécution", grade: "GR-C1" },
-  { intitule: "Gestionnaire de la Paie", niveau: "Exécution", grade: "GR-C2" },
-  { intitule: "Technicien Supérieur SI", niveau: "Exécution", grade: "GR-C3" },
-  { intitule: "Secrétaire de Direction", niveau: "Support", grade: "GR-C4" },
-  { intitule: "Agent Administratif", niveau: "Support", grade: "GR-D1" },
-  { intitule: "Agent Technique", niveau: "Support", grade: "GR-D2" },
-];
+const effectifDe = (niveau: string) => {
+  switch (niveau) {
+    case "BUREAU": return int(4, 11);
+    case "SERVICE": return int(2, 4);
+    case "DIRECTION": return int(2, 4);
+    case "SECRETARIAT": return int(1, 3);
+    case "DIRECTION_GENERALE": return int(3, 6);
+    case "INSPECTION_GENERALE": return int(8, 14);
+    case "INSPECTION_INTERDEPARTEMENTALE": return int(10, 18);
+    case "DIRECTION_DEPARTEMENTALE": return int(65, 130);
+    default: return 0;
+  }
+};
 
-export function buildDataset() {
-  seed = 20260706;
-  const entites: Entite[] = ENTITES;
-  const postes: Poste[] = [];
-  const agents: Agent[] = [];
+/** Grades plausibles selon le niveau d'entité. */
+const gradesPour = (niveau: string, enseignant: boolean): string[] => {
+  if (enseignant) return ["GR-ENS-PT", "GR-ENS-PTC", "GR-ENS-PTC"];
+  switch (niveau) {
+    case "DIRECTION_GENERALE": return ["GR-DIR-DG", "GR-ADM-1"];
+    case "INSPECTION_GENERALE": return ["GR-INSP-1", "GR-INSP-2"];
+    case "DIRECTION": return ["GR-DIR-DC", "GR-ADM-1"];
+    case "SERVICE": return ["GR-ENC-CS1", "GR-ENC-CS2"];
+    case "BUREAU": return ["GR-GEST-1", "GR-GEST-2", "GR-GEST-3", "GR-TECH-1", "GR-SERV-1"];
+    case "DIRECTION_DEPARTEMENTALE": return ["GR-ENS-PTC", "GR-GEST-1", "GR-TECH-1", "GR-SERV-1", "GR-SERV-2"];
+    default: return ["GR-GEST-1", "GR-SERV-1"];
+  }
+};
 
-  let pc = 0;
-  const cibles = entites.filter((e) => e.type !== "MINISTERE");
-  cibles.forEach((ent) => {
-    const nb = ent.type === "DIRECTION_GENERALE" ? 9 : ent.type === "DIRECTION_DEPARTEMENTALE" ? 7 : 5;
-    for (let i = 0; i < nb; i++) {
-      const m = i === 0 && ent.type === "DIRECTION_GENERALE" ? POSTE_MODELES[0] : POSTE_MODELES[Math.min(i + 1, POSTE_MODELES.length - 1)];
-      pc++;
-      postes.push({
-        id: `PST-${pad(pc, 4)}`,
-        code: `${ent.code}-${pad(i + 1, 3)}`,
-        intitule: m.intitule,
-        entiteId: ent.id,
-        gradeRequisId: m.grade,
-        niveau: m.niveau,
-        statut: "Vacant",
-        titulaireId: null,
-        budgetise: rnd() > 0.08,
-      });
-    }
-  });
+const tirerCategorie = (niveau: string): CategoriePersonnel => {
+  if (niveau !== "DIRECTION_DEPARTEMENTALE") {
+    return chance(0.82) ? "FONCTIONNAIRE" : "CONTRACTUEL";
+  }
+  const r = rnd();
+  if (r < 0.5) return "FONCTIONNAIRE";
+  if (r < 0.66) return "CONTRACTUEL";
+  if (r < 0.79) return "PRESTATAIRE";
+  if (r < 0.88) return "VOLONTAIRE";
+  return "VACATAIRE";
+};
 
-  /* ---------- Agents ---------- */
-  let ac = 0;
-  const createAgent = (entiteId: string, gradeId: string, posteId: string | null): Agent => {
-    ac++;
-    const sexe = rnd() > 0.42 ? "M" : "F";
-    const nom = pick(NOMS);
-    const prenom = sexe === "M" ? pick(PRENOMS_M) : pick(PRENOMS_F);
-    const g = gradeById(gradeId)!;
-    const echelon = int(1, g.echelons);
-    const indice = Math.round(g.indiceDebut + ((g.indiceFin - g.indiceDebut) * (echelon - 1)) / Math.max(1, g.echelons - 1));
-    const statut = rnd() > 0.24 ? "Titulaire" : rnd() > 0.4 ? "Contractuel" : "Vacataire";
-    const etatRnd = rnd();
-    const etat = etatRnd > 0.94 ? "Détachement" : etatRnd > 0.9 ? "Disponibilité" : etatRnd > 0.885 ? "Suspendu" : "Actif";
-    const dateRecrutement = dateBetween(1992, 2024);
-    const ent = entites.find((e) => e.id === entiteId)!;
-    const nbEval = int(1, 3);
+/* ---------- Fabrique d'actes ---------- */
 
-    const evaluations = Array.from({ length: nbEval }, (_, k) => {
-      const c = int(60, 98), r = int(55, 97), cp = int(60, 99), eq = int(60, 98), inn = int(45, 95);
-      return {
-        id: `EVA-${pad(ac, 5)}-${k}`,
-        annee: 2025 - k,
-        competences: c, resultats: r, comportement: cp, equipe: eq, innovation: inn,
-        noteGlobale: Math.round(c * 0.3 + r * 0.25 + cp * 0.2 + eq * 0.15 + inn * 0.1),
-        appreciation: pick(["Excellent élément, très impliqué", "Bon agent, résultats conformes", "Progression satisfaisante", "Doit renforcer la rigueur administrative"]),
-        evaluateur: `${pick(NOMS)} ${pick(PRENOMS_M)}`,
-      };
-    });
+let compteurActe = 0;
 
-    const carriere = [
-      { id: `CAR-${pad(ac, 5)}-0`, date: dateRecrutement, type: "Recrutement" as const, libelle: `Intégration – ${g.libelle}`, reference: `ARR-${int(100, 999)}/METP/SG/DGARH` },
-      { id: `CAR-${pad(ac, 5)}-1`, date: dateBetween(2015, 2021), type: "Affectation" as const, libelle: `Affectation – ${ent.sigle}`, reference: `ARR-${int(100, 999)}/METP/SG/DGARH` },
-    ];
-    if (echelon > 2) carriere.push({ id: `CAR-${pad(ac, 5)}-2`, date: dateBetween(2022, 2025), type: "Avancement" as const, libelle: `Avancement à l'échelon ${echelon}`, reference: `ARR-${int(100, 999)}/METP/SG/DGARH` });
+function fabriquerActe(
+  type: TypeActe, agentId: string, agentNom: string, entiteInstructriceId: string,
+  dateCreation: string, statut: StatutActe
+): Acte {
+  compteurActe++;
+  const modele = TYPES_ACTE.find((t) => t.type === type)!;
+  const idxCourant =
+    statut === "BROUILLON" ? 0
+    : statut === "SOUMIS" ? 1
+    : statut === "EN_INSTRUCTION" ? 1
+    : statut === "RETOURNE" ? 1
+    : statut === "VALIDE_SERVICE" ? 2
+    : statut === "VALIDE_DIRECTION" ? 3
+    : statut === "REJETE" ? 3
+    : CIRCUIT_ACTE.length;
 
-    return {
-      id: `AGT-${pad(ac, 5)}`,
-      matricule: `METP-${pad(100000 + ac)}`,
-      nom, prenom, sexe,
-      dateNaissance: dateBetween(1966, 2000),
-      lieuNaissance: pick(DEPARTEMENTS).chefLieu,
-      nationalite: "Congolaise",
-      situationFamiliale: pick(["Célibataire", "Marié(e)", "Marié(e)", "Divorcé(e)", "Veuf(ve)"]) as Agent["situationFamiliale"],
-      enfants: int(0, 6),
-      telephone: `+242 0${int(4, 6)} ${int(100, 999)} ${int(10, 99)} ${int(10, 99)}`,
-      email: `${prenom.toLowerCase().replace(/[^a-z]/g, "")}.${nom.toLowerCase()}@metp.gouv.cg`,
-      adresse: `${int(1, 250)} rue ${pick(["Loutassi", "Mbochis", "Bacongo", "Moungali", "Poto-Poto"])}, ${ent.ville}`,
-      statut: statut as Agent["statut"],
-      etat: etat as Agent["etat"],
-      gradeId, echelon, categorie: g.categorie as Categorie,
-      entiteId, posteId,
-      dateRecrutement,
-      dateDernierAvancement: dateBetween(2022, 2025),
-      indice,
-      soldeConges: int(0, 30),
-      tauxCompletude: int(62, 100),
-      diplomes: Array.from({ length: int(1, 3) }, () => ({ intitule: pick(DIPLOMES), etablissement: pick(ETABS), annee: int(1995, 2023) })),
-      competences: Array.from(new Set(Array.from({ length: int(2, 5) }, () => pick(COMPETENCES)))),
-      langues: Array.from(new Set(["Français", pick(LANGUES)])),
-      carriere,
-      evaluations,
-      documents: [
-        { id: `DOC-${pad(ac, 5)}-1`, nom: "Arrêté d'intégration.pdf", categorie: "Carrière", date: dateRecrutement, taille: `${int(120, 900)} Ko` },
-        { id: `DOC-${pad(ac, 5)}-2`, nom: "Acte de naissance.pdf", categorie: "Identité", date: dateBetween(2010, 2020), taille: `${int(80, 400)} Ko` },
-        { id: `DOC-${pad(ac, 5)}-3`, nom: "Diplôme certifié.pdf", categorie: "Formation", date: dateBetween(2005, 2022), taille: `${int(200, 1500)} Ko` },
-      ],
-      sanctions: rnd() > 0.9 ? [{ id: `SAN-${pad(ac, 5)}`, date: dateBetween(2020, 2025), groupe: pick([1, 1, 2, 3]) as 1 | 2 | 3, nature: pick(["Avertissement", "Blâme", "Exclusion temporaire (5j)"]), motif: pick(["Absences répétées non justifiées", "Manquement aux obligations de service", "Retards chroniques"]) }] : [],
-      formations: Array.from({ length: int(0, 3) }, (_, k) => ({ id: `FOR-${pad(ac, 5)}-${k}`, intitule: pick(FORMATIONS), type: pick(["Continue", "Spécialisée", "E-learning", "Diplomante"]), annee: int(2022, 2026), statut: pick(["Terminée", "En cours", "Planifiée"]) })),
-    };
-  };
-
-  // 1 titulaire pour ~82% des postes
-  postes.forEach((p) => {
-    if (rnd() > 0.18) {
-      const a = createAgent(p.entiteId, p.gradeRequisId, p.id);
-      p.statut = "Occupé";
-      p.titulaireId = a.id;
-      agents.push(a);
-    } else if (rnd() > 0.85) {
-      p.statut = "Gelé";
-    }
-  });
-
-  // Agents sans poste nommé (personnel d'appui, enseignants administratifs, etc.)
-  cibles.forEach((ent) => {
-    const extra =
-      ent.type === "DIRECTION_DEPARTEMENTALE" ? int(70, 140)
-      : ent.type === "DIRECTION_GENERALE" ? int(40, 70)
-      : ent.type === "DIRECTION_CENTRALE" ? int(18, 38)
-      : int(8, 20);
-    for (let i = 0; i < extra; i++) {
-      agents.push(createAgent(ent.id, pick(["GR-C1", "GR-C2", "GR-C3", "GR-C4", "GR-D1", "GR-D2", "GR-B4", "GR-B4", "GR-B2"]), null));
-    }
-  });
-
-  /* ---------- Actes / Workflows ---------- */
-  const TYPES: Acte["type"][] = ["Nomination", "Mutation", "Avancement", "Promotion", "Recrutement", "Sanction", "Retraite"];
-  const STATUTS: Acte["statut"][] = ["Brouillon", "Soumis", "Validation SG", "Validation Ministre", "Signé", "Rejeté", "Publié"];
-  const actes: Acte[] = Array.from({ length: 64 }, (_, i) => {
-    const ag = pick(agents);
-    const type = pick(TYPES);
-    const statut = pick(STATUTS);
-    const dateCreation = dateBetween(2025, 2026);
-    const flow = ["Initiation Gestionnaire RH", "Contrôle DGARH", "Validation Secrétaire Général", "Signature Ministre", "Publication"];
-    const idx = STATUTS.indexOf(statut);
-    return {
-      id: `ACT-${pad(i + 1, 4)}`,
-      reference: `ARR-${pad(int(100, 999), 4)}/METP/SG/DGARH-${2026}`,
-      type,
-      objet: `${type} de ${ag.prenom} ${ag.nom}`,
-      agentId: ag.id,
-      entiteId: ag.entiteId,
-      posteCibleId: pick(postes).id,
-      statut,
-      dateCreation,
-      dateEcheance: iso(new Date(new Date(dateCreation).getTime() + 15 * 864e5)),
-      initiateur: `${pick(PRENOMS_M)} ${pick(NOMS)}`,
-      etapes: flow.map((libelle, k) => ({
-        libelle,
-        acteur: ["Gestionnaire RH", "DGARH", "Secrétaire Général", "Ministre", "DSIC"][k],
-        statut: k < idx ? "Terminé" : k === idx ? "En cours" : "À venir",
-        date: k <= idx ? iso(new Date(new Date(dateCreation).getTime() + k * 3 * 864e5)) : undefined,
-      })),
-    } as Acte;
-  });
-
-  /* ---------- Congés ---------- */
-  const conges: DemandeConge[] = Array.from({ length: 48 }, (_, i) => {
-    const ag = pick(agents);
-    const debut = new Date(2026, int(0, 11), int(1, 25));
-    const jours = int(2, 30);
-    return {
-      id: `CNG-${pad(i + 1, 4)}`,
-      reference: `DC-${pad(i + 1, 4)}/2026`,
-      agentId: ag.id,
-      type: pick(["Annuel", "Annuel", "Maladie", "Maternité", "Paternité", "Exceptionnel", "Formation", "Sans solde"]) as DemandeConge["type"],
-      dateDebut: iso(debut),
-      dateFin: iso(new Date(debut.getTime() + jours * 864e5)),
-      jours,
-      motif: pick(["Congé annuel réglementaire", "Raisons de santé", "Événement familial", "Formation diplômante", "Convenance personnelle"]),
-      statut: pick(["En attente", "En attente", "Approuvé", "Approuvé", "Refusé", "En cours"]) as DemandeConge["statut"],
-      validateur: `${pick(PRENOMS_M)} ${pick(NOMS)}`,
-    };
-  });
-
-  /* ---------- Utilisateurs ---------- */
-  const dd = entites.find((e) => e.id === "ENT-DD-02")!;
-  const utilisateurs: Utilisateur[] = [
-    { id: "USR-001", email: "admin@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Jade MELACK", role: "SUPER_ADMIN", entiteId: "ENT-DGARH", fonction: "Directeur Général de l'Administration et des RH", actif: true, mfa: true, derniereConnexion: "2026-07-06" },
-    { id: "USR-002", email: "ministre@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Gustave F. R. ADICOLLE GOUM", role: "MINISTRE", entiteId: "ENT-METP", fonction: "Ministre de l'Enseignement Technique et Professionnel", actif: true, mfa: true, derniereConnexion: "2026-07-05" },
-    { id: "USR-003", email: "sg@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Alphonse NGATSE", role: "SECRETAIRE_GENERAL", entiteId: "ENT-SG", fonction: "Secrétaire Général", actif: true, mfa: false, derniereConnexion: "2026-07-04" },
-    { id: "USR-004", email: "ig@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Berthe MOUKALA", role: "INSPECTEUR_GENERAL", entiteId: "ENT-IG", fonction: "Inspecteur Général", actif: true, mfa: true },
-    { id: "USR-005", email: "dget@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Rodrigue OKEMBA", role: "DIRECTEUR_GENERAL", entiteId: "ENT-DGET", fonction: "Directeur Général de l'Enseignement Technique", actif: true, mfa: false },
-    { id: "USR-006", email: "dd.brazzaville@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Sylvie LOEMBA", role: "DIRECTEUR_DEPARTEMENTAL", entiteId: dd.id, fonction: `Directeur Départemental – Brazzaville`, actif: true, mfa: false },
-    { id: "USR-007", email: "rh@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ghislain MABIALA", role: "GESTIONNAIRE_RH", entiteId: "ENT-DRH", fonction: "Gestionnaire RH – DRH", actif: true, mfa: false },
-    { id: "USR-008", email: "agent@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: `${agents[0].prenom} ${agents[0].nom}`, role: "AGENT", entiteId: agents[0].entiteId, agentId: agents[0].id, fonction: "Agent – Portail libre-service", actif: true, mfa: false },
-    { id: "USR-009", email: "cabinet@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Prosper BANZOUZI", role: "DIRECTEUR_CABINET", entiteId: "ENT-CAB", fonction: "Directeur de Cabinet", actif: true, mfa: true },
-    { id: "USR-010", email: "dsic@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ulrich TSIBA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DSIC", fonction: "Directeur des Systèmes d'Information", actif: false, mfa: false },
-  ];
-
-  const journal: JournalEntry[] = Array.from({ length: 40 }, (_, i) => ({
-    id: `LOG-${pad(i + 1, 4)}`,
-    date: `2026-07-0${int(1, 6)} ${pad(int(7, 19), 2)}:${pad(int(0, 59), 2)}`,
-    utilisateur: pick(utilisateurs).nomComplet,
-    action: pick(["Connexion", "Création fiche agent", "Modification grade", "Validation acte", "Export CSV", "Suppression poste", "Consultation dossier"]),
-    cible: pick(agents).matricule,
-    ip: `41.7${int(0, 9)}.${int(1, 254)}.${int(1, 254)}`,
+  const etapes: EtapeActe[] = CIRCUIT_ACTE.map((s, k) => ({
+    id: `ETP-${pad(compteurActe, 5)}-${k}`,
+    ordre: s.ordre,
+    libelle: s.libelle,
+    entiteId: s.entiteId,
+    statut: k < idxCourant ? "TERMINEE" : k === idxCourant ? "EN_COURS" : "A_VENIR",
+    dateEntree: k <= idxCourant ? plusJours(dateCreation, k * 3) : undefined,
+    dateSortie: k < idxCourant ? plusJours(dateCreation, k * 3 + 2) : undefined,
+    utilisateur: k <= idxCourant ? `${pick(PRENOMS_M)} ${pick(NOMS)}` : undefined,
+    commentaire: statut === "RETOURNE" && k === idxCourant ? "Pièce justificative manquante" : undefined,
   }));
 
-  const notifications: Notification[] = [
-    { id: "NTF-1", titre: "12 actes en attente de signature", message: "Le Ministre doit signer 12 arrêtés de nomination avant le 15/07/2026.", date: "2026-07-06", type: "alerte", lu: false },
-    { id: "NTF-2", titre: "Avancements automatiques générés", message: "148 avancements d'échelon ont été calculés pour le 3ème trimestre.", date: "2026-07-05", type: "info", lu: false },
-    { id: "NTF-3", titre: "Synchronisation paie réussie", message: "Échange de données avec le système de paie (MFP) terminé sans erreur.", date: "2026-07-05", type: "succes", lu: true },
-    { id: "NTF-4", titre: "Dossiers incomplets", message: "312 dossiers agents ont un taux de complétude inférieur à 80 %.", date: "2026-07-04", type: "alerte", lu: true },
-  ];
-
-  return { entites, grades: GRADES, postes, agents, actes, conges, utilisateurs, journal, notifications };
+  const signe = ["SIGNE", "NOTIFIE", "ARCHIVE"].includes(statut);
+  return {
+    id: `ACT-${pad(compteurActe, 5)}`,
+    reference: `ARR-${pad(int(100, 9999), 4)}/METP/DGARH-${new Date(dateCreation).getFullYear()}`,
+    type,
+    objet: `${modele.libelle} — ${agentNom}`,
+    agentId,
+    entiteInstructriceId,
+    statut,
+    dateCreation,
+    dateEcheance: plusJours(dateCreation, 15),
+    dateSignature: signe ? plusJours(dateCreation, int(8, 40)) : undefined,
+    initiateur: `${pick(PRENOMS_M)} ${pick(NOMS)}`,
+    etapes,
+    pieces: [
+      { id: `PC-${pad(compteurActe, 5)}-1`, nom: "Demande signée.pdf", categorie: "Demande", date: dateCreation, taille: `${int(80, 900)} Ko` },
+      { id: `PC-${pad(compteurActe, 5)}-2`, nom: "Situation administrative.pdf", categorie: "Justificatif", date: dateCreation, taille: `${int(80, 600)} Ko` },
+    ],
+  };
 }
 
-export type Dataset = ReturnType<typeof buildDataset>;
+/* ---------- Construction ---------- */
+
+export interface Dataset {
+  entites: typeof ENTITES;
+  corps: typeof CORPS;
+  grades: typeof GRADES;
+  postes: Poste[];
+  agents: Agent[];
+  situations: SituationCarriere[];
+  affectations: Affectation[];
+  positions: Position[];
+  actes: Acte[];
+  besoins: BesoinPersonnel[];
+  utilisateurs: Utilisateur[];
+  journal: EntreeJournal[];
+  notifications: Notification[];
+}
+
+export function buildDataset(): Dataset {
+  graine = 20260909;
+  compteurActe = 0;
+
+  const agents: Agent[] = [];
+  const situations: SituationCarriere[] = [];
+  const affectations: Affectation[] = [];
+  const positions: Position[] = [];
+  const actes: Acte[] = [];
+  const postes: Poste[] = [];
+
+  let nAgent = 0;
+  let nPoste = 0;
+
+  const cibles = ENTITES.filter((x) => effectifDe(x.niveau) > 0);
+
+  cibles.forEach((ent) => {
+    const nb = effectifDe(ent.niveau);
+    const departemental = ent.niveau === "DIRECTION_DEPARTEMENTALE";
+
+    for (let i = 0; i < nb; i++) {
+      nAgent++;
+      const categorie = tirerCategorie(ent.niveau);
+      const regle = REGLES_CATEGORIE[categorie];
+      const enseignant = departemental ? chance(0.62) : false;
+      const sexe = chance(0.42) ? "F" : "M";
+      const prenom = sexe === "F" ? pick(PRENOMS_F) : pick(PRENOMS_M);
+      const nom = pick(NOMS);
+      const id = `AGT-${pad(nAgent, 5)}`;
+      const nomComplet = `${prenom} ${nom}`;
+
+      const dateRecrutement = dateEntre(1992, 2025);
+      const datePriseService = chance(0.93) ? plusJours(dateRecrutement, int(5, 90)) : undefined;
+      const dateTitularisation =
+        regle.titularisation && datePriseService && chance(0.85)
+          ? plusJours(datePriseService, int(365, 900))
+          : undefined;
+
+      agents.push({
+        id,
+        matricule: `${int(10, 99)}-${pad(nAgent, 5)}-${int(1, 9)}`,
+        nom, prenom, sexe,
+        dateNaissance: dateEntre(1962, 2001),
+        lieuNaissance: pick(VILLES),
+        nationalite: "Congolaise",
+        situationFamiliale: pick(["Célibataire", "Marié(e)", "Marié(e)", "Divorcé(e)", "Veuf(ve)"]) as Agent["situationFamiliale"],
+        enfants: int(0, 6),
+        telephone: `+242 0${int(4, 6)} ${int(100, 999)} ${int(1000, 9999)}`,
+        email: `${prenom.toLowerCase().replace(/[^a-z]/g, "")}.${nom.toLowerCase()}@metp.gouv.cg`,
+        adresse: `${int(1, 220)}, rue ${pick(NOMS).toLowerCase()}, ${pick(VILLES)}`,
+        categorie,
+        enseignant,
+        dateRecrutement,
+        datePriseService,
+        dateTitularisation,
+        diplomes: Array.from({ length: int(1, 3) }, () => ({
+          intitule: pick(DIPLOMES), etablissement: pick(ETABS), annee: int(1990, 2024),
+        })),
+        competences: Array.from(new Set(Array.from({ length: int(2, 5) }, () => pick(COMPETENCES)))),
+        langues: Array.from(new Set(["Français", ...Array.from({ length: int(1, 2) }, () => pick(LANGUES))])),
+      });
+
+      /* --- Acte de recrutement : origine de tout le dossier --- */
+      const acteRec = fabriquerActe("RECRUTEMENT", id, nomComplet, "ENT-SPC-BRM", dateRecrutement, "ARCHIVE");
+      actes.push(acteRec);
+
+      /* Situation de carrière initiale — seulement si la catégorie en a une */
+      let situationCourante: SituationCarriere | undefined;
+      if (regle.carriereStatutaire) {
+        const gradeId = pick(gradesPour(ent.niveau, enseignant));
+        const g = gradeById(gradeId)!;
+        situationCourante = {
+          id: `SIT-${pad(nAgent, 5)}-1`,
+          agentId: id,
+          gradeId,
+          classe: 1,
+          echelon: 1,
+          indice: g.indiceDebut,
+          dateEffet: dateRecrutement,
+          dateFin: null,
+          acteId: acteRec.id,
+        };
+        situations.push(situationCourante);
+      }
+
+      /* Poste et affectation initiale */
+      nPoste++;
+      const gradeRequis = situationCourante?.gradeId ?? pick(gradesPour(ent.niveau, enseignant));
+      const poste: Poste = {
+        id: `PST-${pad(nPoste, 5)}`,
+        code: `${ent.sigle}-${pad(i + 1, 3)}`,
+        intitule: enseignant ? `Enseignant — ${pick(DISCIPLINES)}` : `Agent — ${ent.sigle}`,
+        entiteId: ent.id,
+        gradeRequisId: gradeRequis,
+        statut: "OCCUPE",
+        budgetise: regle.carriereStatutaire,
+      };
+      postes.push(poste);
+
+      affectations.push({
+        id: `AFF-${pad(nAgent, 5)}-1`,
+        agentId: id,
+        entiteId: ent.id,
+        posteId: poste.id,
+        fonction: poste.intitule,
+        dateEffet: datePriseService ?? dateRecrutement,
+        dateFin: null,
+        acteId: acteRec.id,
+      });
+
+      positions.push({
+        id: `POS-${pad(nAgent, 5)}-1`,
+        agentId: id,
+        nature: "ACTIVITE",
+        dateEffet: datePriseService ?? dateRecrutement,
+        dateFin: null,
+        acteId: acteRec.id,
+      });
+
+      /* --- Avancement : ferme la situation précédente, en ouvre une nouvelle --- */
+      if (situationCourante && regle.avancement && chance(0.55)) {
+        const dateAv = dateEntre(Math.max(1996, new Date(dateRecrutement).getFullYear() + 2), 2026);
+        if (dateAv > dateRecrutement) {
+          const acteAv = fabriquerActe("AVANCEMENT", id, nomComplet, "ENT-SPC-BGC", dateAv, "ARCHIVE");
+          actes.push(acteAv);
+          const g = gradeById(situationCourante.gradeId)!;
+          const echelon = Math.min(g.echelons, situationCourante.echelon + int(1, 4));
+          situationCourante.dateFin = dateAv;
+          situations.push({
+            id: `SIT-${pad(nAgent, 5)}-2`,
+            agentId: id,
+            gradeId: situationCourante.gradeId,
+            classe: situationCourante.classe,
+            echelon,
+            indice: Math.round(g.indiceDebut + ((g.indiceFin - g.indiceDebut) * (echelon - 1)) / Math.max(1, g.echelons - 1)),
+            dateEffet: dateAv,
+            dateFin: null,
+            acteId: acteAv.id,
+          });
+        }
+      }
+
+      /* --- Position non ordinaire pour une minorité --- */
+      if (chance(0.09)) {
+        const dateP = dateEntre(2024, 2026);
+        const nature = pick(["CONGE", "CONGE", "DISPONIBILITE", "DETACHEMENT", "MISE_A_DISPOSITION", "SUSPENSION"]) as Position["nature"];
+        const acteP = fabriquerActe(nature === "CONGE" ? "CONGE" : "POSITION", id, nomComplet, "ENT-SPC-BGC", dateP, "SIGNE");
+        actes.push(acteP);
+        positions[positions.length - 1].dateFin = dateP;
+        positions.push({
+          id: `POS-${pad(nAgent, 5)}-2`,
+          agentId: id,
+          nature,
+          motif: pick(["Congé annuel réglementaire", "Raisons de santé", "Événement familial", "Formation diplômante", "Convenance personnelle"]),
+          dateEffet: dateP,
+          dateFin: null,
+          acteId: acteP.id,
+        });
+      }
+    }
+  });
+
+  /* ---------- Actes en circulation : la charge réelle des bureaux ---------- */
+  const enCours: StatutActe[] = ["SOUMIS", "EN_INSTRUCTION", "EN_INSTRUCTION", "VALIDE_SERVICE", "VALIDE_DIRECTION", "RETOURNE"];
+  for (let i = 0; i < 140; i++) {
+    const a = pick(agents);
+    const modele = pick(TYPES_ACTE.filter((t) => t.type !== "RECRUTEMENT"));
+    actes.push(
+      fabriquerActe(modele.type, a.id, `${a.prenom} ${a.nom}`, modele.bureauId, dateEntre(2026, 2026), pick(enCours))
+    );
+  }
+
+  /* ---------- Besoins ascendants — cahier §04, §10 ---------- */
+  const dd = ENTITES.filter((x) => x.niveau === "DIRECTION_DEPARTEMENTALE");
+  const besoins: BesoinPersonnel[] = Array.from({ length: 72 }, (_, i) => {
+    const d = pick(dd);
+    return {
+      id: `BSN-${pad(i + 1, 4)}`,
+      reference: `BE-${pad(i + 1, 4)}/2026`,
+      etablissementId: `ETB-${d.id}-${int(1, 6)}`,
+      departementId: d.id,
+      categorie: pick(["PRESTATAIRE", "VOLONTAIRE", "VACATAIRE"]) as CategoriePersonnel,
+      discipline: pick(DISCIPLINES),
+      effectifDemande: int(1, 9),
+      effectifRetenu: chance(0.5) ? int(0, 5) : undefined,
+      anneeScolaire: "2026-2027",
+      statut: pick(["EXPRIME", "TRANSMIS", "TRANSMIS", "INSTRUIT", "ARBITRE"]) as BesoinPersonnel["statut"],
+    };
+  });
+
+  /* ---------- Comptes — un par rôle, rattachés à une vraie entité ---------- */
+  const utilisateurs: Utilisateur[] = [
+    { id: "USR-001", email: "admin@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Jade MELACK", role: "ADMIN_SYSTEME", entiteId: "ENT-DGARH", fonction: "Administrateur du système", actif: true },
+    { id: "USR-002", email: "dgarh@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Alphonse NGATSE", role: "DIRECTEUR_GENERAL", entiteId: "ENT-DGARH", fonction: "Directeur général de l'administration et des ressources humaines", actif: true },
+    { id: "USR-003", email: "dpcef@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Berthe MOUKALA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DPCEF", fonction: "Directrice du personnel, de la condition enseignante et de la formation", actif: true },
+    { id: "USR-004", email: "dafm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ulrich TSIBA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DAFM", fonction: "Directeur de l'administration, des finances et du matériel", actif: true },
+    { id: "USR-005", email: "spc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Rodrigue OKEMBA", role: "CHEF_SERVICE", entiteId: "ENT-DPCEF-SPC", fonction: "Chef du service du personnel et du contentieux", actif: true },
+    { id: "USR-006", email: "brm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ghislain MABIALA", role: "CHEF_BUREAU", entiteId: "ENT-SPC-BRM", fonction: "Chef du bureau du recrutement et des mouvements", actif: true },
+    { id: "USR-007", email: "bgc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Nadège BIKINDOU", role: "AGENT_INSTRUCTEUR", entiteId: "ENT-SPC-BGC", fonction: "Instructrice — bureau de la gestion de carrière", actif: true },
+    { id: "USR-008", email: "dd.brazzaville@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Sylvie LOEMBA", role: "DIRECTEUR_DEPARTEMENTAL", entiteId: "ENT-DD-02", fonction: "Directrice départementale — Brazzaville", actif: true },
+    { id: "USR-009", email: "etablissement@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Prosper BANZOUZI", role: "CHEF_ETABLISSEMENT", entiteId: "ENT-DD-02", fonction: "Proviseur — lycée technique", actif: true },
+    { id: "USR-010", email: "agent@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: `${agents[0].prenom} ${agents[0].nom}`, role: "AGENT", entiteId: "ENT-SPC-BRM", agentId: agents[0].id, fonction: "Agent — portail libre-service", actif: true },
+  ];
+
+  /* ---------- Journal d'audit : en ajout seul, rattaché aux actes ---------- */
+  const journal: EntreeJournal[] = Array.from({ length: 90 }, (_, i) => {
+    const acte = pick(actes);
+    const u = pick(utilisateurs);
+    return {
+      id: `JRN-${pad(i + 1, 5)}`,
+      horodatage: `${dateEntre(2026, 2026)}T${pad(int(7, 18), 2)}:${pad(int(0, 59), 2)}:00`,
+      utilisateurId: u.id,
+      utilisateur: u.nomComplet,
+      adresseIp: `10.${int(0, 40)}.${int(0, 255)}.${int(2, 254)}`,
+      action: pick(["CREATION", "MODIFICATION", "CONSULTATION", "VALIDATION", "SIGNATURE"]) as EntreeJournal["action"],
+      cibleType: "Acte",
+      cibleId: acte.id,
+      acteId: acte.id,
+      justification: pick(["Instruction du dossier", "Complément de pièces", "Contrôle de régularité", "Validation hiérarchique"]),
+    };
+  });
+
+  const notifications: Notification[] = [
+    { id: "NTF-1", titre: "Dossiers en attente de signature", message: "Des actes ont dépassé le délai cible de 15 jours au bureau de la gestion de carrière.", date: "2026-09-08", type: "alerte", lu: false },
+    { id: "NTF-2", titre: "Besoins 2026-2027 transmis", message: "Les directions départementales ont transmis leurs états de besoins en prestataires et vacataires.", date: "2026-09-05", type: "info", lu: false },
+    { id: "NTF-3", titre: "Référentiel incomplet", message: "Le détail des services et bureaux reste à confirmer sur l'arrêté n° 25567.", date: "2026-09-01", type: "alerte", lu: true },
+  ];
+
+  return {
+    entites: ENTITES, corps: CORPS, grades: GRADES,
+    postes, agents, situations, affectations, positions, actes, besoins,
+    utilisateurs, journal, notifications,
+  };
+}

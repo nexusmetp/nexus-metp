@@ -10,8 +10,8 @@
  */
 
 import {
-  ENTITES, DEPARTEMENTS, GRADES, CORPS, CIRCUIT_ACTE, TYPES_ACTE,
-  entiteById, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
+  ENTITES, ETABLISSEMENTS, DEPARTEMENTS, GRADES, CORPS, CIRCUIT_ACTE, TYPES_ACTE,
+  entiteById, enfantsDe, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
 } from "@/lib/referentiels";
 import type {
   Acte, Affectation, Agent, BesoinPersonnel, CategoriePersonnel, EntreeJournal,
@@ -54,7 +54,8 @@ const effectifDe = (niveau: string) => {
     case "DIRECTION_GENERALE": return int(3, 6);
     case "INSPECTION_GENERALE": return int(8, 14);
     case "INSPECTION_INTERDEPARTEMENTALE": return int(10, 18);
-    case "DIRECTION_DEPARTEMENTALE": return int(65, 130);
+    case "DIRECTION_DEPARTEMENTALE": return int(14, 26);
+    case "ETABLISSEMENT": return int(22, 48);
     default: return 0;
   }
 };
@@ -68,13 +69,14 @@ const gradesPour = (niveau: string, enseignant: boolean): string[] => {
     case "DIRECTION": return ["GR-DIR-DC", "GR-ADM-1"];
     case "SERVICE": return ["GR-ENC-CS1", "GR-ENC-CS2"];
     case "BUREAU": return ["GR-GEST-1", "GR-GEST-2", "GR-GEST-3", "GR-TECH-1", "GR-SERV-1"];
-    case "DIRECTION_DEPARTEMENTALE": return ["GR-ENS-PTC", "GR-GEST-1", "GR-TECH-1", "GR-SERV-1", "GR-SERV-2"];
+    case "DIRECTION_DEPARTEMENTALE": return ["GR-GEST-1", "GR-TECH-1", "GR-SERV-1", "GR-ENC-CS2"];
+    case "ETABLISSEMENT": return ["GR-ENS-PTC", "GR-ENS-PT", "GR-SERV-1", "GR-GEST-3"];
     default: return ["GR-GEST-1", "GR-SERV-1"];
   }
 };
 
 const tirerCategorie = (niveau: string): CategoriePersonnel => {
-  if (niveau !== "DIRECTION_DEPARTEMENTALE") {
+  if (niveau !== "DIRECTION_DEPARTEMENTALE" && niveau !== "ETABLISSEMENT") {
     return chance(0.82) ? "FONCTIONNAIRE" : "CONTRACTUEL";
   }
   const r = rnd();
@@ -174,13 +176,13 @@ export function buildDataset(): Dataset {
 
   cibles.forEach((ent) => {
     const nb = effectifDe(ent.niveau);
-    const departemental = ent.niveau === "DIRECTION_DEPARTEMENTALE";
+    const departemental = ent.niveau === "DIRECTION_DEPARTEMENTALE" || ent.niveau === "ETABLISSEMENT";
 
     for (let i = 0; i < nb; i++) {
       nAgent++;
       const categorie = tirerCategorie(ent.niveau);
       const regle = REGLES_CATEGORIE[categorie];
-      const enseignant = departemental ? chance(0.62) : false;
+      const enseignant = ent.niveau === "ETABLISSEMENT" ? chance(0.78) : false;
       const sexe = chance(0.42) ? "F" : "M";
       const prenom = sexe === "F" ? pick(PRENOMS_F) : pick(PRENOMS_M);
       const nom = pick(NOMS);
@@ -329,14 +331,13 @@ export function buildDataset(): Dataset {
   }
 
   /* ---------- Besoins ascendants — cahier §04, §10 ---------- */
-  const dd = ENTITES.filter((x) => x.niveau === "DIRECTION_DEPARTEMENTALE");
-  const besoins: BesoinPersonnel[] = Array.from({ length: 72 }, (_, i) => {
-    const d = pick(dd);
+  const besoins: BesoinPersonnel[] = Array.from({ length: 86 }, (_, i) => {
+    const etb = pick(ETABLISSEMENTS);
     return {
       id: `BSN-${pad(i + 1, 4)}`,
       reference: `BE-${pad(i + 1, 4)}/2026`,
-      etablissementId: `ETB-${d.id}-${int(1, 6)}`,
-      departementId: d.id,
+      etablissementId: etb.id,
+      departementId: etb.parentId!,
       categorie: pick(["PRESTATAIRE", "VOLONTAIRE", "VACATAIRE"]) as CategoriePersonnel,
       discipline: pick(DISCIPLINES),
       effectifDemande: int(1, 9),

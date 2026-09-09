@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap,
+  Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
   Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
   UserCircle, ChevronLeft,
 } from "lucide-react";
@@ -25,6 +25,7 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     items: [
       { href: "/dgarh", label: "Espace DGARH", icon: Building2, mod: "dgarh", pret: true },
       { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
+      { href: "/dgarh/bannette", label: "Ma bannette", icon: Inbox, mod: "actes", pret: true },
       { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
       { href: "/dgarh/actes", label: "Actes", icon: FileCheck2, mod: "actes", pret: true },
     ],
@@ -32,33 +33,33 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Gestion du personnel",
     items: [
-      { href: "/carrieres", label: "Carrières", icon: GitBranch, mod: "carrieres" },
-      { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges" },
-      { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations" },
-      { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux" },
+      { href: "/carrieres", label: "Carrières", icon: GitBranch, mod: "carrieres", pret: true },
+      { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges", pret: true },
+      { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations", pret: true },
+      { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux", pret: true },
     ],
   },
   {
     titre: "Déconcentration",
-    items: [{ href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins" }],
+    items: [{ href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins", pret: true }],
   },
   {
     titre: "Ressources",
     items: [
-      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels" },
-      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents" },
-      { href: "/rapports", label: "Rapports", icon: BarChart3, mod: "rapports" },
+      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
+      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents", pret: true },
+      { href: "/rapports", label: "Rapports", icon: BarChart3, mod: "rapports", pret: true },
     ],
   },
   {
     titre: "Espace personnel",
-    items: [{ href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier" }],
+    items: [{ href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier", pret: true }],
   },
   {
     titre: "Système",
     items: [
-      { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal" },
-      { href: "/administration", label: "Administration", icon: Settings, mod: "administration" },
+      { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal", pret: true },
+      { href: "/administration", label: "Administration", icon: Settings, mod: "administration", pret: true },
     ],
   },
 ];

@@ -4,8 +4,8 @@ import { openDB, type IDBPDatabase } from "idb";
 import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
-/** v2 : passage au modèle événementiel du cahier (§15). */
-const DB_VERSION = 2;
+/** v3 : ajout du niveau établissement (§10). v2 : passage au modèle événementiel du cahier (§15). */
+const DB_VERSION = 3;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -22,7 +22,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 2) {
+        if (ancienne < 3) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {

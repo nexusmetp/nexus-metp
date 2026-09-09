@@ -53,6 +53,11 @@ export const LACUNES = [
     ou: "Référence non retrouvée à ce jour",
   },
   {
+    sujet: "Liste réelle des établissements",
+    manque: "Carte scolaire de l'enseignement technique et professionnel",
+    ou: "Document non consulté — les établissements sont un gabarit",
+  },
+  {
     sujet: "Grille indiciaire et corps réels",
     manque: "Statut général de la fonction publique et statuts particuliers",
     ou: "Textes non consultés",
@@ -188,9 +193,42 @@ const deconcentration: E[] = [
   ),
 ];
 
+/* — Établissements — cahier §10 —
+   Le niveau local ferme la chaîne ascendante : c'est de là que partent les
+   états de besoins. La liste réelle relève de la carte scolaire du ministère ;
+   celle-ci est un gabarit, marqué comme tel. */
+const MODELES_ETABLISSEMENT = [
+  { prefixe: "LT", genre: "Lycée technique" },
+  { prefixe: "CET", genre: "Collège d'enseignement technique" },
+  { prefixe: "CFP", genre: "Centre de formation professionnelle" },
+  { prefixe: "LTA", genre: "Lycée technique agricole" },
+];
+
+const etablissements: E[] = DEPARTEMENTS.flatMap((d, i) => {
+  const ddId = `ENT-DD-${String(i + 1).padStart(2, "0")}`;
+  const nb = d.nom === "Brazzaville" || d.nom === "Pointe-Noire" ? 4 : 3;
+  return MODELES_ETABLISSEMENT.slice(0, nb).map((m, k) =>
+    e(
+      `ENT-ETB-${String(i + 1).padStart(2, "0")}-${k + 1}`,
+      `${m.prefixe}-${d.nom.slice(0, 4).toUpperCase()}`,
+      `${m.genre} de ${d.chefLieu}`,
+      "ETABLISSEMENT",
+      ddId,
+      "A_VERIFIER",
+      "Carte scolaire du ministère — liste non consultée",
+      d.chefLieu
+    )
+  );
+});
+
 export const ENTITES: Entite[] = [
-  ...sommet, ...secretariat, ...dpcef, ...dobas, ...dafm, ...deconcentration,
+  ...sommet, ...secretariat, ...dpcef, ...dobas, ...dafm, ...deconcentration, ...etablissements,
 ] as Entite[];
+
+export const ETABLISSEMENTS = etablissements as Entite[];
+/** Département (direction départementale) dont relève une entité locale. */
+export const departementDe = (entiteId?: string | null) =>
+  entiteId ? cheminDe(entiteId).find((x) => x.niveau === "DIRECTION_DEPARTEMENTALE") : undefined;
 
 /* — Accès à l'arborescence — */
 
@@ -467,10 +505,18 @@ export function moduleDeRoute(pathname: string): ModuleKey | null {
   const routes: [string, ModuleKey][] = [
     ["/dgarh/organigramme", "organigramme"],
     ["/dgarh/agents", "agents"],
+    ["/dgarh/bannette", "actes"],
     ["/dgarh/actes", "actes"],
     ["/dgarh", "dgarh"],
     ["/mon-dossier", "mon-dossier"],
+    ["/carrieres", "carrieres"],
+    ["/conges", "conges"],
+    ["/formations", "formations"],
+    ["/contentieux", "contentieux"],
     ["/besoins", "besoins"],
+    ["/referentiels", "referentiels"],
+    ["/documents", "documents"],
+    ["/rapports", "rapports"],
     ["/journal", "journal"],
     ["/administration", "administration"],
   ];

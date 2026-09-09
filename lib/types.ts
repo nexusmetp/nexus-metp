@@ -236,6 +236,20 @@ export interface EtapeActe {
   commentaire?: string;
 }
 
+/** Ce que l'acte changera dans le dossier une fois notifié. */
+export interface CibleActe {
+  entiteId?: string;
+  posteId?: string;
+  fonction?: string;
+  gradeId?: string;
+  classe?: number;
+  echelon?: number;
+  nature?: NaturePosition;
+  motif?: string;
+  /** Date d'effet de la décision, distincte de la date de signature. */
+  dateEffet?: string;
+}
+
 export interface Acte {
   id: string;
   reference: string;
@@ -249,6 +263,13 @@ export interface Acte {
   dateEcheance: string;
   dateSignature?: string;
   initiateur: string;
+  /** Agent instructeur à qui le dossier est confié — sa bannette. */
+  assigneA?: string;
+  /** Qui a instruit : sert la séparation instruction / validation (§11). */
+  instruitPar?: string;
+  /** Vrai une fois les effets reportés dans le dossier (étape 10 du §09). */
+  effetsAppliques?: boolean;
+  cible?: CibleActe;
   etapes: EtapeActe[];
   pieces: Piece[];
 }

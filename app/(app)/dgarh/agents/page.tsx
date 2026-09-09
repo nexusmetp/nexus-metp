@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Search, Users, X } from "lucide-react";
 import { useAgentsProjetes } from "@/lib/queries";
 import {
@@ -148,7 +149,9 @@ export default function AgentsPage() {
                   return (
                     <TableRow key={a.id}>
                       <TableCell>
-                        <div className="font-medium">{a.prenom} {a.nom}</div>
+                        <Link href={`/dgarh/agents/${a.id}`} className="font-medium hover:text-primary hover:underline">
+                          {a.prenom} {a.nom}
+                        </Link>
                         <div className="font-mono text-[11px] text-muted-foreground">{a.matricule}</div>
                       </TableCell>
                       <TableCell className="hidden max-w-[220px] md:table-cell">

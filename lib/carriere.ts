@@ -152,3 +152,33 @@ export function ligneDeVie(agentId: string, h: Historique): EvenementCarriere[] 
   );
   return out.sort((a, b) => b.date.localeCompare(a.date));
 }
+
+/**
+ * Décisions prises mais pas encore en vigueur : un acte notifié dont la date
+ * d'effet est future n'a pas encore déplacé l'agent. L'écran doit le dire,
+ * sinon la fiche paraît contredire l'acte qu'on vient de signer.
+ */
+export interface Attente {
+  categorie: "affectation" | "carriere" | "position";
+  dateEffet: string;
+  libelle: string;
+  acteId: string;
+}
+
+export function decisionsAVenir(
+  agentId: string,
+  h: Historique,
+  date = new Date().toISOString().slice(0, 10)
+): Attente[] {
+  const out: Attente[] = [];
+  h.affectations
+    .filter((a) => a.agentId === agentId && a.dateEffet > date)
+    .forEach((a) => out.push({ categorie: "affectation", dateEffet: a.dateEffet, libelle: a.fonction, acteId: a.acteId }));
+  h.situations
+    .filter((s) => s.agentId === agentId && s.dateEffet > date)
+    .forEach((s) => out.push({ categorie: "carriere", dateEffet: s.dateEffet, libelle: `Échelon ${s.echelon} · indice ${s.indice}`, acteId: s.acteId }));
+  h.positions
+    .filter((p) => p.agentId === agentId && p.dateEffet > date)
+    .forEach((p) => out.push({ categorie: "position", dateEffet: p.dateEffet, libelle: p.motif ?? p.nature, acteId: p.acteId }));
+  return out.sort((a, b) => a.dateEffet.localeCompare(b.dateEffet));
+}

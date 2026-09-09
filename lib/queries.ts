@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { all, one, remove, resetDB, save, type StoreName } from "@/lib/db";
 import { projeterTous, type Historique } from "@/lib/carriere";
+import { appliquerTransition, calculerEffets, entreeJournal, type CodeTransition } from "@/lib/actes";
 import type {
   Acte, Affectation, Agent, AgentProjete, BesoinPersonnel, Corps, EntreeJournal,
   Entite, Grade, Notification, Position, Poste, SituationCarriere, Utilisateur,
@@ -88,4 +89,76 @@ export function useDeleteRow(store: StoreName) {
 export function useResetData() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: () => resetDB(), onSuccess: () => qc.invalidateQueries() });
+}
+
+/* ------------------------------------------------------------------ */
+/* Écriture — cahier §09, §12                                          */
+/* ------------------------------------------------------------------ */
+
+
+/**
+ * Fait franchir une étape à un acte.
+ *
+ * Écrit dans cet ordre : l'acte, le journal, puis — uniquement à la
+ * notification — les effets dans le dossier. Rien d'autre dans
+ * l'application ne modifie une affectation, une situation ou une position.
+ */
+export function useTransitionActe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      acte, code, utilisateur, motif,
+    }: { acte: Acte; code: CodeTransition; utilisateur: Utilisateur; motif?: string }) => {
+      const avant = acte.statut;
+      const suivant = appliquerTransition(acte, code, utilisateur, motif);
+
+      await save<Acte>("actes", suivant);
+      await save("journal", entreeJournal(suivant, code, utilisateur, avant, motif) as any);
+
+      if (code === "notifier") {
+        const [affectations, situations, positions] = await Promise.all([
+          all<Affectation>("affectations"),
+          all<SituationCarriere>("situations"),
+          all<Position>("positions"),
+        ]);
+        const effets = calculerEffets(suivant, { affectations, situations, positions });
+        await Promise.all([
+          ...effets.affectationsFermees.map((r) => save("affectations", r)),
+          ...effets.affectationsCreees.map((r) => save("affectations", r)),
+          ...effets.situationsFermees.map((r) => save("situations", r)),
+          ...effets.situationsCreees.map((r) => save("situations", r)),
+          ...effets.positionsFermees.map((r) => save("positions", r)),
+          ...effets.positionsCreees.map((r) => save("positions", r)),
+        ]);
+      }
+      return suivant;
+    },
+    onSuccess: () => {
+      ["actes", "journal", "affectations", "situations", "positions"].forEach((k) =>
+        qc.invalidateQueries({ queryKey: [k] })
+      );
+    },
+  });
+}
+
+/** Dépose un acte neuf en brouillon. */
+export function useCreerActe() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (acte: Acte) => {
+      await save<Acte>("actes", acte);
+      return acte;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["actes"] }),
+  });
+}
+
+/** Les dossiers d'un agent, du plus récent au plus ancien. */
+export function useActesDeLAgent(agentId?: string) {
+  const { data: actes = [], isLoading } = useActes();
+  const data = useMemo(
+    () => (agentId ? actes.filter((a) => a.agentId === agentId).sort((a, b) => b.dateCreation.localeCompare(a.dateCreation)) : []),
+    [actes, agentId]
+  );
+  return { data, isLoading };
 }

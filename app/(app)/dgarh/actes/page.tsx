@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { FileCheck2, Search, X } from "lucide-react";
 import { useActes, useAgents } from "@/lib/queries";
 import {
@@ -104,6 +106,9 @@ export default function ActesPage() {
         <Badge variant="outline" className="gap-1.5">
           <FileCheck2 className="h-3 w-3" /> {fmtNum(filtres.length)} acte{filtres.length > 1 ? "s" : ""}
         </Badge>
+        <Button size="sm" asChild>
+          <Link href="/dgarh/actes/nouveau"><Plus className="mr-1.5 h-3.5 w-3.5" /> Nouvelle mutation</Link>
+        </Button>
       </PageHeader>
 
       <Card>
@@ -173,7 +178,11 @@ export default function ActesPage() {
                         className="cursor-pointer"
                         onClick={() => setOuvert(estOuvert ? null : a.id)}
                       >
-                        <TableCell className="font-mono text-xs">{a.reference}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <Link href={`/dgarh/actes/${a.id}`} onClick={(e) => e.stopPropagation()} className="hover:text-primary hover:underline">
+                            {a.reference}
+                          </Link>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-[10px]">
                             {typeActeById(a.type)?.libelle ?? a.type}

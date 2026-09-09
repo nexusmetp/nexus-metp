@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import {
   AlertTriangle, Eye, EyeOff, Fingerprint, Loader2, Lock, User, ShieldCheck, ChevronDown,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, MINISTERE_NOM, ROLE_LABELS } from "@/lib/referentiels";
-import { LOGIN_BG_URL } from "@/lib/assets";
+import { LOGIN_BG_URL, LOGIN_VIDEO_URL } from "@/lib/assets";
 import { useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,9 @@ export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [pending, setPending] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
+  const [videoKo, setVideoKo] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const fondAnime = Boolean(LOGIN_VIDEO_URL) && !reduceMotion && !videoKo;
 
   useEffect(() => {
     if (user) router.replace(user.role === "AGENT" ? "/mon-dossier" : "/dashboard");
@@ -65,12 +69,28 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04121a] px-4 py-10 sm:px-6 sm:py-14">
-      {/* Fond image plein écran */}
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${LOGIN_BG_URL})` }}
-      />
+      {/* Fond plein écran : vidéo si LOGIN_VIDEO_URL est renseigné, image sinon */}
+      {fondAnime ? (
+        <video
+          aria-hidden
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={LOGIN_BG_URL}
+          onError={() => setVideoKo(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src={LOGIN_VIDEO_URL as string} />
+        </video>
+      ) : (
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${LOGIN_BG_URL})` }}
+        />
+      )}
       <div aria-hidden className="absolute inset-0 bg-[#04121a]/45" />
       <div aria-hidden className="absolute inset-0 nexus-grid opacity-25" />
 

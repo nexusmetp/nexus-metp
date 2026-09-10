@@ -6,12 +6,15 @@ import { usePathname } from "next/navigation";
 import {
   Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
   Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
-  UserCircle, ChevronLeft, Gauge, Landmark, LifeBuoy, Megaphone, MessageSquare,
+  UserCircle, ChevronLeft, Gauge, Landmark, LayoutDashboard, LifeBuoy, Map, Megaphone,
+  MessageSquare, MoreHorizontal,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type NavItem = {
   href: string; label: string; icon: any; mod: ModuleKey;
@@ -23,8 +26,9 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Direction générale",
     items: [
-      { href: "/dgarh", label: "Espace DGARH", icon: Building2, mod: "dgarh", pret: true },
+      { href: "/dgarh", label: "Tableau de bord", icon: LayoutDashboard, mod: "dgarh", pret: true },
       { href: "/dgarh/pilotage", label: "Pilotage des directions", icon: Gauge, mod: "pilotage", pret: true },
+      { href: "/dgarh/national", label: "Vue nationale", icon: Map, mod: "national", pret: true },
       { href: "/dgarh/organisation", label: "Organisation", icon: Landmark, mod: "organisation", pret: true },
       { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
       { href: "/dgarh/bannette", label: "Ma bannette", icon: Inbox, mod: "actes", pret: true },
@@ -192,26 +196,69 @@ export function MobileNav() {
   const pathname = usePathname();
   const user = useAuth((s) => s.user);
   const groupes = useGroupesAutorises();
+  const [menu, setMenu] = useState(false);
   if (!user) return null;
-  const items = groupes.flatMap((g) => g.items).filter((i) => i.pret).slice(0, 5);
+
+  const tous = groupes.flatMap((g) => g.items).filter((i) => i.pret);
+  const items = tous.slice(0, 4);
+  const lien = "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]";
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur lg:hidden">
-      {items.map((i) => {
-        const actif = pathname === i.href || pathname.startsWith(i.href + "/");
-        return (
-          <Link
-            key={i.href}
-            href={i.href}
-            className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px]",
-              actif ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            <i.icon className="h-5 w-5" />
-            <span className="truncate px-1">{i.label.split(" ")[0]}</span>
-          </Link>
-        );
-      })}
-    </div>
+    <>
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur lg:hidden">
+        {items.map((i) => {
+          const actif = pathname === i.href || pathname.startsWith(i.href + "/");
+          return (
+            <Link
+              key={i.href} href={i.href}
+              className={cn(lien, actif ? "text-primary" : "text-muted-foreground")}
+            >
+              <i.icon className="h-5 w-5" />
+              <span className="truncate px-1">{i.label.split(" ")[0]}</span>
+            </Link>
+          );
+        })}
+        <button onClick={() => setMenu(true)} className={cn(lien, "text-muted-foreground")}>
+          <MoreHorizontal className="h-5 w-5" />
+          <span className="px-1">Plus</span>
+        </button>
+      </div>
+
+      {/* Toute la navigation, atteignable sur téléphone. */}
+      <Sheet open={menu} onOpenChange={setMenu}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto lg:hidden">
+          <SheetHeader className="text-left">
+            <SheetTitle>Navigation</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-5 pb-6">
+            {groupes.map((g) => (
+              <div key={g.titre}>
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                  {g.titre}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {g.items.filter((i) => i.pret).map((i) => {
+                    const actif = pathname === i.href || pathname.startsWith(i.href + "/");
+                    return (
+                      <Link
+                        key={i.href} href={i.href}
+                        onClick={() => setMenu(false)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-xs font-medium transition",
+                          actif ? "border-primary bg-primary/10 text-primary" : "hover:bg-muted"
+                        )}
+                      >
+                        <i.icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{i.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

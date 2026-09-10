@@ -180,6 +180,9 @@ export default function TableauDeBordPage() {
         }
       >
         <Button variant="outline" size="sm" asChild>
+          <Link href="/dgarh/national">Vue nationale</Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
           <Link href="/dgarh/pilotage">Pilotage des directions</Link>
         </Button>
         <Button size="sm" asChild>

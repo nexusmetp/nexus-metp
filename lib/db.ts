@@ -9,7 +9,7 @@ const DB_NAME = "nexus-metp";
  * messagerie, annonces) et paramétrage. v4 : dossier personnel pour tous les
  * rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -27,7 +27,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 6) {
+        if (ancienne < 7) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {

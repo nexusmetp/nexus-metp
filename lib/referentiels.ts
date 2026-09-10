@@ -76,22 +76,27 @@ export const LACUNES = [
 /* Les 15 départements de la République du Congo                       */
 /* ------------------------------------------------------------------ */
 
-export const DEPARTEMENTS: { nom: string; chefLieu: string }[] = [
-  { nom: "Bouenza", chefLieu: "Madingou" },
-  { nom: "Brazzaville", chefLieu: "Brazzaville" },
-  { nom: "Congo-Oubangui", chefLieu: "Mossaka" },
-  { nom: "Cuvette", chefLieu: "Owando" },
-  { nom: "Cuvette-Ouest", chefLieu: "Ewo" },
-  { nom: "Djoué-Léfini", chefLieu: "Odziba" },
-  { nom: "Kouilou", chefLieu: "Loango" },
-  { nom: "Lékoumou", chefLieu: "Sibiti" },
-  { nom: "Likouala", chefLieu: "Impfondo" },
-  { nom: "Niari", chefLieu: "Dolisie" },
-  { nom: "Nkéni-Alima", chefLieu: "Gamboma" },
-  { nom: "Plateaux", chefLieu: "Djambala" },
-  { nom: "Pointe-Noire", chefLieu: "Pointe-Noire" },
-  { nom: "Pool", chefLieu: "Kinkala" },
-  { nom: "Sangha", chefLieu: "Ouesso" },
+/**
+ * Les quinze départements et leurs chefs-lieux. Les coordonnées servent la vue
+ * nationale : elles situent le chef-lieu, à quelques kilomètres près, et ne
+ * prétendent pas délimiter le département.
+ */
+export const DEPARTEMENTS: { nom: string; chefLieu: string; lat: number; lon: number }[] = [
+  { nom: "Bouenza", chefLieu: "Madingou", lat: -4.155, lon: 13.550 },
+  { nom: "Brazzaville", chefLieu: "Brazzaville", lat: -4.267, lon: 15.283 },
+  { nom: "Congo-Oubangui", chefLieu: "Mossaka", lat: -1.225, lon: 16.803 },
+  { nom: "Cuvette", chefLieu: "Owando", lat: -0.482, lon: 15.900 },
+  { nom: "Cuvette-Ouest", chefLieu: "Ewo", lat: -0.872, lon: 14.822 },
+  { nom: "Djoué-Léfini", chefLieu: "Odziba", lat: -3.567, lon: 15.300 },
+  { nom: "Kouilou", chefLieu: "Loango", lat: -4.650, lon: 11.800 },
+  { nom: "Lékoumou", chefLieu: "Sibiti", lat: -3.683, lon: 13.350 },
+  { nom: "Likouala", chefLieu: "Impfondo", lat: 1.617, lon: 18.067 },
+  { nom: "Niari", chefLieu: "Dolisie", lat: -4.198, lon: 12.673 },
+  { nom: "Nkéni-Alima", chefLieu: "Gamboma", lat: -1.876, lon: 15.864 },
+  { nom: "Plateaux", chefLieu: "Djambala", lat: -2.545, lon: 14.753 },
+  { nom: "Pointe-Noire", chefLieu: "Pointe-Noire", lat: -4.795, lon: 11.867 },
+  { nom: "Pool", chefLieu: "Kinkala", lat: -4.362, lon: 14.765 },
+  { nom: "Sangha", chefLieu: "Ouesso", lat: 1.614, lon: 16.052 },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -125,22 +130,86 @@ const REF_CABINET = "Schéma constant des cabinets ministériels congolais — t
 
 const cabinet: E[] = [
   e("ENT-CAB", "CAB", "Cabinet du ministre", "CABINET", "ENT-METP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  // Le secrétariat particulier relève du ministre, non du directeur de cabinet :
+  // c'est ce qui le distingue du secrétariat de la direction de cabinet.
+  e("ENT-CAB-SP", "SPM", "Secrétariat particulier du ministre", "SECRETARIAT", "ENT-CAB", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SP-BCC", "BCC", "Bureau du courrier confidentiel", "BUREAU", "ENT-CAB-SP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SP-BAA", "BAA", "Bureau des audiences et de l'agenda", "BUREAU", "ENT-CAB-SP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
   e("ENT-CAB-DIR", "DIRCAB", "Direction de cabinet", "DIRECTION", "ENT-CAB", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-CHEF", "CHEFCAB", "Chef de cabinet", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-SP", "SPM", "Secrétariat particulier du ministre", "SECRETARIAT", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-CONS", "CONS", "Collège des conseillers", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-CONS-PED", "CONS-PED", "Conseiller à la pédagogie et aux programmes",
+  // Règle générale de l'administration congolaise : toute direction centrale a
+  // un secrétariat dirigé par un secrétaire ayant rang de chef de bureau.
+  e("ENT-CAB-DIR-SEC", "SEC-DIRCAB", "Secrétariat de la direction de cabinet",
+    "SECRETARIAT", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  e("ENT-CAB-SAAJ", "SAAJ", "Service des affaires administratives et juridiques",
+    "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SAAJ-BAR", "BAR", "Bureau des actes et du suivi réglementaire",
+    "BUREAU", "ENT-CAB-SAAJ", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SAAJ-BCX", "BCX-CAB", "Bureau du contentieux du cabinet",
+    "BUREAU", "ENT-CAB-SAAJ", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  e("ENT-CAB-SCP", "SCP", "Service de la coopération et des partenariats",
+    "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SCP-BCB", "BCB", "Bureau de la coopération bilatérale et multilatérale",
+    "BUREAU", "ENT-CAB-SCP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SCP-BPP", "BPP", "Bureau des projets et programmes",
+    "BUREAU", "ENT-CAB-SCP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  e("ENT-CAB-COM", "COMCAB", "Service de la communication et de la presse",
+    "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-COM-BPR", "BPR", "Bureau de la presse et des relations publiques",
+    "BUREAU", "ENT-CAB-COM", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-COM-BDA", "BDA-CAB", "Bureau de la documentation et des archives du cabinet",
+    "BUREAU", "ENT-CAB-COM", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  e("ENT-CAB-PROTO", "PROTO", "Service du protocole", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-PROTO-BCD", "BCD", "Bureau des cérémonies et des déplacements",
+    "BUREAU", "ENT-CAB-PROTO", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SECU", "SECUCAB", "Service de la sécurité", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+
+  // Les conseillers sont nommés par décret et suivent chacun un secteur ;
+  // ils forment un collège, pas une hiérarchie.
+  e("ENT-CAB-CONS", "CONS", "Collège des conseillers", "SERVICE", "ENT-CAB", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-ETP", "CONS-ETP", "Conseiller à l'enseignement technique et à la pédagogie",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-FPA", "CONS-FPA", "Conseiller à la formation professionnelle et à l'apprentissage",
     "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
   e("ENT-CAB-CONS-ADM", "CONS-ADM", "Conseiller aux affaires administratives et juridiques",
     "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-CONS-FIN", "CONS-FIN", "Conseiller aux finances et à la coopération",
+  e("ENT-CAB-CONS-FIN", "CONS-FIN", "Conseiller aux finances et au budget",
     "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-COM", "COMCAB", "Service de la communication et de la presse",
-    "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
-  e("ENT-CAB-PROTO", "PROTO", "Service du protocole", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-COOP", "CONS-COOP", "Conseiller à la coopération",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-COM", "CONS-COM", "Conseiller à la communication",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
 ];
 
-/* — Secrétariat de direction : 2 bureaux — */
+/* — Inspection générale —
+   Elle contrôle, elle n'administre pas : c'est ce qui la sépare des
+   directions. Son existence est établie par l'arrêté n° 25569 ; le détail de
+   ses inspections spécialisées suit la pratique du secteur éducatif. */
+const REF_IG = "Détail des inspections spécialisées — arrêté n° 25569 non consulté intégralement";
+
+const inspectionGenerale: E[] = [
+  e("ENT-IG-SEC", "SEC-IG", "Secrétariat de l'inspection générale",
+    "SECRETARIAT", "ENT-IG", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IET", "IET", "Inspection de l'enseignement technique",
+    "SERVICE", "ENT-IG", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IET-BPED", "BPED", "Bureau du contrôle pédagogique",
+    "BUREAU", "ENT-IG-IET", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IFP", "IFP", "Inspection de la formation professionnelle et de l'apprentissage",
+    "SERVICE", "ENT-IG", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IFP-BCFP", "BCFP", "Bureau du contrôle des centres de formation",
+    "BUREAU", "ENT-IG-IFP", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IAF", "IAF", "Inspection administrative et financière",
+    "SERVICE", "ENT-IG", "A_VERIFIER", REF_IG, "Brazzaville"),
+  e("ENT-IG-IAF-BAUD", "BAUD", "Bureau de l'audit et des vérifications",
+    "BUREAU", "ENT-IG-IAF", "A_VERIFIER", REF_IG, "Brazzaville"),
+];
+
+/* — Secrétariat de direction : 2 bureaux — *//* — Secrétariat de direction : 2 bureaux — */
 const secretariat: E[] = [
   e("ENT-DGARH-SEC", "SEC", "Secrétariat de direction", "SECRETARIAT", "ENT-DGARH", "A_VERIFIER", TEXTES.ARR_25567),
   e("ENT-SEC-BCRPC", "BCRPC", "Bureau du courrier, des relations publiques et de la communication",
@@ -210,9 +279,53 @@ const dafm: E[] = [
 /* — Déconcentration — cahier §10 —
    L'échelon interdépartemental existe (arrêté 25570) mais ses instances ne sont
    pas connues : on porte le corps, pas des unités inventées. */
+/* — Déconcentration —
+   L'arrêté n° 25570 crée les inspections interdépartementales et les antennes
+   départementales d'appui et de contrôle, sans que leur découpage nous soit
+   accessible. Le regroupement retenu ci-dessous est géographique et signalé
+   comme tel : il donne à la vue nationale des points réels à situer. */
+/** Identifiants en ASCII : une classe de caractères accentués dans une
+ *  expression régulière devient invalide si le document n'est pas lu en UTF-8. */
+const sansAccent = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const REF_IID = "Découpage des inspections interdépartementales — arrêté n° 25570 non consulté intégralement";
+
+const GROUPES_IID: { id: string; sigle: string; nom: string; siege: string; departements: string[] }[] = [
+  {
+    id: "ENT-IID-SUD", sigle: "IID-SUD", nom: "Inspection interdépartementale du Sud", siege: "Pointe-Noire",
+    departements: ["Pointe-Noire", "Kouilou", "Niari", "Bouenza", "Lékoumou"],
+  },
+  {
+    id: "ENT-IID-CENTRE", sigle: "IID-CTR", nom: "Inspection interdépartementale du Centre", siege: "Brazzaville",
+    departements: ["Brazzaville", "Pool", "Djoué-Léfini", "Plateaux", "Nkéni-Alima"],
+  },
+  {
+    id: "ENT-IID-CUVETTES", sigle: "IID-CUV", nom: "Inspection interdépartementale des Cuvettes", siege: "Owando",
+    departements: ["Cuvette", "Cuvette-Ouest", "Congo-Oubangui"],
+  },
+  {
+    id: "ENT-IID-NORD", sigle: "IID-NRD", nom: "Inspection interdépartementale du Nord", siege: "Ouesso",
+    departements: ["Sangha", "Likouala"],
+  },
+];
+
 const deconcentration: E[] = [
   e("ENT-INTERDEP", "INTERDEP", "Inspections interdépartementales et antennes départementales d'appui et de contrôle",
     "INSPECTION_INTERDEPARTEMENTALE", "ENT-METP", "TEXTE", TEXTES.ARR_25570, "Brazzaville"),
+
+  ...GROUPES_IID.flatMap((g) => [
+    e(g.id, g.sigle, g.nom, "INSPECTION_INTERDEPARTEMENTALE", "ENT-INTERDEP", "A_VERIFIER", REF_IID, g.siege),
+    ...g.departements.map((nom) => {
+      const d = DEPARTEMENTS.find((x) => x.nom === nom)!;
+      return e(
+        `ENT-ANT-${sansAccent(nom).replace(/[^A-Za-z0-9]/g, "").slice(0, 8).toUpperCase()}`,
+        `ANT-${nom.slice(0, 4).toUpperCase()}`,
+        `Antenne départementale d'appui et de contrôle — ${nom}`,
+        "ANTENNE_DEPARTEMENTALE", g.id, "A_VERIFIER", REF_IID, d.chefLieu
+      );
+    }),
+  ]),
+
   ...DEPARTEMENTS.map((d, i) =>
     e(
       `ENT-DD-${String(i + 1).padStart(2, "0")}`,
@@ -257,8 +370,8 @@ const etablissements: E[] = DEPARTEMENTS.flatMap((d, i) => {
 
 /** La semence : l'organigramme tel que les textes et le cahier le décrivent. */
 export const ENTITES_SEMENCE: Entite[] = [
-  ...sommet, ...cabinet, ...secretariat, ...dpcef, ...dobas, ...dafm,
-  ...deconcentration, ...etablissements,
+  ...sommet, ...cabinet, ...inspectionGenerale, ...secretariat, ...dpcef, ...dobas,
+  ...dafm, ...deconcentration, ...etablissements,
 ] as Entite[];
 
 /**
@@ -313,6 +426,21 @@ export function cheminDe(id: string): Entite[] {
     cur = cur.parentId ? parIdIndex.get(cur.parentId) : undefined;
   }
   return out;
+}
+
+/**
+ * Situe une entité par le chef-lieu qu'elle porte. Plusieurs entités partagent
+ * le même chef-lieu ; un décalage déterministe, tiré de leur identifiant, les
+ * empêche de se superposer exactement sans les déplacer d'une ville à l'autre.
+ */
+export function coordonneesDe(entite: Entite): { lat: number; lon: number } | undefined {
+  const d = entite.ville ? DEPARTEMENTS.find((x) => x.chefLieu === entite.ville) : undefined;
+  if (!d) return undefined;
+  let h = 0;
+  for (let i = 0; i < entite.id.length; i++) h = (h * 31 + entite.id.charCodeAt(i)) & 0xffff;
+  const angle = (h / 0xffff) * Math.PI * 2;
+  const rayon = entite.niveau === "DIRECTION_DEPARTEMENTALE" ? 0 : 0.07 + (h % 7) * 0.018;
+  return { lat: d.lat + Math.sin(angle) * rayon, lon: d.lon + Math.cos(angle) * rayon };
 }
 
 export const DGARH_ID = "ENT-DGARH";
@@ -483,13 +611,14 @@ export const POSITION_LABELS: Record<NaturePosition, string> = {
 /* ------------------------------------------------------------------ */
 
 export type ModuleKey =
-  | "dgarh" | "organigramme" | "organisation" | "pilotage" | "agents" | "actes"
+  | "dgarh" | "national" | "organigramme" | "organisation" | "pilotage" | "agents" | "actes"
   | "carrieres" | "conges" | "formations" | "contentieux" | "besoins"
   | "referentiels" | "documents" | "rapports" | "journal" | "administration"
   | "messagerie" | "tickets" | "annonces" | "mon-dossier";
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
-  dgarh: "Espace DGARH",
+  dgarh: "Tableau de bord",
+  national: "Vue nationale",
   organigramme: "Organigramme",
   organisation: "Organisation",
   pilotage: "Pilotage des directions",
@@ -527,16 +656,19 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   ADMIN_SYSTEME: {
     organigramme: "R", referentiels: "W", administration: "W", journal: "W",
+    national: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
   },
   DIRECTEUR_GENERAL: {
     dgarh: "W", organigramme: "W", organisation: "W", pilotage: "W", agents: "W",
+    national: "R",
     actes: "W", carrieres: "R", conges: "R", formations: "R", contentieux: "R",
     besoins: "R", referentiels: "R", documents: "R", rapports: "W", journal: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
   },
   DIRECTEUR_CENTRAL: {
     dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
+    national: "R",
     carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
     referentiels: "R", documents: "R", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
@@ -557,6 +689,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   },
   DIRECTEUR_DEPARTEMENTAL: {
     organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R",
+    national: "R",
     rapports: "R", messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   CHEF_ETABLISSEMENT: {
@@ -604,6 +737,7 @@ export const pageAccueil = (role: Role) =>
 /** Module couvrant une route, pour le contrôle d'accès du layout. */
 export function moduleDeRoute(pathname: string): ModuleKey | null {
   const routes: [string, ModuleKey][] = [
+    ["/dgarh/national", "national"],
     ["/dgarh/organigramme", "organigramme"],
     ["/dgarh/organisation", "organisation"],
     ["/dgarh/pilotage", "pilotage"],

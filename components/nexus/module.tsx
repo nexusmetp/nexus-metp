@@ -424,6 +424,58 @@ export function ChampSelect({ label, valeur, surChangement, options, aide, oblig
   );
 }
 
+/**
+ * Dépôt d'une photographie d'identité.
+ *
+ * Le cliché est lu dans le navigateur et conservé en données incorporées :
+ * il n'y a pas de serveur de fichiers, et une photographie qui pointerait
+ * ailleurs se briserait au premier changement d'hébergement.
+ */
+export function ChampPhoto({
+  label, valeur, surChangement, aide, apercu,
+}: {
+  label: string;
+  valeur?: string | null;
+  surChangement: (v: string | null) => void;
+  aide?: string;
+  apercu: React.ReactNode;
+}) {
+  const lire = (fichier?: File) => {
+    if (!fichier) return;
+    if (fichier.size > 1_500_000) {
+      alert("Photographie trop lourde : 1,5 Mo au maximum.");
+      return;
+    }
+    const lecteur = new FileReader();
+    lecteur.onload = () => surChangement(String(lecteur.result));
+    lecteur.readAsDataURL(fichier);
+  };
+
+  return (
+    <Champ label={label} aide={aide}>
+      <div className="flex items-center gap-4 rounded-lg border p-3">
+        {apercu}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <label className="cursor-pointer">
+            <input
+              type="file" accept="image/*" className="sr-only"
+              onChange={(e) => lire(e.target.files?.[0])}
+            />
+            <span className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-xs font-medium transition hover:bg-muted">
+              Choisir une photographie
+            </span>
+          </label>
+          {valeur && (
+            <Button variant="ghost" size="sm" className="h-9 text-xs" onClick={() => surChangement(null)}>
+              Retirer
+            </Button>
+          )}
+        </div>
+      </div>
+    </Champ>
+  );
+}
+
 /** Barre de progression sobre, réutilisée par les états de diffusion. */
 export function Jauge({ valeur, teinte = "bg-primary" }: { valeur: number; teinte?: string }) {
   return (

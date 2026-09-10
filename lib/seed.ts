@@ -19,7 +19,7 @@ import type {
   EtapeActe, InscriptionFormation, Message, MessageTicket, NatureConge, NatureFormation,
   NatureTexte, Notification, OffreFormation, ParametresSysteme, Position, Poste,
   PrioriteTicket, SituationCarriere, StatutActe, StatutTicket, TexteReglementaire,
-  Ticket, TypeActe, Utilisateur,
+  CarteProfessionnelle, StatutCarte, Ticket, TypeActe, Utilisateur,
 } from "@/lib/types";
 
 /* ---------- PRNG déterministe ---------- */
@@ -176,6 +176,7 @@ export interface Dataset {
   candidatures: Candidature[];
   offresFormation: OffreFormation[];
   inscriptions: InscriptionFormation[];
+  cartes: CarteProfessionnelle[];
 }
 
 export function buildDataset(): Dataset {
@@ -958,11 +959,39 @@ export function buildDataset(): Dataset {
     }
   });
 
+  /* ---------- Cartes professionnelles —
+     Elles n'attribuent aucun droit : elles attestent ce que les actes ont
+     établi. Toutes les cartes ne sont pas éditées, et c'est le sujet : le
+     module sert d'abord à voir qui n'en a pas. ---------- */
+  const cartes: CarteProfessionnelle[] = [];
+  let nCarte = 0;
+  agents.forEach((a) => {
+    if (!chance(0.62)) return;
+    nCarte++;
+    const aff = affectations.find((x) => x.agentId === a.id && x.dateFin === null);
+    const emission = dateEntre(2022, 2026);
+    const expiration = `${new Date(emission).getFullYear() + 5}-${emission.slice(5)}`;
+    const perimee = expiration < "2026-09-10";
+    cartes.push({
+      id: `CRT-${pad(nCarte, 5)}`,
+      numero: `${new Date(emission).getFullYear()}-${pad(nCarte, 5)}`,
+      agentId: a.id,
+      entiteId: aff?.entiteId ?? "ENT-METP",
+      fonction: aff?.fonction ?? "Agent",
+      dateEmission: emission,
+      dateExpiration: expiration,
+      statut: perimee ? "EXPIREE" : pick<StatutCarte>(["REMISE", "REMISE", "REMISE", "EDITEE", "PERDUE"]),
+      emisePar: "Bureau du personnel — DGARH",
+      dateRemise: chance(0.85) ? plusJours(emission, int(3, 40)) : null,
+    });
+  });
+
   return {
     entites: ENTITES, corps: CORPS, grades: GRADES,
     postes, agents, situations, affectations, positions, actes, besoins,
     utilisateurs, journal, notifications,
     tickets, messagesTicket, conversations, messages, annonces, parametres,
     conges, delegations, textes, campagnes, candidatures, offresFormation, inscriptions,
+    cartes,
   };
 }

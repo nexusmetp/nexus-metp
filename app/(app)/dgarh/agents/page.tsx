@@ -16,9 +16,10 @@ import {
   BadgeCategorie, BadgePosition, BadgeStatutaire, PageHeader,
 } from "@/components/nexus/ui-kit";
 import {
-  ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo,
+  ChampPhoto, ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo,
   PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { Portrait } from "@/components/nexus/portrait";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +39,7 @@ const videAgent = {
   categorie: "FONCTIONNAIRE" as CategoriePersonnel,
   enseignant: false, entiteId: "", fonction: "",
   dateEffet: new Date().toISOString().slice(0, 10), gradeId: "",
+  photo: null as string | null,
 };
 
 export default function AgentsPage() {
@@ -114,6 +116,7 @@ export default function AgentsPage() {
       adresse: "",
       categorie: formulaire.categorie,
       enseignant: formulaire.enseignant,
+      photo: formulaire.photo,
       dateRecrutement: formulaire.dateEffet,
       datePriseService: formulaire.dateEffet,
       diplomes: [],
@@ -139,9 +142,12 @@ export default function AgentsPage() {
     {
       cle: "agent", entete: "Agent",
       rendu: (a) => (
-        <div className="min-w-0">
-          <div className="text-sm font-medium">{a.prenom} {a.nom}</div>
-          <div className="font-mono text-[10px] text-muted-foreground">{a.matricule}</div>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <Portrait photo={a.photo} prenom={a.prenom} nom={a.nom} cle={a.matricule} taille="sm" />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium">{a.prenom} {a.nom}</div>
+            <div className="font-mono text-[10px] text-muted-foreground">{a.matricule}</div>
+          </div>
         </div>
       ),
     },
@@ -249,6 +255,16 @@ export default function AgentsPage() {
       >
         {selection && (
           <>
+            <div className="flex items-center gap-4 rounded-xl border bg-muted/30 p-4">
+              <Portrait photo={selection.photo} prenom={selection.prenom} nom={selection.nom}
+                        cle={selection.matricule} taille="lg" />
+              <div className="min-w-0">
+                <div className="text-base font-semibold">{selection.prenom} {selection.nom}</div>
+                <div className="font-mono text-xs text-muted-foreground">{selection.matricule}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{selection.fonction ?? "—"}</div>
+              </div>
+            </div>
+
             <Section titre="État civil">
               <LigneInfo k="Nom et prénom" v={`${selection.prenom} ${selection.nom}`} />
               <LigneInfo k="Matricule" v={<span className="font-mono text-xs">{selection.matricule}</span>} />
@@ -302,6 +318,21 @@ export default function AgentsPage() {
       >
         {formulaire && (
           <>
+            <ChampPhoto
+              label="Photographie d'identité"
+              valeur={formulaire.photo}
+              surChangement={(v) => setFormulaire({ ...formulaire, photo: v })}
+              aide="Facultative. Elle apparaîtra sur la carte professionnelle et dans l'annuaire ; à défaut, un jeton d'initiales en tient lieu."
+              apercu={
+                <Portrait
+                  photo={formulaire.photo}
+                  prenom={formulaire.prenom || "?"}
+                  nom={formulaire.nom || "?"}
+                  cle={formulaire.nom + formulaire.prenom || "nouveau"}
+                  taille="lg" carre
+                />
+              }
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <ChampTexte label="Nom" obligatoire valeur={formulaire.nom}
                 surChangement={(v) => setFormulaire({ ...formulaire, nom: v })} placeholder="MABIALA" />

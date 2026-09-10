@@ -5,11 +5,12 @@ import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
 /**
+ * v9 : cartes professionnelles et photographies.
  * v8 : emplois, délégations, fonds documentaire, recrutement et formation.
  * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
  * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -17,7 +18,7 @@ const STORES = [
   "actes", "besoins", "utilisateurs", "journal", "notifications",
   "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres",
   "conges", "delegations", "textes", "campagnes", "candidatures",
-  "offresFormation", "inscriptions", "meta",
+  "offresFormation", "inscriptions", "cartes", "meta",
 ] as const;
 export type StoreName = (typeof STORES)[number];
 
@@ -29,7 +30,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 8) {
+        if (ancienne < 9) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {
@@ -87,6 +88,7 @@ export async function ensureSeed(force = false): Promise<void> {
     ...put("candidatures", data.candidatures),
     ...put("offresFormation", data.offresFormation),
     ...put("inscriptions", data.inscriptions),
+    ...put("cartes", data.cartes),
     tx.objectStore("parametres").put(data.parametres),
     tx.objectStore("meta").put({
       id: "seed",

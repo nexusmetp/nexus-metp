@@ -5,17 +5,23 @@ import {
   ROLE_LABELS, TEXTES, TYPES_ACTE, corpsById, entiteById,
 } from "@/lib/referentiels";
 import { BadgeProvenance, BadgeStatutaire, PageHeader } from "@/components/nexus/ui-kit";
-import { RangeeKpi } from "@/components/nexus/module";
+import { Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section } from "@/components/nexus/module";
 import { fmtNum } from "@/lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle, Check, Library, Layers, Minus, ShieldCheck } from "lucide-react";
 
+import { useState } from "react";
+
 const Oui = () => <Check className="h-3.5 w-3.5 text-emerald-500" />;
 const Non = () => <Minus className="h-3.5 w-3.5 text-muted-foreground/40" />;
 
 export default function ReferentielsPage() {
+  const [grade, setGrade] = useState<(typeof GRADES)[number] | null>(null);
+  const corpsDuGrade = grade ? CORPS.find((c) => c.id === grade.corpsId) : undefined;
+  const voisins = grade ? GRADES.filter((g) => g.corpsId === grade.corpsId) : [];
+
   return (
     <>
       <PageHeader
@@ -149,7 +155,7 @@ export default function ReferentielsPage() {
               </TableRow></TableHeader>
               <TableBody>
                 {GRADES.map((g) => (
-                  <TableRow key={g.id}>
+                  <TableRow key={g.id} onClick={() => setGrade(g)} className="cursor-pointer">
                     <TableCell className="text-sm font-medium">{g.libelle}</TableCell>
                     <TableCell className="hidden md:table-cell text-xs text-muted-foreground">{corpsById(g.corpsId)?.libelle}</TableCell>
                     <TableCell className="text-center text-sm tabular-nums">{g.classes}</TableCell>
@@ -187,6 +193,85 @@ export default function ReferentielsPage() {
           </div>
         </CardContent>
       </Card>
+      <PanneauDetail
+        ouvert={!!grade}
+        surFermeture={() => setGrade(null)}
+        titre={grade?.libelle ?? ""}
+        sousTitre={corpsDuGrade ? `${corpsDuGrade.libelle} — catégorie ${corpsDuGrade.categorie}` : undefined}
+        etiquette={grade && corpsDuGrade && (
+          <>
+            <BadgeStatutaire v={corpsDuGrade.categorie} />
+            <Badge variant="secondary" className="text-[10px]">
+              {corpsDuGrade.enseignant ? "corps enseignant" : "corps administratif"}
+            </Badge>
+          </>
+        )}
+      >
+        {grade && (
+          <>
+            <Section titre="Grille">
+              <LigneInfo k="Corps" v={corpsDuGrade?.libelle ?? "—"} />
+              <LigneInfo k="Catégorie statutaire" v={corpsDuGrade?.categorie ?? "—"} />
+              <LigneInfo k="Échelons" v={grade.echelons} />
+              <LigneInfo k="Indice de début" v={grade.indiceDebut} />
+              <LigneInfo k="Indice terminal" v={grade.indiceFin} />
+              <LigneInfo k="Amplitude" v={`${grade.indiceFin - grade.indiceDebut} points`} />
+            </Section>
+
+            <Section titre="Progression indiciaire">
+              <div className="space-y-1.5">
+                {Array.from({ length: Math.min(grade.echelons, 12) }, (_, i) => {
+                  const ech = i + 1;
+                  const indice = Math.round(
+                    grade.indiceDebut + ((grade.indiceFin - grade.indiceDebut) * i) / Math.max(1, grade.echelons - 1)
+                  );
+                  const part = ((indice - grade.indiceDebut) / Math.max(1, grade.indiceFin - grade.indiceDebut)) * 100;
+                  return (
+                    <div key={ech}>
+                      <div className="mb-1 flex items-baseline justify-between text-[11px]">
+                        <span className="text-muted-foreground">Échelon {ech}</span>
+                        <span className="font-semibold tabular-nums">indice {indice}</span>
+                      </div>
+                      <Jauge valeur={part} />
+                    </div>
+                  );
+                })}
+                {grade.echelons > 12 && (
+                  <p className="pt-1 text-[11px] text-muted-foreground">
+                    … et {grade.echelons - 12} échelons au-delà.
+                  </p>
+                )}
+              </div>
+            </Section>
+
+            {voisins.length > 1 && (
+              <Section titre={`Autres grades du corps — ${voisins.length - 1}`}>
+                <div className="space-y-1">
+                  {voisins.filter((g) => g.id !== grade.id).map((g) => (
+                    <button
+                      key={g.id} onClick={() => setGrade(g)}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/60"
+                    >
+                      <span className="truncate text-xs font-medium">{g.libelle}</span>
+                      <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                        {g.indiceDebut} → {g.indiceFin}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            <Section titre="Portée">
+              <p className="rounded-lg border bg-muted/30 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                Le grade ne se saisit pas dans un dossier : il résulte d'un acte de recrutement, de
+                titularisation, d'avancement ou de promotion. La grille dit ce qu'il vaut ; l'acte dit
+                qui le détient et depuis quand.
+              </p>
+            </Section>
+          </>
+        )}
+      </PanneauDetail>
     </>
   );
 }

@@ -13,6 +13,7 @@ import { fmtDate } from "@/lib/format";
 import {
   BadgeCategorie, BadgePosition, BadgeStatutActe, BadgeStatutaire, PageHeader,
 } from "@/components/nexus/ui-kit";
+import { Portrait } from "@/components/nexus/portrait";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -65,6 +66,21 @@ export default function DossierAgentPage() {
           <Link href="/dgarh/actes/nouveau"><GitBranch className="mr-2 h-3.5 w-3.5" /> Nouvelle mutation</Link>
         </Button>
       </PageHeader>
+
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4">
+        <Portrait photo={a.photo} prenom={a.prenom} nom={a.nom} cle={a.matricule} taille="xl" carre />
+        <div className="min-w-0 flex-1">
+          <div className="text-lg font-semibold">{a.prenom} {a.nom}</div>
+          <div className="font-mono text-xs text-muted-foreground">{a.matricule}</div>
+          <div className="mt-1.5 text-sm text-muted-foreground">{a.fonction ?? "—"}</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {a.entiteId ? entiteById(a.entiteId)?.nom : "sans affectation"}
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/cartes">Carte professionnelle</Link>
+        </Button>
+      </div>
 
       {aVenir.length > 0 && (
         <Card className="border-primary/30 bg-primary/[0.04]">

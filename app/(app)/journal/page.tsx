@@ -6,7 +6,7 @@ import { Search, ScrollText, ShieldCheck } from "lucide-react";
 import { useJournal } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { KpiCard, PageHeader } from "@/components/nexus/ui-kit";
-import { RangeeKpi } from "@/components/nexus/module";
+import { LigneInfo, PanneauDetail, RangeeKpi, Section } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ export default function JournalPage() {
   const [q, setQ] = useState("");
   const [action, setAction] = useState("all");
   const [page, setPage] = useState(1);
+  const [selection, setSelection] = useState<any | null>(null);
 
   const filtres = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -104,7 +105,7 @@ export default function JournalPage() {
               </TableHeader>
               <TableBody>
                 {visibles.map((j) => (
-                  <TableRow key={j.id}>
+                  <TableRow key={j.id} onClick={() => setSelection(j)} className="cursor-pointer">
                     <TableCell className="whitespace-nowrap font-mono text-[11px] tabular-nums">
                       {j.horodatage.slice(0, 16).replace("T", " ")}
                     </TableCell>
@@ -136,6 +137,55 @@ export default function JournalPage() {
           </div>
         </div>
       )}
+      <PanneauDetail
+        ouvert={!!selection}
+        surFermeture={() => setSelection(null)}
+        titre={selection ? selection.action : ""}
+        sousTitre={selection ? `${selection.utilisateur} — ${selection.horodatage?.replace("T", " ").slice(0, 16)}` : undefined}
+        etiquette={selection && (
+          <>
+            <Badge variant="secondary" className="text-[10px]">{selection.cibleType}</Badge>
+            {!selection.acteId && <Badge variant="destructive" className="text-[10px]">sans acte de référence</Badge>}
+          </>
+        )}
+        actions={selection?.acteId && (
+          <Button size="sm" asChild>
+            <Link href={`/dgarh/actes/${selection.acteId}`}>Ouvrir l'acte</Link>
+          </Button>
+        )}
+      >
+        {selection && (
+          <>
+            <Section titre="Écriture">
+              <LigneInfo k="Identifiant" v={<span className="font-mono text-[11px]">{selection.id}</span>} />
+              <LigneInfo k="Horodatage" v={selection.horodatage?.replace("T", " ").slice(0, 19)} />
+              <LigneInfo k="Action" v={selection.action} />
+              <LigneInfo k="Auteur" v={selection.utilisateur} />
+              <LigneInfo k="Origine" v={<span className="font-mono text-[11px]">{selection.adresseIp}</span>} />
+            </Section>
+
+            <Section titre="Cible">
+              <LigneInfo k="Type" v={selection.cibleType} />
+              <LigneInfo k="Identifiant" v={<span className="font-mono text-[11px]">{selection.cibleId}</span>} />
+              {selection.champ && <LigneInfo k="Champ" v={selection.champ} />}
+              {selection.ancienneValeur && <LigneInfo k="Avant" v={<span className="text-xs">{selection.ancienneValeur}</span>} />}
+              {selection.nouvelleValeur && <LigneInfo k="Après" v={<span className="text-xs font-semibold">{selection.nouvelleValeur}</span>} />}
+            </Section>
+
+            <Section titre="Justification">
+              <p className="rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">
+                {selection.justification || "Aucune justification consignée."}
+              </p>
+              {!selection.acteId && (
+                <p className="mt-2 text-[11px] leading-relaxed text-amber-600">
+                  Cette écriture ne cite aucun acte. Le §12 la qualifie d'anomalie : une modification
+                  de dossier sans acte de référence ne peut pas être justifiée après coup.
+                </p>
+              )}
+            </Section>
+          </>
+        )}
+      </PanneauDetail>
     </>
   );
 }

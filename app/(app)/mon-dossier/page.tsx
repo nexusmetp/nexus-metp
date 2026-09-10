@@ -13,6 +13,7 @@ import {
   BadgeCategorie, BadgePosition, BadgeStatutaire, GardeModule, PageHeader,
 } from "@/components/nexus/ui-kit";
 import { RangeeKpi } from "@/components/nexus/module";
+import { Portrait } from "@/components/nexus/portrait";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,6 +72,19 @@ export default function MonDossierPage() {
             <BadgeCategorie v={projete.categorie} />
             <BadgePosition v={projete.nature} />
           </PageHeader>
+
+          <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4">
+            <Portrait photo={projete.photo} prenom={projete.prenom} nom={projete.nom}
+                      cle={projete.matricule} taille="xl" carre />
+            <div className="min-w-0 flex-1">
+              <div className="text-lg font-semibold">{projete.prenom} {projete.nom}</div>
+              <div className="font-mono text-xs text-muted-foreground">{projete.matricule}</div>
+              <div className="mt-1.5 text-sm text-muted-foreground">{projete.fonction ?? "—"}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                {entiteById(projete.entiteId)?.nom ?? "sans affectation"}
+              </div>
+            </div>
+          </div>
 
           <RangeeKpi tuiles={[
             { titre: "Ancienneté", valeur: `${projete.anciennete} ans`, sousTitre: `recruté le ${fmtDate(projete.dateRecrutement)}`, icon: TrendingUp },

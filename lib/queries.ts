@@ -11,7 +11,7 @@ import type {
   Candidature, Conge, Conversation, Corps, Delegation, EntreeJournal, Entite, Grade,
   InscriptionFormation, Message, MessageTicket, Notification, OffreFormation,
   ParametresSysteme, Position, Poste, Role, SituationCarriere, StatutTicket,
-  TexteReglementaire, Ticket, Utilisateur,
+  CarteProfessionnelle, TexteReglementaire, Ticket, Utilisateur,
 } from "@/lib/types";
 
 const liste = <T,>(store: StoreName) =>
@@ -42,6 +42,7 @@ export const useCampagnes = () => liste<CampagneRecrutement>("campagnes");
 export const useCandidatures = () => liste<Candidature>("candidatures");
 export const useOffresFormation = () => liste<OffreFormation>("offresFormation");
 export const useInscriptions = () => liste<InscriptionFormation>("inscriptions");
+export const useCartes = () => liste<CarteProfessionnelle>("cartes");
 
 export const useAgent = (id: string) =>
   useQuery<Agent | undefined>({ queryKey: ["agents", id], queryFn: () => one<Agent>("agents", id), enabled: !!id });
@@ -603,5 +604,120 @@ export function useInscrireFormation() {
       return inscription;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["inscriptions"] }),
+  });
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Cartes professionnelles                                             */
+/* ------------------------------------------------------------------ */
+
+export function useEnregistrerCarte() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ carte, utilisateur, creation }: {
+      carte: CarteProfessionnelle; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<CarteProfessionnelle>("cartes", carte);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Carte", carte.id, {
+        nouvelleValeur: carte.statut,
+        justification: `Carte n° ${carte.numero}`,
+      });
+      return carte;
+    },
+    onSuccess: () => {
+      ["cartes", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Emplois, besoins et congés — les écritures des écrans de gestion     */
+/* ------------------------------------------------------------------ */
+
+export function useEnregistrerPoste() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ poste, utilisateur, creation }: {
+      poste: Poste; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<Poste>("postes", poste);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Poste", poste.id, {
+        champ: creation ? undefined : "statut",
+        nouvelleValeur: poste.statut,
+        justification: `${poste.code} — ${poste.intitule}`,
+      });
+      return poste;
+    },
+    onSuccess: () => {
+      ["postes", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+export function useEnregistrerBesoin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ besoin, utilisateur, creation }: {
+      besoin: BesoinPersonnel; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<BesoinPersonnel>("besoins", besoin);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Besoin", besoin.id, {
+        champ: creation ? undefined : "statut",
+        nouvelleValeur: besoin.statut,
+        justification: `${besoin.reference} — ${besoin.discipline}`,
+      });
+      return besoin;
+    },
+    onSuccess: () => {
+      ["besoins", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+export function useEnregistrerConge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ conge, utilisateur, creation }: {
+      conge: Conge; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<Conge>("conges", conge);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Conge", conge.id, {
+        champ: creation ? undefined : "statut",
+        nouvelleValeur: conge.statut,
+        acteId: conge.acteId ?? undefined,
+        justification: `${conge.jours} jours — ${conge.nature}`,
+      });
+      return conge;
+    },
+    onSuccess: () => {
+      ["conges", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+/**
+ * Verse une pièce au dossier d'un acte. Une pièce n'existe pas seule :
+ * elle est rattachée à l'acte qu'elle appuie (§14).
+ */
+export function useVerserPiece() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ acte, piece, utilisateur }: {
+      acte: Acte; piece: Acte["pieces"][number]; utilisateur: Utilisateur;
+    }) => {
+      const maj: Acte = { ...acte, pieces: [...(acte.pieces ?? []), piece] };
+      await save<Acte>("actes", maj);
+      await journaliser(utilisateur, "MODIFICATION", "Acte", acte.id, {
+        champ: "pieces", acteId: acte.id,
+        nouvelleValeur: piece.nom,
+        justification: `Pièce versée au dossier ${acte.reference}.`,
+      });
+      return maj;
+    },
+    onSuccess: () => {
+      ["actes", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
   });
 }

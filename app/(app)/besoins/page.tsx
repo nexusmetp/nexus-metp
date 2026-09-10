@@ -1,12 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowUp, Building2, ClipboardList, School } from "lucide-react";
-import { useBesoins } from "@/lib/queries";
-import { REGLES_CATEGORIE, ETABLISSEMENTS, cheminDe, entiteById } from "@/lib/referentiels";
+import { toast } from "sonner";
+import { ArrowUp, Building2, ClipboardList, Gavel, Plus, School } from "lucide-react";
+import { useBesoins, useEnregistrerBesoin } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
+import {
+  CATEGORIES, REGLES_CATEGORIE, ETABLISSEMENTS, cheminDe, departementDe, entiteById, peut,
+} from "@/lib/referentiels";
 import { fmtNum } from "@/lib/format";
 import { BadgeCategorie, KpiCard, PageHeader } from "@/components/nexus/ui-kit";
-import { Jauge, LigneInfo, PanneauDetail, Section } from "@/components/nexus/module";
+import {
+  ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail, Section,
+} from "@/components/nexus/module";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -31,11 +38,24 @@ const COULEUR: Record<BesoinPersonnel["statut"], string> = {
   ARBITRE: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25",
 };
 
+const DISCIPLINES = ["Génie civil", "Électrotechnique", "Mécanique", "Comptabilité", "Secrétariat",
+  "Informatique", "Froid et climatisation", "Hôtellerie-restauration", "Agriculture"];
+
+const videBesoin = {
+  etablissementId: "", discipline: "Génie civil",
+  categorie: "VACATAIRE", effectifDemande: "2", anneeScolaire: "2026-2027",
+};
+
 export default function BesoinsPage() {
   const { data: besoins = [], isLoading } = useBesoins();
   const [departement, setDepartement] = useState("all");
   const [statut, setStatut] = useState("all");
   const [selection, setSelection] = useState<BesoinPersonnel | null>(null);
+  const user = useAuth((s) => s.user)!;
+  const enregistrer = useEnregistrerBesoin();
+  const [formulaire, setFormulaire] = useState<typeof videBesoin | null>(null);
+  const [arbitrage, setArbitrage] = useState<{ besoin: BesoinPersonnel; retenu: string } | null>(null);
+  const redacteur = peut(user.role, "besoins", "W");
 
   const departements = useMemo(
     () => Array.from(new Set(besoins.map((b) => b.departementId))).map((id) => entiteById(id)!).filter(Boolean),
@@ -63,6 +83,54 @@ export default function BesoinsPage() {
     return { demande, retenu, arbitres, parDiscipline };
   }, [filtres]);
 
+  const valide = !!formulaire && !!formulaire.etablissementId && Number(formulaire.effectifDemande) > 0;
+
+  const exprimer = async () => {
+    if (!formulaire || !valide) return;
+    const etb = entiteById(formulaire.etablissementId);
+    const besoin: BesoinPersonnel = {
+      id: `BSN-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      reference: `BE-${String(besoins.length + 1).padStart(4, "0")}/${new Date().getFullYear()}`,
+      etablissementId: formulaire.etablissementId,
+      departementId: departementDe(formulaire.etablissementId)?.id ?? "ENT-METP",
+      categorie: formulaire.categorie as BesoinPersonnel["categorie"],
+      discipline: formulaire.discipline,
+      effectifDemande: Number(formulaire.effectifDemande),
+      effectifRetenu: undefined,
+      anneeScolaire: formulaire.anneeScolaire,
+      statut: "EXPRIME",
+    };
+    await enregistrer.mutateAsync({ besoin, utilisateur: user, creation: true });
+    toast.success(`Besoin ${besoin.reference} exprimé`, {
+      description: `${etb?.nom ?? ""} — ${besoin.effectifDemande} poste(s) en ${besoin.discipline}.`,
+    });
+    setFormulaire(null);
+    setSelection(besoin);
+  };
+
+  /* Le besoin remonte étape par étape : il ne saute pas de l'expression à
+     l'arbitrage sans passer par la direction départementale. */
+  const avancer = async (b: BesoinPersonnel, statut: BesoinPersonnel["statut"]) => {
+    const besoin = { ...b, statut };
+    await enregistrer.mutateAsync({ besoin, utilisateur: user, creation: false });
+    setSelection(besoin);
+    toast.success(`Besoin ${STATUT_LABELS[statut].toLowerCase()}`);
+  };
+
+  const arbitrer = async () => {
+    if (!arbitrage) return;
+    const retenu = Math.max(0, Number(arbitrage.retenu) || 0);
+    const besoin: BesoinPersonnel = { ...arbitrage.besoin, effectifRetenu: retenu, statut: "ARBITRE" };
+    await enregistrer.mutateAsync({ besoin, utilisateur: user, creation: false });
+    setSelection(besoin);
+    setArbitrage(null);
+    toast.success("Besoin arbitré", {
+      description: retenu >= besoin.effectifDemande
+        ? "La demande est entièrement retenue."
+        : `${besoin.effectifDemande - retenu} poste(s) non retenus sur ${besoin.effectifDemande}.`,
+    });
+  };
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   return (
@@ -70,7 +138,13 @@ export default function BesoinsPage() {
       <PageHeader
         titre="États de besoins"
         description="Le flux ascendant du §10 : les établissements expriment leurs besoins en prestataires, volontaires et vacataires, les directions départementales transmettent, le bureau du suivi des prestataires instruit."
-      />
+      >
+        {redacteur && (
+          <Button size="sm" onClick={() => setFormulaire({ ...videBesoin, etablissementId: ETABLISSEMENTS[0]?.id ?? "" })}>
+            <Plus className="mr-1.5 h-4 w-4" /> Exprimer un besoin
+          </Button>
+        )}
+      </PageHeader>
 
       {/* La chaîne, montrée telle qu'elle circule. */}
       <Card>
@@ -187,6 +261,29 @@ export default function BesoinsPage() {
       </div>
 
       <PanneauDetail
+        actions={selection && redacteur && (
+          <>
+            {selection.statut === "EXPRIME" && (
+              <Button variant="outline" size="sm" onClick={() => avancer(selection, "TRANSMIS")}>
+                Transmettre
+              </Button>
+            )}
+            {selection.statut === "TRANSMIS" && (
+              <Button variant="outline" size="sm" onClick={() => avancer(selection, "INSTRUIT")}>
+                Prendre en instruction
+              </Button>
+            )}
+            {(selection.statut === "INSTRUIT" || selection.statut === "ARBITRE") && (
+              <Button size="sm" onClick={() => setArbitrage({
+                besoin: selection,
+                retenu: String(selection.effectifRetenu ?? selection.effectifDemande),
+              })}>
+                <Gavel className="mr-1.5 h-3.5 w-3.5" />
+                {selection.statut === "ARBITRE" ? "Revoir l'arbitrage" : "Arbitrer"}
+              </Button>
+            )}
+          </>
+        )}
         ouvert={!!selection}
         surFermeture={() => setSelection(null)}
         titre={selection ? `${selection.discipline} — ${entiteById(selection.etablissementId)?.nom ?? "établissement"}` : ""}
@@ -249,6 +346,61 @@ export default function BesoinsPage() {
           </>
         )}
       </PanneauDetail>
+
+      <DialogueFormulaire
+        ouvert={!!formulaire}
+        surFermeture={() => setFormulaire(null)}
+        titre="Exprimer un besoin"
+        description="Le besoin part de l'établissement et remonte : il ne crée pas de poste par lui-même."
+        surValidation={exprimer}
+        validationPossible={valide}
+        libelleValidation="Exprimer"
+        large
+      >
+        {formulaire && (
+          <>
+            <ChampSelect label="Établissement" obligatoire valeur={formulaire.etablissementId}
+              surChangement={(v) => setFormulaire({ ...formulaire, etablissementId: v })}
+              options={ETABLISSEMENTS.map((e) => ({ valeur: e.id, libelle: `${e.nom} — ${e.ville ?? ""}` }))} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampSelect label="Discipline" obligatoire valeur={formulaire.discipline}
+                surChangement={(v) => setFormulaire({ ...formulaire, discipline: v })}
+                options={DISCIPLINES.map((d) => ({ valeur: d, libelle: d }))} />
+              <ChampSelect label="Catégorie demandée" obligatoire valeur={formulaire.categorie}
+                surChangement={(v) => setFormulaire({ ...formulaire, categorie: v })}
+                options={CATEGORIES.map((c) => ({ valeur: c, libelle: REGLES_CATEGORIE[c].libelle }))} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampTexte label="Effectif demandé" type="number" obligatoire valeur={formulaire.effectifDemande}
+                surChangement={(v) => setFormulaire({ ...formulaire, effectifDemande: v })} />
+              <ChampTexte label="Année scolaire" valeur={formulaire.anneeScolaire}
+                surChangement={(v) => setFormulaire({ ...formulaire, anneeScolaire: v })} />
+            </div>
+          </>
+        )}
+      </DialogueFormulaire>
+
+      <DialogueFormulaire
+        ouvert={!!arbitrage}
+        surFermeture={() => setArbitrage(null)}
+        titre="Arbitrer le besoin"
+        description="L'arbitrage fixe ce qui sera pourvu. L'écart avec la demande reste visible : il justifie les campagnes à venir."
+        surValidation={arbitrer}
+        validationPossible={!!arbitrage && Number(arbitrage.retenu) >= 0}
+        libelleValidation="Arbitrer"
+      >
+        {arbitrage && (
+          <>
+            <LigneInfo k="Référence" v={<span className="font-mono text-xs">{arbitrage.besoin.reference}</span>} />
+            <LigneInfo k="Établissement" v={entiteById(arbitrage.besoin.etablissementId)?.nom ?? "—"} />
+            <LigneInfo k="Discipline" v={arbitrage.besoin.discipline} />
+            <LigneInfo k="Effectif demandé" v={fmtNum(arbitrage.besoin.effectifDemande)} />
+            <ChampTexte label="Effectif retenu" type="number" obligatoire valeur={arbitrage.retenu}
+              surChangement={(v) => setArbitrage({ ...arbitrage, retenu: v })}
+              aide="Zéro est un arbitrage : le besoin est examiné et non retenu, et cela se voit." />
+          </>
+        )}
+      </DialogueFormulaire>
     </>
   );
 }

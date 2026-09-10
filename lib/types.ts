@@ -128,6 +128,8 @@ export interface Agent {
   adresse: string;
   categorie: CategoriePersonnel;
   enseignant: boolean;
+  /** Photographie d'identité, en données incorporées. Absente le plus souvent. */
+  photo?: string | null;
   dateRecrutement: string;
   datePriseService?: string;
   dateTitularisation?: string;
@@ -683,4 +685,30 @@ export interface InscriptionFormation {
   statut: "PROPOSEE" | "RETENUE" | "REFUSEE" | "SUIVIE" | "ABANDONNEE";
   acteId?: string | null;
   resultat?: "ACQUIS" | "PARTIEL" | "NON_ACQUIS" | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Carte professionnelle — la pièce qui atteste la qualité d'agent      */
+/* ------------------------------------------------------------------ */
+
+export type StatutCarte = "A_EDITER" | "EDITEE" | "REMISE" | "PERDUE" | "EXPIREE";
+
+/**
+ * Elle n'attribue aucun droit : elle atteste ce que les actes ont établi.
+ * Une carte se périme, se perd et se renouvelle sans que la situation
+ * administrative de l'agent en soit affectée.
+ */
+export interface CarteProfessionnelle {
+  id: string;
+  numero: string;
+  agentId: string;
+  /** Entité portée sur la carte, figée à l'émission. */
+  entiteId: string;
+  fonction: string;
+  dateEmission: string;
+  dateExpiration: string;
+  statut: StatutCarte;
+  emisePar: string;
+  dateRemise?: string | null;
+  motifReedition?: string;
 }

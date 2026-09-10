@@ -5,17 +5,19 @@ import Link from "next/link";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { CalendarCheck, CalendarDays, CalendarX, Plane, Users } from "lucide-react";
-import { useAgentsProjetes, useConges, useEntites } from "@/lib/queries";
+import { toast } from "sonner";
+import { CalendarCheck, CalendarDays, CalendarX, Check, Plane, Plus, X } from "lucide-react";
+import { useAgentsProjetes, useConges, useEnregistrerConge, useEntites } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, POSITION_LABELS, cheminDe, descendantsDe, entiteById,
+  ENTITES, POSITION_LABELS, cheminDe, descendantsDe, entiteById, peut,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgePosition, PageHeader } from "@/components/nexus/ui-kit";
 import { ListeActes } from "@/components/nexus/liste-actes";
 import {
-  Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
+  ChampSelect, ChampTexte, ChampZone, DialogueFormulaire, Jauge, LigneInfo,
+  PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +55,15 @@ const infobulle = {
   },
 };
 
+const videConge = {
+  agentId: "", nature: "ANNUEL" as NatureConge,
+  dateDebut: new Date().toISOString().slice(0, 10), dateFin: "", motif: "",
+};
+
 export default function CongesPage() {
   const user = useAuth((s) => s.user)!;
+  const enregistrer = useEnregistrerConge();
+  const [formulaire, setFormulaire] = useState<typeof videConge | null>(null);
   const { data: conges = [], isLoading } = useConges();
   const { data: agents, pret } = useAgentsProjetes();
   const { data: entitesDb = [] } = useEntites();
@@ -158,6 +167,51 @@ export default function CongesPage() {
     },
   ];
 
+  const instructeur = peut(user.role, "conges", "W") || peut(user.role, "actes", "W");
+
+  const joursEntre = (a: string, b: string) =>
+    a && b && b >= a ? Math.round((new Date(b).getTime() - new Date(a).getTime()) / 864e5) + 1 : 0;
+
+  const valide = !!formulaire && !!formulaire.agentId
+    && joursEntre(formulaire.dateDebut, formulaire.dateFin) > 0;
+
+  const demander = async () => {
+    if (!formulaire || !valide) return;
+    const jours = joursEntre(formulaire.dateDebut, formulaire.dateFin);
+    const conge: Conge = {
+      id: `CNG-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      agentId: formulaire.agentId,
+      nature: formulaire.nature,
+      dateDebut: formulaire.dateDebut,
+      dateFin: formulaire.dateFin,
+      jours,
+      exercice: new Date(formulaire.dateDebut).getFullYear(),
+      statut: "DEMANDE",
+      acteId: null,
+      motif: formulaire.motif.trim() || undefined,
+    };
+    await enregistrer.mutateAsync({ conge, utilisateur: user, creation: true });
+    const a = agentDe.get(conge.agentId);
+    toast.success("Demande enregistrée", {
+      description: `${a ? a.prenom + " " + a.nom : ""} — ${jours} jours, en attente d'accord.`,
+    });
+    setFormulaire(null);
+    setSelection(conge);
+  };
+
+  /* Accorder n'est pas prendre : le congé devient effectif à la date de
+     début, et c'est un acte qui le porte au dossier. */
+  const statuer = async (c: Conge, statut: Conge["statut"]) => {
+    const conge = { ...c, statut };
+    await enregistrer.mutateAsync({ conge, utilisateur: user, creation: false });
+    setSelection(conge);
+    toast.success(`Congé ${STATUT_LABELS[statut].toLowerCase()}`, {
+      description: statut === "ACCORDE"
+        ? "Reste à ouvrir l'acte qui le portera au dossier de l'agent."
+        : undefined,
+    });
+  };
+
   if (isLoading || !pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   const agentSel = selection ? agentDe.get(selection.agentId) : undefined;
@@ -171,6 +225,11 @@ export default function CongesPage() {
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/mon-dossier">Mon dossier</Link>
+        </Button>
+        <Button size="sm" onClick={() => setFormulaire({
+          ...videConge, agentId: user.agentId ?? agents[0]?.id ?? "",
+        })}>
+          <Plus className="mr-1.5 h-4 w-4" /> Demander un congé
         </Button>
       </PageHeader>
 
@@ -259,10 +318,29 @@ export default function CongesPage() {
             {agentSel && <BadgePosition v={agentSel.nature} />}
           </>
         )}
-        actions={agentSel && (
-          <Button size="sm" asChild>
-            <Link href={`/dgarh/agents/${agentSel.id}`}>Ouvrir le dossier</Link>
-          </Button>
+        actions={selection && (
+          <>
+            {instructeur && selection.statut === "DEMANDE" && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => statuer(selection, "REFUSE")}>
+                  <X className="mr-1.5 h-3.5 w-3.5" /> Refuser
+                </Button>
+                <Button size="sm" onClick={() => statuer(selection, "ACCORDE")}>
+                  <Check className="mr-1.5 h-3.5 w-3.5" /> Accorder
+                </Button>
+              </>
+            )}
+            {instructeur && selection.statut === "ACCORDE" && (
+              <Button variant="outline" size="sm" onClick={() => statuer(selection, "PRIS")}>
+                Marquer pris
+              </Button>
+            )}
+            {agentSel && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dgarh/agents/${agentSel.id}`}>Ouvrir le dossier</Link>
+              </Button>
+            )}
+          </>
         )}
       >
         {selection && (
@@ -311,6 +389,50 @@ export default function CongesPage() {
           </>
         )}
       </PanneauDetail>
+
+      <DialogueFormulaire
+        ouvert={!!formulaire}
+        surFermeture={() => setFormulaire(null)}
+        titre="Demander un congé"
+        description="La demande est enregistrée en attente d'accord. Accorder ne suffit pas : un acte porte la décision au dossier."
+        surValidation={demander}
+        validationPossible={valide}
+        libelleValidation="Enregistrer la demande"
+        large
+      >
+        {formulaire && (
+          <>
+            <ChampSelect label="Agent" obligatoire valeur={formulaire.agentId}
+              surChangement={(v) => setFormulaire({ ...formulaire, agentId: v })}
+              options={agents.slice(0, 400).map((a) => ({
+                valeur: a.id, libelle: `${a.prenom} ${a.nom} — ${a.matricule}`,
+              }))} />
+            <ChampSelect label="Nature" obligatoire valeur={formulaire.nature}
+              surChangement={(v) => setFormulaire({ ...formulaire, nature: v as NatureConge })}
+              options={(Object.keys(NATURE_LABELS) as NatureConge[]).map((n) => ({ valeur: n, libelle: NATURE_LABELS[n] }))} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampTexte label="Du" type="date" obligatoire valeur={formulaire.dateDebut}
+                surChangement={(v) => setFormulaire({ ...formulaire, dateDebut: v })} />
+              <ChampTexte label="Au" type="date" obligatoire valeur={formulaire.dateFin}
+                surChangement={(v) => setFormulaire({ ...formulaire, dateFin: v })} />
+            </div>
+            {formulaire.dateFin && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-xs">
+                <span className="font-semibold">{joursEntre(formulaire.dateDebut, formulaire.dateFin)} jours</span>
+                {formulaire.nature === "ANNUEL" && formulaire.agentId && (
+                  <span className="text-muted-foreground">
+                    {" "}— solde après accord :{" "}
+                    {DROIT_ANNUEL - (soldes.get(formulaire.agentId) ?? 0) - joursEntre(formulaire.dateDebut, formulaire.dateFin)} jours
+                  </span>
+                )}
+              </div>
+            )}
+            <ChampZone label="Motif" lignes={2} valeur={formulaire.motif}
+              surChangement={(v) => setFormulaire({ ...formulaire, motif: v })}
+              placeholder="Facultatif pour un congé annuel ; attendu pour un congé exceptionnel." />
+          </>
+        )}
+      </DialogueFormulaire>
     </>
   );
 }

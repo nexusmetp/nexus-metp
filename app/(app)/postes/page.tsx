@@ -5,15 +5,18 @@ import Link from "next/link";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { Briefcase, Lock, ShieldCheck, Snowflake, UserCheck, UserX } from "lucide-react";
-import { useAgentsProjetes, useEntites, usePostes } from "@/lib/queries";
+import { Briefcase, Plus, ShieldCheck, Snowflake, UserCheck, UserX } from "lucide-react";
+import { toast } from "sonner";
+import { useAgentsProjetes, useEnregistrerPoste, useEntites, usePostes } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
 import {
-  ENTITES, NIVEAU_LABELS, cheminDe, descendantsDe, entiteById, gradeById,
+  ENTITES, GRADES, NIVEAU_LABELS, cheminDe, descendantsDe, entiteById, gradeById, peut,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import {
-  Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
+  ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail,
+  RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +42,20 @@ const infobulle = {
   },
 };
 
+const videPoste = {
+  intitule: "", entiteId: "", gradeRequisId: "", budgetise: true,
+};
+
 export default function TableauDesEmploisPage() {
+  const user = useAuth((s) => s.user)!;
   const { data: postes = [], isLoading } = usePostes();
   const { data: agents, pret } = useAgentsProjetes();
   const { data: entitesDb = [] } = useEntites();
+  const enregistrer = useEnregistrerPoste();
 
+  const redacteur = peut(user.role, "postes", "W");
   const [selection, setSelection] = useState<Poste | null>(null);
+  const [formulaire, setFormulaire] = useState<typeof videPoste | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ statut: "all", entite: "all", budget: "all" });
 
   /* Qui occupe quoi : le poste ne porte pas l'agent, c'est l'affectation. */
@@ -155,6 +166,45 @@ export default function TableauDesEmploisPage() {
     },
   ];
 
+  const valide = !!formulaire && formulaire.intitule.trim().length > 4 && !!formulaire.entiteId;
+
+  const creer = async () => {
+    if (!formulaire || !valide) return;
+    const ent = entiteById(formulaire.entiteId);
+    const poste: Poste = {
+      id: `PST-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      code: `${ent?.sigle ?? "ENT"}-${String(postes.length + 1).padStart(3, "0")}`,
+      intitule: formulaire.intitule.trim(),
+      entiteId: formulaire.entiteId,
+      gradeRequisId: formulaire.gradeRequisId || GRADES[0].id,
+      // Un poste naît vacant : on ouvre un emploi, on ne nomme pas quelqu'un.
+      statut: formulaire.budgetise ? "VACANT" : "GELE",
+      budgetise: formulaire.budgetise,
+    };
+    await enregistrer.mutateAsync({ poste, utilisateur: user, creation: true });
+    toast.success(`Emploi ${poste.code} créé`, {
+      description: poste.budgetise
+        ? "Il est vacant : il se pourvoit par mutation ou par recrutement."
+        : "Il est gelé faute d'inscription budgétaire.",
+    });
+    setFormulaire(null);
+    setSelection(poste);
+  };
+
+  const basculerGel = async (p: Poste) => {
+    if (p.statut === "OCCUPE") return;
+    const poste: Poste = p.statut === "GELE"
+      ? { ...p, statut: "VACANT", budgetise: true }
+      : { ...p, statut: "GELE", budgetise: false };
+    await enregistrer.mutateAsync({ poste, utilisateur: user, creation: false });
+    setSelection(poste);
+    toast.success(poste.statut === "GELE" ? "Emploi gelé" : "Emploi dégelé", {
+      description: poste.statut === "GELE"
+        ? "Il reste au tableau des emplois mais n'est plus pourvoyable."
+        : "Il redevient pourvoyable et compte au budget.",
+    });
+  };
+
   if (isLoading || !pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   return (
@@ -166,9 +216,14 @@ export default function TableauDesEmploisPage() {
         <Button variant="outline" size="sm" asChild>
           <Link href="/besoins">États de besoins</Link>
         </Button>
-        <Button size="sm" asChild>
+        <Button variant="outline" size="sm" asChild>
           <Link href="/recrutement">Recrutement</Link>
         </Button>
+        {redacteur && (
+          <Button size="sm" onClick={() => setFormulaire({ ...videPoste, entiteId: user.entiteId })}>
+            <Plus className="mr-1.5 h-4 w-4" /> Créer un emploi
+          </Button>
+        )}
       </PageHeader>
 
       <RangeeKpi tuiles={[
@@ -234,10 +289,20 @@ export default function TableauDesEmploisPage() {
             </Badge>
           </>
         )}
-        actions={selection && selection.statut === "VACANT" && (
-          <Button size="sm" asChild>
-            <Link href="/recrutement">Ouvrir un recrutement</Link>
-          </Button>
+        actions={selection && (
+          <>
+            {redacteur && selection.statut !== "OCCUPE" && (
+              <Button variant="outline" size="sm" onClick={() => basculerGel(selection)}>
+                <Snowflake className="mr-1.5 h-3.5 w-3.5" />
+                {selection.statut === "GELE" ? "Dégeler" : "Geler"}
+              </Button>
+            )}
+            {selection.statut === "VACANT" && (
+              <Button size="sm" asChild>
+                <Link href="/recrutement">Ouvrir un recrutement</Link>
+              </Button>
+            )}
+          </>
         )}
       >
         {selection && (
@@ -270,6 +335,47 @@ export default function TableauDesEmploisPage() {
           </>
         )}
       </PanneauDetail>
+
+      <DialogueFormulaire
+        ouvert={!!formulaire}
+        surFermeture={() => setFormulaire(null)}
+        titre="Créer un emploi"
+        description="Un emploi naît vacant : il ouvre une place, il ne nomme personne."
+        surValidation={creer}
+        validationPossible={valide}
+        libelleValidation="Créer l'emploi"
+        large
+      >
+        {formulaire && (
+          <>
+            <ChampTexte label="Intitulé" obligatoire valeur={formulaire.intitule}
+              surChangement={(v) => setFormulaire({ ...formulaire, intitule: v })}
+              placeholder="Enseignant — Génie civil" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampSelect label="Entité" obligatoire valeur={formulaire.entiteId}
+                surChangement={(v) => setFormulaire({ ...formulaire, entiteId: v })}
+                options={ENTITES.filter((e) => e.actif !== false)
+                  .map((e) => ({ valeur: e.id, libelle: `${e.sigle} — ${NIVEAU_LABELS[e.niveau]}` }))} />
+              <ChampSelect label="Grade requis" valeur={formulaire.gradeRequisId}
+                surChangement={(v) => setFormulaire({ ...formulaire, gradeRequisId: v })}
+                options={GRADES.map((g) => ({ valeur: g.id, libelle: g.libelle }))}
+                aide="Il conditionne qui peut être nommé sur cet emploi." />
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div>
+                <div className="text-sm font-medium">Inscrit au budget</div>
+                <p className="text-[11px] text-muted-foreground">
+                  Sans inscription budgétaire, l'emploi est créé gelé : il figure au tableau mais
+                  n'est pas pourvoyable.
+                </p>
+              </div>
+              <input type="checkbox" className="h-4 w-4 accent-primary"
+                checked={formulaire.budgetise}
+                onChange={(e) => setFormulaire({ ...formulaire, budgetise: e.target.checked })} />
+            </label>
+          </>
+        )}
+      </DialogueFormulaire>
     </>
   );
 }

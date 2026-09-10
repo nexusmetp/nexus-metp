@@ -5,13 +5,16 @@ import Link from "next/link";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { Award, ClipboardList, GraduationCap, Users2, UserPlus } from "lucide-react";
-import { useBesoins, useCampagnes, useCandidatures } from "@/lib/queries";
-import { REGLES_CATEGORIE, entiteById } from "@/lib/referentiels";
+import { toast } from "sonner";
+import { Award, ClipboardList, Plus, Users2, UserPlus } from "lucide-react";
+import { useBesoins, useCampagnes, useCandidatures, useEnregistrerCampagne } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
+import { CATEGORIES, ENTITES, REGLES_CATEGORIE, entiteById, peut } from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, PageHeader } from "@/components/nexus/ui-kit";
 import {
-  Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
+  ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail,
+  RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +49,26 @@ const infobulle = {
   },
 };
 
+/** Suite ouverte à chaque statut : une campagne ne saute pas d'étape. */
+const SUITES: Record<StatutCampagne, StatutCampagne[]> = {
+  PREPARATION: ["OUVERTE", "ANNULEE"],
+  OUVERTE: ["CLOSE", "ANNULEE"],
+  CLOSE: ["CORRECTION", "ANNULEE"],
+  CORRECTION: ["PROCLAMEE"],
+  PROCLAMEE: [],
+  ANNULEE: [],
+};
+
+const videCampagne = {
+  intitule: "", categorie: "FONCTIONNAIRE", postesOuverts: "50",
+  disciplines: "", dateOuverture: new Date().toISOString().slice(0, 10),
+  dateCloture: "", entiteId: "",
+};
+
 export default function RecrutementPage() {
+  const user = useAuth((s) => s.user)!;
+  const enregistrerCampagne = useEnregistrerCampagne();
+  const [formulaire, setFormulaire] = useState<typeof videCampagne | null>(null);
   const { data: campagnes = [], isLoading } = useCampagnes();
   const { data: candidatures = [] } = useCandidatures();
   const { data: besoins = [] } = useBesoins();
@@ -124,6 +146,42 @@ export default function RecrutementPage() {
     },
   ];
 
+  const redacteur = peut(user.role, "recrutement", "W");
+  const valide = !!formulaire && formulaire.intitule.trim().length > 10
+    && Number(formulaire.postesOuverts) > 0 && !!formulaire.dateCloture;
+
+  const ouvrir = async () => {
+    if (!formulaire || !valide) return;
+    const annee = new Date(formulaire.dateOuverture).getFullYear();
+    const campagne: CampagneRecrutement = {
+      id: `CMP-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      reference: `CON-${String(campagnes.length + 1).padStart(2, "0")}/METP-${annee}`,
+      intitule: formulaire.intitule.trim(),
+      annee,
+      categorie: formulaire.categorie as CampagneRecrutement["categorie"],
+      postesOuverts: Number(formulaire.postesOuverts),
+      disciplines: formulaire.disciplines.split(",").map((d) => d.trim()).filter(Boolean),
+      dateOuverture: formulaire.dateOuverture,
+      dateCloture: formulaire.dateCloture,
+      statut: "PREPARATION",
+      entiteId: formulaire.entiteId || user.entiteId,
+      besoinIds: [],
+    };
+    await enregistrerCampagne.mutateAsync({ campagne, utilisateur: user, creation: true });
+    toast.success(`Campagne ${campagne.reference} ouverte en préparation`, {
+      description: `${campagne.postesOuverts} postes — dépôt jusqu'au ${fmtDate(campagne.dateCloture)}.`,
+    });
+    setFormulaire(null);
+    setSelection(campagne);
+  };
+
+  const avancer = async (c: CampagneRecrutement, statut: StatutCampagne) => {
+    const campagne = { ...c, statut };
+    await enregistrerCampagne.mutateAsync({ campagne, utilisateur: user, creation: false });
+    setSelection(campagne);
+    toast.success(`Campagne ${STATUT_LABELS[statut].toLowerCase()}`);
+  };
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   const mesCandidats = selection ? (parCampagne.get(selection.id) ?? []) : [];
@@ -138,9 +196,14 @@ export default function RecrutementPage() {
         <Button variant="outline" size="sm" asChild>
           <Link href="/besoins">États de besoins</Link>
         </Button>
-        <Button size="sm" asChild>
+        <Button variant="outline" size="sm" asChild>
           <Link href="/postes">Tableau des emplois</Link>
         </Button>
+        {redacteur && (
+          <Button size="sm" onClick={() => setFormulaire({ ...videCampagne, entiteId: user.entiteId })}>
+            <Plus className="mr-1.5 h-4 w-4" /> Ouvrir une campagne
+          </Button>
+        )}
       </PageHeader>
 
       <RangeeKpi tuiles={[
@@ -177,6 +240,19 @@ export default function RecrutementPage() {
           <>
             <Badge variant="outline" className={cn("text-[10px]", COULEUR[selection.statut])}>{STATUT_LABELS[selection.statut]}</Badge>
             <BadgeCategorie v={selection.categorie} />
+          </>
+        )}
+        actions={selection && redacteur && SUITES[selection.statut].length > 0 && (
+          <>
+            {SUITES[selection.statut].map((st) => (
+              <Button
+                key={st} size="sm"
+                variant={st === "ANNULEE" ? "outline" : "default"}
+                onClick={() => avancer(selection, st)}
+              >
+                {STATUT_LABELS[st]}
+              </Button>
+            ))}
           </>
         )}
         large
@@ -287,6 +363,46 @@ export default function RecrutementPage() {
           </>
         )}
       </PanneauDetail>
+
+      <DialogueFormulaire
+        ouvert={!!formulaire}
+        surFermeture={() => setFormulaire(null)}
+        titre="Ouvrir une campagne de recrutement"
+        description="Elle démarre en préparation : les dépôts ne s'ouvrent qu'ensuite."
+        surValidation={ouvrir}
+        validationPossible={valide}
+        libelleValidation="Ouvrir la campagne"
+        large
+      >
+        {formulaire && (
+          <>
+            <ChampTexte label="Intitulé" obligatoire valeur={formulaire.intitule}
+              surChangement={(v) => setFormulaire({ ...formulaire, intitule: v })}
+              placeholder="Concours direct de recrutement de professeurs techniques adjoints" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampSelect label="Catégorie recrutée" obligatoire valeur={formulaire.categorie}
+                surChangement={(v) => setFormulaire({ ...formulaire, categorie: v })}
+                options={CATEGORIES.map((c) => ({ valeur: c, libelle: REGLES_CATEGORIE[c].libelle }))} />
+              <ChampTexte label="Postes ouverts" type="number" obligatoire valeur={formulaire.postesOuverts}
+                surChangement={(v) => setFormulaire({ ...formulaire, postesOuverts: v })} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ChampTexte label="Ouverture des dépôts" type="date" obligatoire valeur={formulaire.dateOuverture}
+                surChangement={(v) => setFormulaire({ ...formulaire, dateOuverture: v })} />
+              <ChampTexte label="Clôture des dépôts" type="date" obligatoire valeur={formulaire.dateCloture}
+                surChangement={(v) => setFormulaire({ ...formulaire, dateCloture: v })} />
+            </div>
+            <ChampTexte label="Disciplines" valeur={formulaire.disciplines}
+              surChangement={(v) => setFormulaire({ ...formulaire, disciplines: v })}
+              placeholder="Génie civil, Électrotechnique, Informatique"
+              aide="Séparées par des virgules." />
+            <ChampSelect label="Service organisateur" valeur={formulaire.entiteId}
+              surChangement={(v) => setFormulaire({ ...formulaire, entiteId: v })}
+              options={ENTITES.filter((e) => ["SERVICE", "BUREAU", "DIRECTION"].includes(e.niveau))
+                .map((e) => ({ valeur: e.id, libelle: `${e.sigle} — ${e.nom.slice(0, 40)}` }))} />
+          </>
+        )}
+      </DialogueFormulaire>
     </>
   );
 }

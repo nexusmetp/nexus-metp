@@ -7,7 +7,8 @@ import {
   Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
   Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
   UserCircle, ChevronLeft, Gauge, Landmark, LayoutDashboard, LifeBuoy, Map, Megaphone,
-  MessageSquare, MoreHorizontal, PenLine, Award, BookMarked, Briefcase, CircleHelp, Contact, UserMinus,
+  MessageSquare, MoreHorizontal, PenLine, Award, BookMarked, Briefcase, ChevronDown,
+  CircleHelp, Contact, CreditCard, UserMinus,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
@@ -22,54 +23,67 @@ type NavItem = {
   pret?: boolean;
 };
 
+/*
+ * Les groupes suivent les métiers, pas les modules : on cherche « où sont les
+ * dossiers », pas « où est la page des actes ». Ils se replient, et celui qui
+ * contient la page ouverte se déplie de lui-même.
+ */
 const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
-    titre: "Direction générale",
+    titre: "Pilotage",
     items: [
       { href: "/dgarh", label: "Tableau de bord", icon: LayoutDashboard, mod: "dgarh", pret: true },
       { href: "/dgarh/pilotage", label: "Pilotage des directions", icon: Gauge, mod: "pilotage", pret: true },
       { href: "/dgarh/national", label: "Vue nationale", icon: Map, mod: "national", pret: true },
+      { href: "/rapports", label: "Rapports et états", icon: BarChart3, mod: "rapports", pret: true },
+    ],
+  },
+  {
+    titre: "Organisation",
+    items: [
       { href: "/dgarh/organisation", label: "Organisation", icon: Landmark, mod: "organisation", pret: true },
       { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
-      { href: "/dgarh/bannette", label: "Ma bannette", icon: Inbox, mod: "actes", pret: true },
-      { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
-      { href: "/dgarh/actes", label: "Actes", icon: FileCheck2, mod: "actes", pret: true },
-    ],
-  },
-  {
-    titre: "Gestion du personnel",
-    items: [
-      { href: "/carrieres", label: "Carrières", icon: GitBranch, mod: "carrieres", pret: true },
-      { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges", pret: true },
-      { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations", pret: true },
-      { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux", pret: true },
-      { href: "/retraite", label: "Départs à la retraite", icon: UserMinus, mod: "retraite", pret: true },
-    ],
-  },
-  {
-    titre: "Emplois et recrutement",
-    items: [
-      { href: "/postes", label: "Tableau des emplois", icon: Briefcase, mod: "postes", pret: true },
-      { href: "/recrutement", label: "Recrutement et concours", icon: Award, mod: "recrutement", pret: true },
       { href: "/delegations", label: "Délégations et intérims", icon: PenLine, mod: "delegations", pret: true },
     ],
   },
   {
-    titre: "Déconcentration",
-    items: [{ href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins", pret: true }],
-  },
-  {
-    titre: "Ressources",
+    titre: "Personnel",
     items: [
+      { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
       { href: "/annuaire", label: "Annuaire", icon: Contact, mod: "annuaire", pret: true },
-      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
-      { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
-      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents", pret: true },
-      { href: "/rapports", label: "Rapports", icon: BarChart3, mod: "rapports", pret: true },
+      { href: "/cartes", label: "Cartes professionnelles", icon: CreditCard, mod: "cartes", pret: true },
     ],
   },
   {
-    titre: "Collaboration",
+    titre: "Dossiers et actes",
+    items: [
+      { href: "/dgarh/bannette", label: "Ma bannette", icon: Inbox, mod: "actes", pret: true },
+      { href: "/dgarh/actes", label: "Registre des actes", icon: FileCheck2, mod: "actes", pret: true },
+      { href: "/carrieres", label: "Carrières", icon: GitBranch, mod: "carrieres", pret: true },
+      { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges", pret: true },
+      { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations", pret: true },
+      { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux", pret: true },
+    ],
+  },
+  {
+    titre: "Emplois et effectifs",
+    items: [
+      { href: "/postes", label: "Tableau des emplois", icon: Briefcase, mod: "postes", pret: true },
+      { href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins", pret: true },
+      { href: "/recrutement", label: "Recrutement et concours", icon: Award, mod: "recrutement", pret: true },
+      { href: "/retraite", label: "Départs à la retraite", icon: UserMinus, mod: "retraite", pret: true },
+    ],
+  },
+  {
+    titre: "Documentation",
+    items: [
+      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
+      { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
+      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents", pret: true },
+    ],
+  },
+  {
+    titre: "Échanges",
     items: [
       { href: "/messagerie", label: "Messagerie", icon: MessageSquare, mod: "messagerie", pret: true },
       { href: "/tickets", label: "Réclamations", icon: LifeBuoy, mod: "tickets", pret: true },
@@ -77,14 +91,14 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     ],
   },
   {
-    titre: "Espace personnel",
+    titre: "Mon espace",
     items: [
       { href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier", pret: true },
       { href: "/aide", label: "Aide", icon: CircleHelp, mod: "aide", pret: true },
     ],
   },
   {
-    titre: "Système",
+    titre: "Supervision",
     items: [
       { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal", pret: true },
       { href: "/administration", label: "Système", icon: Settings, mod: "administration", pret: true },
@@ -105,6 +119,7 @@ export function AppSidebar() {
   const user = useAuth((s) => s.user);
   const { sidebarOpen, toggleSidebar } = useUi();
   const groupes = useGroupesAutorises();
+  const [replies, setReplies] = useState<Record<string, boolean>>({});
   if (!user) return null;
 
   return (
@@ -127,15 +142,22 @@ export function AppSidebar() {
       </div>
 
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-5">
-          {groupes.map((g) => (
+        <nav className="space-y-3">
+          {groupes.map((g) => {
+            const porteLActif = g.items.some((i) => pathname === i.href || pathname.startsWith(i.href + "/"));
+            const deplie = !sidebarOpen || replies[g.titre] === undefined ? porteLActif || !sidebarOpen : !replies[g.titre];
+            return (
             <div key={g.titre}>
               {sidebarOpen && (
-                <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                <button
+                  onClick={() => setReplies((r) => ({ ...r, [g.titre]: deplie }))}
+                  className="mb-1 flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70 transition hover:text-foreground"
+                >
                   {g.titre}
-                </div>
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", !deplie && "-rotate-90")} />
+                </button>
               )}
-              <div className="space-y-0.5">
+              <div className={cn("space-y-0.5", !deplie && "hidden")}>
                 {g.items.map((i) => {
                   const actif = pathname === i.href || pathname.startsWith(i.href + "/");
                   const base = "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition";
@@ -183,7 +205,8 @@ export function AppSidebar() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
       </ScrollArea>
 

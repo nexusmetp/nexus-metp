@@ -11,6 +11,7 @@ import {
 } from "@/lib/referentiels";
 import { fmtNum, initiales } from "@/lib/format";
 import { BadgeCategorie, BadgePosition, PageHeader } from "@/components/nexus/ui-kit";
+import { Portrait } from "@/components/nexus/portrait";
 import {
   LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
@@ -69,9 +70,7 @@ export default function AnnuairePage() {
       cle: "agent", entete: "Agent",
       rendu: (a) => (
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-            {initiales(a.prenom, a.nom)}
-          </span>
+          <Portrait photo={a.photo} prenom={a.prenom} nom={a.nom} cle={a.matricule} taille="sm" />
           <div className="min-w-0">
             <div className="truncate text-sm font-medium">{a.prenom} {a.nom}</div>
             <div className="truncate text-[11px] text-muted-foreground">{a.fonction ?? "—"}</div>
@@ -184,6 +183,16 @@ export default function AnnuairePage() {
       >
         {selection && (
           <>
+            <div className="flex items-center gap-4 rounded-xl border bg-muted/30 p-4">
+              <Portrait photo={selection.photo} prenom={selection.prenom} nom={selection.nom}
+                        cle={selection.matricule} taille="lg" />
+              <div className="min-w-0">
+                <div className="text-base font-semibold">{selection.prenom} {selection.nom}</div>
+                <div className="font-mono text-xs text-muted-foreground">{selection.matricule}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{entiteById(selection.entiteId)?.nom ?? "—"}</div>
+              </div>
+            </div>
+
             <Section titre="Contact">
               <LigneInfo k="Téléphone" v={selection.telephone
                 ? <span className="inline-flex items-center gap-1.5"><Phone className="h-3 w-3" />{selection.telephone}</span>
@@ -212,9 +221,7 @@ export default function AnnuairePage() {
                       key={c.id} onClick={() => setSelection(c)}
                       className="flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/60"
                     >
-                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted text-[9px] font-bold">
-                        {initiales(c.prenom, c.nom)}
-                      </span>
+                      <Portrait photo={c.photo} prenom={c.prenom} nom={c.nom} cle={c.matricule} taille="xs" />
                       <div className="min-w-0">
                         <div className="truncate text-xs font-medium">{c.prenom} {c.nom}</div>
                         <div className="truncate text-[10px] text-muted-foreground">{c.fonction ?? "—"}</div>

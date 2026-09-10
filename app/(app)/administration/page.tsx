@@ -182,10 +182,10 @@ export default function AdministrationPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Comptes", valeur: fmtNum(comptes.length), sousTitre: `${fmtNum(actifs)} actifs`, icon: Users },
-        { titre: "Écritures d'audit", valeur: fmtNum(journal.length), sousTitre: "journal en ajout seul", icon: Database },
-        { titre: "Réclamations ouvertes", valeur: fmtNum(tickets.filter((t) => t.statut !== "CLOS" && t.statut !== "RESOLU").length), sousTitre: `${fmtNum(tickets.length)} au total`, icon: Activity },
-        { titre: "Anomalies", valeur: fmtNum(sansEntite), sousTitre: "comptes sans entité valide", icon: ShieldCheck },
+        { ton: "bleu", titre: "Comptes", valeur: fmtNum(comptes.length), sousTitre: `${fmtNum(actifs)} actifs`, icon: Users },
+        { ton: "indigo", titre: "Écritures d'audit", valeur: fmtNum(journal.length), sousTitre: "journal en ajout seul", icon: Database },
+        { ton: "ambre", titre: "Réclamations ouvertes", valeur: fmtNum(tickets.filter((t) => t.statut !== "CLOS" && t.statut !== "RESOLU").length), sousTitre: `${fmtNum(tickets.length)} au total`, icon: Activity },
+        { ton: "rose", titre: "Anomalies", valeur: fmtNum(sansEntite), sousTitre: "comptes sans entité valide", icon: ShieldCheck },
       ]} />
 
       <Tabs defaultValue="comptes" className="space-y-4">

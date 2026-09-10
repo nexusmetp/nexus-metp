@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img"
+     aria-labelledby="titre-armoiries">
+  <title id="titre-armoiries">Armoiries de la République du Congo</title>
+  <!--
+    Armoiries de la République du Congo : d'or à la bande ondée de sinople,
+    au lion de gueules tenant une torche ; supports : deux éléphants rampants ;
+    couronne murale de sinople ; devise « Unité · Travail · Progrès » sur un
+    listel aux couleurs nationales.
+
+    Ce fichier est le SEUL point d'entrée du blason dans l'application (écran
+    d'ouverture, page de connexion, en-têtes, documents imprimés). Pour poser
+    le fichier officiel du ministère, écrasez CE fichier — rien d'autre ne
+    bouge.
+  -->
+  <defs>
+    <!-- L'écu, défini une fois : sert de tracé, de bordure et de masque. -->
+    <path id="ecu-forme"
+          d="M70 46 h60 v46 c0 26 -15 45 -30 53 c-15 -8 -30 -27 -30 -53 z"/>
+    <clipPath id="ecu-masque"><use href="#ecu-forme"/></clipPath>
+
+    <!--
+      Éléphant rampant, dressé sur ses membres postérieurs, tourné vers la
+      dextre. Composé de masses pleines d'une seule couleur : à 28 px le
+      dessin doit tenir par sa silhouette, pas par son détail.
+    -->
+    <g id="elephant-support" fill="#2b3440">
+      <!-- queue -->
+      <path d="M26 74 C16 84 13 100 17 114" fill="none" stroke="#2b3440"
+            stroke-width="5" stroke-linecap="round"/>
+      <!-- membres postérieurs -->
+      <path d="M30 96 c10 -4 20 -2 24 6 l2 34 c0 5 -12 5 -13 0 z"/>
+      <path d="M52 100 c10 -3 19 1 21 9 l1 31 c0 5 -12 5 -13 0 z"/>
+      <!-- masse du corps, montant de la croupe aux épaules -->
+      <ellipse cx="50" cy="86" rx="27" ry="35" transform="rotate(-14 50 86)"/>
+      <ellipse cx="61" cy="58" rx="24" ry="24"/>
+      <!-- membres antérieurs levés vers l'écu -->
+      <path d="M70 56 c14 -8 26 -6 30 2 c3 7 -4 13 -14 12 l-16 -3 z"/>
+      <path d="M68 76 c14 -6 25 -3 27 5 c2 7 -6 12 -15 10 l-14 -5 z"/>
+      <!-- tête -->
+      <ellipse cx="70" cy="34" rx="20" ry="19"/>
+      <!-- oreille -->
+      <path d="M46 20 c14 -10 30 -6 34 8 c4 15 -4 30 -18 33 c-12 2 -20 -8 -20 -21 z"
+            fill="#1c242e"/>
+      <!-- trompe, enroulée vers l'extérieur -->
+      <path d="M84 42 c9 6 13 18 10 29 c-2 9 1 16 7 19" fill="none"
+            stroke="#2b3440" stroke-width="9" stroke-linecap="round"/>
+      <!-- défenses -->
+      <path d="M76 50 c8 4 13 11 14 18" fill="none" stroke="#f5f3ef"
+            stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M66 54 c5 5 8 11 8 17" fill="none" stroke="#f5f3ef"
+            stroke-width="3.5" stroke-linecap="round"/>
+      <!-- œil -->
+      <circle cx="76" cy="27" r="2.6" fill="#f5f3ef"/>
+      <circle cx="76.6" cy="27" r="1.4" fill="#111827"/>
+    </g>
+  </defs>
+
+  <!-- Supports : posés avant l'écu, qui les recouvre. -->
+  <use href="#elephant-support" transform="translate(2 34) scale(0.86)"/>
+  <use href="#elephant-support" transform="translate(198 34) scale(-0.86 0.86)"/>
+
+  <!-- Couronne murale de sinople -->
+  <g>
+    <rect x="66" y="26" width="68" height="15" rx="2" fill="#009543"/>
+    <g fill="#009543">
+      <rect x="66" y="14" width="12" height="13" rx="1.5"/>
+      <rect x="83" y="14" width="12" height="13" rx="1.5"/>
+      <rect x="100" y="14" width="12" height="13" rx="1.5"/>
+      <rect x="117" y="14" width="12" height="13" rx="1.5"/>
+    </g>
+    <rect x="66" y="38" width="68" height="4" rx="2" fill="#FBDE4A"/>
+  </g>
+
+  <!-- Écu -->
+  <g>
+    <use href="#ecu-forme" fill="#FBDE4A"/>
+    <g clip-path="url(#ecu-masque)">
+      <!-- bande ondée de sinople, de l'angle senestre au flanc dextre -->
+      <path d="M46 40 C68 56 72 74 92 88 C110 100 116 118 136 134 L158 118
+               C138 102 132 84 114 72 C94 58 90 40 68 22 Z" fill="#009543"/>
+      <!-- lion de gueules, rampant, tenant une torche -->
+      <g fill="#CE1126">
+        <!-- corps, membres et queue d'un seul tenant -->
+        <path d="M112 68 c-5 -6 -13 -7 -18 -2 c-4 4 -5 11 -2 16
+                 l-9 3 c-4 1 -4 6 1 7 l11 0
+                 c-3 9 0 17 7 22 l2 22
+                 c-5 5 -6 13 -3 19 l11 0 c2 -7 0 -14 -3 -18
+                 l1 -18 l15 4 l3 22
+                 c-4 5 -4 12 -1 17 l11 0 c2 -7 1 -13 -2 -17
+                 l-2 -29 c7 -5 11 -14 9 -22
+                 c7 1 13 -3 14 -10 c1 -7 -4 -13 -11 -14 l-17 -3 z"/>
+        <!-- membre antérieur tendu vers la torche -->
+        <path d="M94 82 c-7 -8 -15 -12 -23 -10 l-2 -9 c9 -3 20 1 27 10 z"/>
+        <!-- crinière -->
+        <path d="M110 62 c8 -2 14 3 14 11 c0 7 -6 12 -13 11 z"/>
+      </g>
+      <!-- torche -->
+      <rect x="58" y="66" width="6" height="26" rx="2" fill="#4a2b12"
+            transform="rotate(-32 61 79)"/>
+      <path d="M70 44 c7 7 7 16 1 22 c-7 -6 -8 -15 -1 -22 z" fill="#CE1126"/>
+      <path d="M70 50 c4 4 4 9 0 13 c-4 -4 -4 -9 0 -13 z" fill="#FBDE4A"/>
+    </g>
+    <use href="#ecu-forme" fill="none" stroke="#111827" stroke-width="3"/>
+  </g>
+
+  <!-- Listel de la devise, aux couleurs nationales. Le texte est posé sur la
+       bande d'or : sur le vert ou le rouge il ne se lirait plus. -->
+  <g>
+    <path d="M12 158 C56 148 144 148 188 158 L188 165 C144 155 56 155 12 165 Z" fill="#009543"/>
+    <path d="M12 165 C56 155 144 155 188 165 L188 174 C144 164 56 164 12 174 Z" fill="#FBDE4A"/>
+    <path d="M12 174 C56 164 144 164 188 174 L188 181 C144 171 56 171 12 181 Z" fill="#CE1126"/>
+    <path d="M12 158 C56 148 144 148 188 158 L188 181 C144 171 56 171 12 181 Z"
+          fill="none" stroke="#111827" stroke-width="2.5"/>
+    <text x="100" y="165.5" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-size="9.5" font-weight="700" letter-spacing="0.3" fill="#111827">
+      UNITÉ · TRAVAIL · PROGRÈS
+    </text>
+  </g>
+</svg>

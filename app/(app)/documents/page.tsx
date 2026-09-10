@@ -45,10 +45,10 @@ export default function DocumentsPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Modèles disponibles", valeur: fmtNum(MODELES.length), sousTitre: "arrêtés, attestations, états, correspondance", icon: FileOutput },
-        { titre: "Documents établis", valeur: fmtNum(emis.length), sousTitre: `dont ${fmtNum(imprimes)} imprimés`, icon: Printer },
-        { titre: "Pièces au dossier", valeur: fmtNum(pieces), sousTitre: `réparties sur ${fmtNum(actes.length)} actes`, icon: FolderOpen },
-        { titre: "Rattachement", valeur: "100 %", sousTitre: "toute pièce relève d'un acte", icon: ShieldCheck },
+        { ton: "violet", titre: "Modèles disponibles", valeur: fmtNum(MODELES.length), sousTitre: "arrêtés, attestations, états, correspondance", icon: FileOutput },
+        { ton: "bleu", titre: "Documents établis", valeur: fmtNum(emis.length), sousTitre: `dont ${fmtNum(imprimes)} imprimés`, icon: Printer },
+        { ton: "cyan", titre: "Pièces au dossier", valeur: fmtNum(pieces), sousTitre: `réparties sur ${fmtNum(actes.length)} actes`, icon: FolderOpen },
+        { ton: "emeraude", titre: "Rattachement", valeur: "100 %", sousTitre: "toute pièce relève d'un acte", icon: ShieldCheck },
       ]} />
 
       <Tabs defaultValue="modeles" className="space-y-4">

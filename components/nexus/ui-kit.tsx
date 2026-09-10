@@ -11,6 +11,7 @@ import {
   peut, type ModuleKey,
 } from "@/lib/referentiels";
 import type { CategoriePersonnel, NaturePosition, Provenance, Role, StatutActe } from "@/lib/types";
+import { TONS, type Ton } from "@/components/nexus/tons";
 import { ArrowDownRight, ArrowUpRight, ShieldOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -46,18 +47,36 @@ export function Compteur({ valeur, duree = 550 }: { valeur: number; duree?: numb
   return <>{new Intl.NumberFormat("fr-FR").format(affiche)}</>;
 }
 
+/**
+ * Une tuile de chiffre.
+ *
+ * Le `ton` porte le sens : ambre pour une attente, rose pour une échéance
+ * dépassée, émeraude pour ce qui est acquis. À défaut, la rangée en attribue
+ * un par position (voir `RangeeKpi`), pour qu'aucune tuile ne reste blanche.
+ */
 export function KpiCard({
-  titre, valeur, sousTitre, icon: Icon, variation,
+  titre, valeur, sousTitre, icon: Icon, variation, ton = "cyan",
 }: {
-  titre: string; valeur: string | number; sousTitre?: string; icon: any; variation?: number;
+  titre: string; valeur: string | number; sousTitre?: string; icon: any;
+  variation?: number; ton?: Ton;
 }) {
+  const t = TONS[ton];
   return (
-    <Card className="relative flex h-full min-h-[122px] flex-col justify-center overflow-hidden p-5 transition-shadow group-hover:shadow-md">
-      <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/10 blur-2xl transition-transform group-hover:scale-125" />
+    <Card className={cn(
+      "relative flex h-full min-h-[122px] flex-col justify-center overflow-hidden p-5 pt-6",
+      "bg-gradient-to-br to-transparent transition-shadow group-hover:shadow-md",
+      t.fond
+    )}>
+      {/* Filet supérieur : la couleur se voit même quand la tuile est vide. */}
+      <div className={cn("absolute inset-x-0 top-0 h-1", t.filet)} />
+      <div className={cn(
+        "absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full blur-2xl",
+        "transition-transform group-hover:scale-125", t.halo
+      )} />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{titre}</div>
-          <div className="mt-2 text-3xl font-bold tracking-tight tabular-nums">
+          <div className={cn("mt-2 text-3xl font-bold tracking-tight tabular-nums", t.valeur)}>
             {typeof valeur === "number" ? <Compteur valeur={valeur} /> : valeur}
           </div>
           {sousTitre && <div className="mt-1 text-xs text-muted-foreground">{sousTitre}</div>}
@@ -71,7 +90,7 @@ export function KpiCard({
             </div>
           )}
         </div>
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <div className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-xl", t.puce)}>
           <Icon className="h-5 w-5" />
         </div>
       </div>

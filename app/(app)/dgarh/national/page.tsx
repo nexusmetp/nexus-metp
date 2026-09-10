@@ -165,10 +165,10 @@ export default function VueNationalePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Déployés en département", valeur: stats.deploye, sousTitre: `${fmtPct(agents.length ? (stats.deploye / agents.length) * 100 : 0)} de l'effectif`, icon: MapPin, href: "/dgarh/agents" },
-        { titre: "En administration centrale", valeur: stats.central, sousTitre: "cabinet, directions et inspections", icon: Building2, href: "/dgarh/agents?entite=ENT-DGARH" },
-        { titre: "Département le plus doté", valeur: stats.fort?.effectif ?? 0, sousTitre: stats.fort?.nom ?? "—", icon: Users },
-        { titre: "Écart entre extrêmes", valeur: `× ${stats.ecart}`, sousTitre: `${stats.fort?.nom ?? "—"} face à ${stats.faible?.nom ?? "—"}`, icon: Network, href: "/besoins" },
+        { ton: "bleu", titre: "Déployés en département", valeur: stats.deploye, sousTitre: `${fmtPct(agents.length ? (stats.deploye / agents.length) * 100 : 0)} de l'effectif`, icon: MapPin, href: "/dgarh/agents" },
+        { ton: "cyan", titre: "En administration centrale", valeur: stats.central, sousTitre: "cabinet, directions et inspections", icon: Building2, href: "/dgarh/agents?entite=ENT-DGARH" },
+        { ton: "emeraude", titre: "Département le plus doté", valeur: stats.fort?.effectif ?? 0, sousTitre: stats.fort?.nom ?? "—", icon: Users },
+        { ton: "ambre", titre: "Écart entre extrêmes", valeur: `× ${stats.ecart}`, sousTitre: `${stats.fort?.nom ?? "—"} face à ${stats.faible?.nom ?? "—"}`, icon: Network, href: "/besoins" },
       ]} />
 
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">

@@ -257,10 +257,10 @@ export default function TicketsPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "En cours", valeur: fmtNum(stats.ouverts), sousTitre: `${fmtNum(visibles.length)} au total`, icon: LifeBuoy },
-        { titre: "Hors délai", valeur: fmtNum(stats.retard), sousTitre: "échéance dépassée", icon: AlertTriangle },
-        { titre: "Délai moyen", valeur: `${stats.delai} j`, sousTitre: "de l'ouverture à la clôture", icon: Clock },
-        { titre: "Satisfaction", valeur: stats.satisfaction, sousTitre: "note moyenne sur 5", icon: Star },
+        { ton: "cyan", titre: "En cours", valeur: fmtNum(stats.ouverts), sousTitre: `${fmtNum(visibles.length)} au total`, icon: LifeBuoy },
+        { ton: "rose", titre: "Hors délai", valeur: fmtNum(stats.retard), sousTitre: "échéance dépassée", icon: AlertTriangle },
+        { ton: "ambre", titre: "Délai moyen", valeur: `${stats.delai} j`, sousTitre: "de l'ouverture à la clôture", icon: Clock },
+        { ton: "emeraude", titre: "Satisfaction", valeur: stats.satisfaction, sousTitre: "note moyenne sur 5", icon: Star },
       ]} />
 
       <TableauModule<Ticket>

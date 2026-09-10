@@ -164,10 +164,10 @@ export default function AnnoncesPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Notes reçues", valeur: fmtNum(visibles.length), sousTitre: "vous concernant", icon: Megaphone },
-        { titre: "À lire", valeur: fmtNum(aLire), sousTitre: "accusé de lecture attendu", icon: BellRing },
-        { titre: "Épinglées", valeur: fmtNum(visibles.filter((a) => a.epingle).length), sousTitre: "en tête de liste", icon: Pin },
-        { titre: "Émises par vous", valeur: fmtNum(annonces.filter((a) => a.auteurId === user.id).length), sousTitre: "dont vous répondez", icon: Users },
+        { ton: "cyan", titre: "Notes reçues", valeur: fmtNum(visibles.length), sousTitre: "vous concernant", icon: Megaphone },
+        { ton: "ambre", titre: "À lire", valeur: fmtNum(aLire), sousTitre: "accusé de lecture attendu", icon: BellRing },
+        { ton: "violet", titre: "Épinglées", valeur: fmtNum(visibles.filter((a) => a.epingle).length), sousTitre: "en tête de liste", icon: Pin },
+        { ton: "bleu", titre: "Émises par vous", valeur: fmtNum(annonces.filter((a) => a.auteurId === user.id).length), sousTitre: "dont vous répondez", icon: Users },
       ]} />
 
       <TableauModule<Annonce>

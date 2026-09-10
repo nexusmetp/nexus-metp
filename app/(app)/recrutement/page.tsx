@@ -207,10 +207,10 @@ export default function RecrutementPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Campagnes ouvertes", valeur: stats.ouvertes, sousTitre: `${fmtNum(campagnes.length)} au total`, icon: ClipboardList },
-        { titre: "Postes ouverts", valeur: stats.postes, sousTitre: "toutes campagnes confondues", icon: UserPlus, href: "/postes" },
-        { titre: "Candidatures", valeur: stats.candidats, sousTitre: "déposées et instruites", icon: Users2 },
-        { titre: "Sélectivité", valeur: fmtPct(stats.selectivite), sousTitre: `${fmtNum(stats.admis)} admis`, icon: Award },
+        { ton: "cyan", titre: "Campagnes ouvertes", valeur: stats.ouvertes, sousTitre: `${fmtNum(campagnes.length)} au total`, icon: ClipboardList },
+        { ton: "bleu", titre: "Postes ouverts", valeur: stats.postes, sousTitre: "toutes campagnes confondues", icon: UserPlus, href: "/postes" },
+        { ton: "violet", titre: "Candidatures", valeur: stats.candidats, sousTitre: "déposées et instruites", icon: Users2 },
+        { ton: "ambre", titre: "Sélectivité", valeur: fmtPct(stats.selectivite), sousTitre: `${fmtNum(stats.admis)} admis`, icon: Award },
       ]} />
 
       <TableauModule<CampagneRecrutement>

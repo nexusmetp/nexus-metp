@@ -195,10 +195,10 @@ export default function DelegationsPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "En vigueur", valeur: stats.vigueur, sousTitre: `sur ${fmtNum(delegations.length)} enregistrées`, icon: CheckCircle2 },
-        { titre: "Intérims en cours", valeur: stats.interims, sousTitre: "un agent exerce à la place d'un autre", icon: UserCog },
-        { titre: "Expirent sous 30 jours", valeur: stats.proches, sousTitre: "à renouveler avant échéance", icon: CalendarClock },
-        { titre: "Vous concernant", valeur: stats.miennes, sousTitre: "consenties par vous ou à vous", icon: PenLine },
+        { ton: "emeraude", titre: "En vigueur", valeur: stats.vigueur, sousTitre: `sur ${fmtNum(delegations.length)} enregistrées`, icon: CheckCircle2 },
+        { ton: "cyan", titre: "Intérims en cours", valeur: stats.interims, sousTitre: "un agent exerce à la place d'un autre", icon: UserCog },
+        { ton: "ambre", titre: "Expirent sous 30 jours", valeur: stats.proches, sousTitre: "à renouveler avant échéance", icon: CalendarClock },
+        { ton: "bleu", titre: "Vous concernant", valeur: stats.miennes, sousTitre: "consenties par vous ou à vous", icon: PenLine },
       ]} />
 
       {stats.proches > 0 && (

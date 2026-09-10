@@ -181,10 +181,10 @@ export default function FormationPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Sessions ouvertes", valeur: stats.offres, sousTitre: `${fmtNum(offres.length)} au catalogue`, icon: BookOpen },
-        { titre: "Agents formés", valeur: stats.beneficiaires, sousTitre: `${fmtNum(inscriptions.length)} inscriptions`, icon: Users2 },
-        { titre: "Taux d'acquisition", valeur: fmtPct(stats.reussite), sousTitre: "sur les formations suivies", icon: TrendingUp },
-        { titre: "Engagement budgétaire", valeur: fcfa(stats.budget), sousTitre: "places retenues et suivies", icon: Banknote },
+        { ton: "cyan", titre: "Sessions ouvertes", valeur: stats.offres, sousTitre: `${fmtNum(offres.length)} au catalogue`, icon: BookOpen },
+        { ton: "emeraude", titre: "Agents formés", valeur: stats.beneficiaires, sousTitre: `${fmtNum(inscriptions.length)} inscriptions`, icon: Users2 },
+        { ton: "bleu", titre: "Taux d'acquisition", valeur: fmtPct(stats.reussite), sousTitre: "sur les formations suivies", icon: TrendingUp },
+        { ton: "ambre", titre: "Engagement budgétaire", valeur: fcfa(stats.budget), sousTitre: "places retenues et suivies", icon: Banknote },
       ]} />
 
       <Tabs defaultValue="catalogue" className="space-y-4">

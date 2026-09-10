@@ -32,10 +32,10 @@ export default function ReferentielsPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Corps", valeur: fmtNum(CORPS.length), sousTitre: "familles de métiers", icon: Library },
-        { titre: "Grades", valeur: fmtNum(GRADES.length), sousTitre: "avec échelons et indices", icon: Layers },
-        { titre: "Types d'acte", valeur: fmtNum(TYPES_ACTE.length), sousTitre: "instruits par le circuit", icon: ShieldCheck },
-        { titre: "Lacunes", valeur: fmtNum(LACUNES.length), sousTitre: "points à confirmer avant mise en service", icon: AlertTriangle },
+        { ton: "indigo", titre: "Corps", valeur: fmtNum(CORPS.length), sousTitre: "familles de métiers", icon: Library },
+        { ton: "bleu", titre: "Grades", valeur: fmtNum(GRADES.length), sousTitre: "avec échelons et indices", icon: Layers },
+        { ton: "violet", titre: "Types d'acte", valeur: fmtNum(TYPES_ACTE.length), sousTitre: "instruits par le circuit", icon: ShieldCheck },
+        { ton: "rose", titre: "Lacunes", valeur: fmtNum(LACUNES.length), sousTitre: "points à confirmer avant mise en service", icon: AlertTriangle },
       ]} />
 
       <Card className="border-amber-500/30 bg-amber-500/[0.04]">

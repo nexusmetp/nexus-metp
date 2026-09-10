@@ -235,10 +235,10 @@ export default function CongesPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Congés en cours", valeur: stats.enCours, sousTitre: `${fmtNum(stats.demandes)} demandes à instruire`, icon: Plane },
-        { titre: "Jours annuels consommés", valeur: stats.joursPris, sousTitre: `${fmtPct(stats.taux)} du droit ouvert`, icon: CalendarCheck },
-        { titre: "Agents hors activité", valeur: stats.absents, sousTitre: "détachement, disponibilité, suspension", icon: CalendarX },
-        { titre: "Votre solde", valeur: `${monSolde} j`, sousTitre: `sur ${DROIT_ANNUEL} jours de droit annuel`, icon: CalendarDays, href: "/mon-dossier" },
+        { ton: "cyan", titre: "Congés en cours", valeur: stats.enCours, sousTitre: `${fmtNum(stats.demandes)} demandes à instruire`, icon: Plane },
+        { ton: "bleu", titre: "Jours annuels consommés", valeur: stats.joursPris, sousTitre: `${fmtPct(stats.taux)} du droit ouvert`, icon: CalendarCheck },
+        { ton: "ambre", titre: "Agents hors activité", valeur: stats.absents, sousTitre: "détachement, disponibilité, suspension", icon: CalendarX },
+        { ton: "emeraude", titre: "Votre solde", valeur: `${monSolde} j`, sousTitre: `sur ${DROIT_ANNUEL} jours de droit annuel`, icon: CalendarDays, href: "/mon-dossier" },
       ]} />
 
       <Tabs defaultValue="registre" className="space-y-4">

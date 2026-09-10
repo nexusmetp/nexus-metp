@@ -61,24 +61,24 @@ export default function ArchivesPage() {
 
       <RangeeKpi tuiles={[
         {
-          titre: "Articles conservés", valeur: fmtNum(chiffres.articles),
+          ton: "violet", titre: "Articles conservés", valeur: fmtNum(chiffres.articles),
           sousTitre: `${fmtNum(chiffres.enRayon)} en rayon · ${chiffres.metrage} mètres linéaires`,
           icon: Archive,
         },
         {
-          titre: "Versements", valeur: fmtNum(versements.length),
+          ton: "bleu", titre: "Versements", valeur: fmtNum(versements.length),
           sousTitre: chiffres.enAttente
             ? `${fmtNum(chiffres.enAttente)} en attente de prise en charge`
             : "tous pris en charge",
           icon: Boxes,
         },
         {
-          titre: "Durées échues", valeur: fmtNum(chiffres.echus),
+          ton: "ambre", titre: "Durées échues", valeur: fmtNum(chiffres.echus),
           sousTitre: `dont ${fmtNum(chiffres.aEliminer)} éliminables sur bordereau visé`,
           icon: Clock,
         },
         {
-          titre: "Sorties en cours", valeur: fmtNum(chiffres.sorties),
+          ton: "cyan", titre: "Sorties en cours", valeur: fmtNum(chiffres.sorties),
           sousTitre: `${fmtNum(communications.length)} communications enregistrées`,
           icon: ShieldCheck,
         },

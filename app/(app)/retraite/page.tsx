@@ -165,10 +165,10 @@ export default function RetraitePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: `Départs sous ${HORIZON} ans`, valeur: stats.horizon, sousTitre: `${fmtPct(stats.part)} de l'effectif`, icon: UserMinus },
-        { titre: "Départs cette année", valeur: stats.cetteAnnee, sousTitre: `atteignent ${AGE_DEPART} ans en ${annee}`, icon: CalendarClock },
-        { titre: "Âge dépassé sans acte", valeur: stats.depasses, sousTitre: "situations à régulariser", icon: TrendingDown, href: "/dgarh/actes" },
-        { titre: "Effectif concerné", valeur: concernes.length, sousTitre: "horizon et retards confondus", icon: Users },
+        { ton: "bleu", titre: `Départs sous ${HORIZON} ans`, valeur: stats.horizon, sousTitre: `${fmtPct(stats.part)} de l'effectif`, icon: UserMinus },
+        { ton: "ambre", titre: "Départs cette année", valeur: stats.cetteAnnee, sousTitre: `atteignent ${AGE_DEPART} ans en ${annee}`, icon: CalendarClock },
+        { ton: "rose", titre: "Âge dépassé sans acte", valeur: stats.depasses, sousTitre: "situations à régulariser", icon: TrendingDown, href: "/dgarh/actes" },
+        { ton: "cyan", titre: "Effectif concerné", valeur: concernes.length, sousTitre: "horizon et retards confondus", icon: Users },
       ]} />
 
       {stats.depasses > 0 && (

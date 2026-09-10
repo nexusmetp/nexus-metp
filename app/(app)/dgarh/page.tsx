@@ -90,18 +90,18 @@ export default function TableauDeBordPage() {
 
       {/* ── La population ── */}
       <RangeeKpi tuiles={[
-        { titre: "Effectif du ministère", valeur: stats.ministere, sousTitre: "toutes catégories, tous départements", icon: Users, href: "/dgarh/agents" },
-        { titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/agents?entite=${DGARH_ID}` },
-        { titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/agents?entite=${CABINET_ID}` },
-        { titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
+        { ton: "bleu", titre: "Effectif du ministère", valeur: stats.ministere, sousTitre: "toutes catégories, tous départements", icon: Users, href: "/dgarh/agents" },
+        { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/agents?entite=${DGARH_ID}` },
+        { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/agents?entite=${CABINET_ID}` },
+        { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
       ]} />
 
       {/* ── L'activité ── */}
       <RangeeKpi tuiles={[
-        { titre: "Actes en circulation", valeur: stats.ouverts, sousTitre: "dossiers non encore notifiés", icon: FileCheck2, href: "/dgarh/actes" },
-        { titre: "Délai moyen d'instruction", valeur: `${stats.delaiMoyen} j`, sousTitre: "cible : 15 jours", icon: Timer, href: "/rapports" },
-        { titre: "Dossiers hors délai", valeur: stats.horsDelai, sousTitre: "au-delà de la cible", icon: AlertTriangle, href: "/dgarh/bannette" },
-        { titre: "Réclamations ouvertes", valeur: stats.reclamations, sousTitre: "en attente de traitement", icon: LifeBuoy, href: "/tickets" },
+        { ton: "cyan", titre: "Actes en circulation", valeur: stats.ouverts, sousTitre: "dossiers non encore notifiés", icon: FileCheck2, href: "/dgarh/actes" },
+        { ton: "indigo", titre: "Délai moyen d'instruction", valeur: `${stats.delaiMoyen} j`, sousTitre: "cible : 15 jours", icon: Timer, href: "/rapports" },
+        { ton: "rose", titre: "Dossiers hors délai", valeur: stats.horsDelai, sousTitre: "au-delà de la cible", icon: AlertTriangle, href: "/dgarh/bannette" },
+        { ton: "ambre", titre: "Réclamations ouvertes", valeur: stats.reclamations, sousTitre: "en attente de traitement", icon: LifeBuoy, href: "/tickets" },
       ]} />
 
       {/* ── La structure ── */}

@@ -12,8 +12,21 @@ import type { Provenance } from "@/lib/types";
 export const APP_NAME = "NEXUS-METP";
 export const APP_TAGLINE = "Système Intégré de Gestion des Ressources Humaines";
 export const MINISTERE_NOM = "Ministère de l'Enseignement Technique et Professionnel";
-export const LOGO_URL =
-  "https://customer-assets-4nw71qhi.emergentagent.net/job_609b8195-c10e-4b71-8d33-e31431d5ad2a/artifacts/knsy5ozk_metp-logo.jpeg";
+/**
+ * Marque de l'État. Les deux fichiers vivent dans /public : pour poser les
+ * originaux du ministère, on les écrase, et toute l'application suit — écran
+ * d'ouverture, connexion, barre latérale, en-têtes de documents.
+ *
+ * Ils sont servis par l'application elle-même, et non depuis un hébergeur
+ * tiers : les armoiries d'un ministère ne doivent pas dépendre d'un domaine
+ * que la DGARH ne contrôle pas, et la plateforme doit s'afficher entièrement
+ * hors ligne.
+ */
+export const ARMOIRIES_URL = "/armoiries-congo.svg";
+export const DRAPEAU_URL = "/drapeau-congo.svg";
+
+/** @deprecated Utilisez ARMOIRIES_URL, ou le composant <Armoiries />. */
+export const LOGO_URL = ARMOIRIES_URL;
 
 /* ------------------------------------------------------------------ */
 /* Textes de référence — cahier §18                                    */

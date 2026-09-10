@@ -207,10 +207,10 @@ export default function AgentsPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Agents", valeur: fmtNum(stats.total), sousTitre: `sur ${fmtNum(agents.length)} au ministère`, icon: Users },
-        { titre: "Enseignants", valeur: fmtNum(stats.enseignants), sousTitre: "personnel enseignant et d'encadrement", icon: GraduationCap },
-        { titre: "En activité", valeur: fmtNum(stats.activite), sousTitre: "position administrative courante", icon: ShieldCheck },
-        { titre: "Dossiers complets", valeur: fmtPct(stats.completude), sousTitre: "moyenne des pièces attendues", icon: UserPlus },
+        { ton: "bleu", titre: "Agents", valeur: fmtNum(stats.total), sousTitre: `sur ${fmtNum(agents.length)} au ministère`, icon: Users },
+        { ton: "cyan", titre: "Enseignants", valeur: fmtNum(stats.enseignants), sousTitre: "personnel enseignant et d'encadrement", icon: GraduationCap },
+        { ton: "emeraude", titre: "En activité", valeur: fmtNum(stats.activite), sousTitre: "position administrative courante", icon: ShieldCheck },
+        { ton: "violet", titre: "Dossiers complets", valeur: fmtPct(stats.completude), sousTitre: "moyenne des pièces attendues", icon: UserPlus },
       ]} />
 
       <TableauModule<AgentProjete>

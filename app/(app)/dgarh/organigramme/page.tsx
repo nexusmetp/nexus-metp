@@ -138,10 +138,10 @@ export default function OrganigrammePage() {
       />
 
       <RangeeKpi tuiles={[
-        { titre: "Entités", valeur: fmtNum(descendantsDe(DGARH_ID).length), sousTitre: "sous la direction générale", icon: Network },
-        { titre: "Effectif rattaché", valeur: fmtNum(total[DGARH_ID] ?? 0), sousTitre: "agents du périmètre", icon: Users },
-        { titre: "Établies par un texte", valeur: fmtNum(compteProvenance.TEXTE), sousTitre: "fondement juridique connu", icon: ShieldCheck },
-        { titre: "À confirmer", valeur: fmtNum(compteProvenance.A_VERIFIER + compteProvenance.RECOMMANDATION), sousTitre: "provenance non établie", icon: Landmark },
+        { ton: "bleu", titre: "Entités", valeur: fmtNum(descendantsDe(DGARH_ID).length), sousTitre: "sous la direction générale", icon: Network },
+        { ton: "cyan", titre: "Effectif rattaché", valeur: fmtNum(total[DGARH_ID] ?? 0), sousTitre: "agents du périmètre", icon: Users },
+        { ton: "emeraude", titre: "Établies par un texte", valeur: fmtNum(compteProvenance.TEXTE), sousTitre: "fondement juridique connu", icon: ShieldCheck },
+        { ton: "ambre", titre: "À confirmer", valeur: fmtNum(compteProvenance.A_VERIFIER + compteProvenance.RECOMMANDATION), sousTitre: "provenance non établie", icon: Landmark },
       ]} />
 
       <div className="grid gap-3 sm:grid-cols-3">

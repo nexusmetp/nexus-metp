@@ -62,10 +62,10 @@ export default function JournalPage() {
       />
 
       <RangeeKpi tuiles={[
-        { titre: "Écritures", valeur: fmtNum(journal.length), sousTitre: "en ajout seul, jamais modifiées", icon: ScrollText },
-        { titre: "Rattachées à un acte", valeur: fmtNum(journal.length - sansActe), sousTitre: "traçabilité complète", icon: ShieldCheck },
-        { titre: "Sans acte de référence", valeur: fmtNum(sansActe), sousTitre: sansActe ? "à signaler comme anomalie" : "aucune anomalie", icon: ShieldCheck },
-        { titre: "Intervenants", valeur: fmtNum(new Set(journal.map((j) => j.utilisateurId)).size), sousTitre: "comptes ayant écrit au journal", icon: ScrollText },
+        { ton: "indigo", titre: "Écritures", valeur: fmtNum(journal.length), sousTitre: "en ajout seul, jamais modifiées", icon: ScrollText },
+        { ton: "emeraude", titre: "Rattachées à un acte", valeur: fmtNum(journal.length - sansActe), sousTitre: "traçabilité complète", icon: ShieldCheck },
+        { ton: "ambre", titre: "Sans acte de référence", valeur: fmtNum(sansActe), sousTitre: sansActe ? "à signaler comme anomalie" : "aucune anomalie", icon: ShieldCheck },
+        { ton: "bleu", titre: "Intervenants", valeur: fmtNum(new Set(journal.map((j) => j.utilisateurId)).size), sousTitre: "comptes ayant écrit au journal", icon: ScrollText },
       ]} />
 
       <Card>

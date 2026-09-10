@@ -200,10 +200,10 @@ export default function CartesPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Cartes valides", valeur: stats.valides, sousTitre: `couverture ${fmtPct(stats.couverture)}`, icon: BadgeCheck },
-        { titre: "Agents sans carte", valeur: stats.sans, sousTitre: "aucune carte éditée à ce jour", icon: ShieldX },
-        { titre: "Cartes expirées", valeur: stats.expirees, sousTitre: "à renouveler", icon: RefreshCw },
-        { titre: "Déclarées perdues", valeur: stats.perdues, sousTitre: "à rééditer sur déclaration", icon: TriangleAlert },
+        { ton: "emeraude", titre: "Cartes valides", valeur: stats.valides, sousTitre: `couverture ${fmtPct(stats.couverture)}`, icon: BadgeCheck },
+        { ton: "ambre", titre: "Agents sans carte", valeur: stats.sans, sousTitre: "aucune carte éditée à ce jour", icon: ShieldX },
+        { ton: "rose", titre: "Cartes expirées", valeur: stats.expirees, sousTitre: "à renouveler", icon: RefreshCw },
+        { ton: "rose", titre: "Déclarées perdues", valeur: stats.perdues, sousTitre: "à rééditer sur déclaration", icon: TriangleAlert },
       ]} />
 
       {stats.sans > 0 && (

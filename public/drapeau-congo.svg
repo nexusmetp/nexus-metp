@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="Drapeau de la République du Congo">
+  <!-- Drapeau de la République du Congo : parti en bande, de sinople, d'or et de gueules. -->
+  <polygon points="0,0 600,0 0,400" fill="#009543"/>
+  <polygon points="600,0 900,0 0,600 0,400" fill="#FBDE4A"/>
+  <polygon points="900,0 900,600 0,600" fill="#DC241F"/>
+</svg>

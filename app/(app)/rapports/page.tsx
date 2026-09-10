@@ -157,10 +157,10 @@ export default function RapportsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard titre="Effectif ministère" valeur={fmtNum(agents.length)} sousTitre={`dont ${fmtNum(stats.enseignants)} enseignants`} icon={Users} />
-        <KpiCard titre="Effectif DGARH" valeur={fmtNum(stats.dgarhEffectif)} sousTitre="périmètre de la direction générale" icon={BarChart3} />
-        <KpiCard titre="Délai moyen" valeur={`${stats.delaiMoyen} j`} sousTitre="tous actes signés confondus" icon={Timer} />
-        <KpiCard titre="Dossiers ouverts" valeur={fmtNum(stats.ouverts)} sousTitre="en circulation" icon={FileSpreadsheet} />
+        <KpiCard ton="bleu" titre="Effectif ministère" valeur={fmtNum(agents.length)} sousTitre={`dont ${fmtNum(stats.enseignants)} enseignants`} icon={Users} />
+        <KpiCard ton="cyan" titre="Effectif DGARH" valeur={fmtNum(stats.dgarhEffectif)} sousTitre="périmètre de la direction générale" icon={BarChart3} />
+        <KpiCard ton="ambre" titre="Délai moyen" valeur={`${stats.delaiMoyen} j`} sousTitre="tous actes signés confondus" icon={Timer} />
+        <KpiCard ton="violet" titre="Dossiers ouverts" valeur={fmtNum(stats.ouverts)} sousTitre="en circulation" icon={FileSpreadsheet} />
       </div>
 
       <Card>

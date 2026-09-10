@@ -2,32 +2,40 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Database, Eye, EyeOff, Fingerprint, GitBranch, Loader2, Lock, User, Users,
-  ShieldCheck, ChevronDown,
+  ChevronDown, Eye, EyeOff, HelpCircle, Languages, Loader2, Lock, ShieldAlert, UserPlus,
 } from "lucide-react";
-import { APP_NAME, LOGO_URL, MINISTERE_NOM, ROLE_LABELS, pageAccueil } from "@/lib/referentiels";
-import { LOGIN_BG_URL, LOGIN_VIDEO_URL } from "@/lib/assets";
+import { APP_NAME, MINISTERE_NOM, ROLE_LABELS, pageAccueil } from "@/lib/referentiels";
+import { ensureSeed } from "@/lib/db";
 import { useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
+import { Armoiries, DrapeauCongo, LogoMETP } from "@/components/nexus/logo";
+import { FeedbackButton } from "@/components/feedback";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const ATOUTS = [
-  { icon: Users, titre: "Dossier agent unique", texte: "Dossier administratif centralisé et historisé" },
-  { icon: GitBranch, titre: "Workflows dématérialisés", texte: "Nominations et mutations validées en ligne" },
-  { icon: Database, titre: "Cache navigateur IndexedDB", texte: "Consultation même en connectivité dégradée" },
-  { icon: ShieldCheck, titre: "Sécurité & traçabilité", texte: "RBAC et journalisation complète des accès" },
-];
+/* ------------------------------------------------------------------ */
+/* Page de connexion                                                   */
+/*                                                                     */
+/* Tenue d'un service public : bandeau au timbre de l'État, fond clair, */
+/* une seule carte au centre. Rien à faire sur cette page sinon entrer  */
+/* — pas de vitrine, pas d'argument de vente.                          */
+/* ------------------------------------------------------------------ */
+
+/** Renvoie l'agent vers la procédure, plutôt que vers un formulaire qui n'existe pas. */
+const PROCEDURE_MDP = {
+  titre: "Réinitialisation du mot de passe",
+  texte: "La réinitialisation est faite par la DGARH, sur demande écrite du chef de service.",
+};
+const PROCEDURE_COMPTE = {
+  titre: "Ouverture d'un compte",
+  texte: "Un compte est ouvert par la DGARH sur transmission de l'acte d'affectation de l'agent.",
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,9 +48,12 @@ export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [pending, setPending] = useState(false);
   const [openDemo, setOpenDemo] = useState(false);
-  const [videoKo, setVideoKo] = useState(false);
-  const reduceMotion = useReducedMotion();
-  const fondAnime = Boolean(LOGIN_VIDEO_URL) && !reduceMotion && !videoKo;
+
+  // La page peut être atteinte directement, sans passer par l'écran d'ouverture :
+  // sans cet appel, la liste des comptes de démonstration resterait vide.
+  useEffect(() => {
+    ensureSeed().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (user) router.replace(pageAccueil(user.role));
@@ -76,198 +87,181 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04121a] px-4 py-10 sm:px-6 sm:py-14">
-      {/* Fond plein écran : vidéo si LOGIN_VIDEO_URL est renseigné, image sinon */}
-      {fondAnime ? (
-        <video
-          aria-hidden
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster={LOGIN_BG_URL}
-          onError={() => setVideoKo(true)}
-          className="absolute inset-0 h-full w-full object-cover"
-        >
-          <source src={LOGIN_VIDEO_URL as string} />
-        </video>
-      ) : (
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${LOGIN_BG_URL})` }}
-        />
-      )}
-      <div aria-hidden className="absolute inset-0 bg-[#04121a]/45" />
-      <div aria-hidden className="absolute inset-0 nexus-grid opacity-25" />
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      {/* Bandeau de l'État */}
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <LogoMETP taille={44} compact className="min-w-0" />
+          <span
+            className="flex shrink-0 items-center gap-2 text-sm text-slate-600"
+            title="La plateforme n'est publiée qu'en français."
+          >
+            <Languages aria-hidden className="h-4 w-4" />
+            <span className="hidden sm:inline">Français</span>
+            <DrapeauCongo largeur={26} className="ml-1" />
+          </span>
+        </div>
+        <div aria-hidden className="flex h-[3px]">
+          <span className="flex-1 bg-[#009543]" />
+          <span className="flex-1 bg-[#FBDE4A]" />
+          <span className="flex-1 bg-[#DC241F]" />
+        </div>
+      </header>
 
-      <div className="relative z-10 w-full max-w-md">
-        {/* Marque */}
-        <div className="mb-7 flex flex-col items-center text-center">
-          <div className="relative h-16 w-16 overflow-hidden rounded-full border border-white/15 bg-white nexus-glow">
-            <Image src={LOGO_URL} alt="Armoiries METP" fill sizes="64px" className="object-contain p-0.5" priority unoptimized />
-          </div>
-          <div className="mt-3 text-xl font-extrabold tracking-tight text-white">{APP_NAME}</div>
-          <div className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-[#90E0EF]">République du Congo</div>
+      <main className="relative flex flex-1 items-start justify-center px-4 py-10 sm:py-16">
+        {/* Le blason en filigrane, très pâle : il habille le bas de page sans
+            entrer en concurrence avec le formulaire. */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center opacity-[0.045]">
+          <Armoiries taille={420} />
         </div>
 
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
-          <Badge variant="outline" className="border-white/15 bg-white/5 text-[10px] uppercase tracking-wider text-white/70">
-            <Lock className="mr-1.5 h-3 w-3" /> Chiffré AES-256
-          </Badge>
-          <Badge variant="outline" className="border-[#00B4D8]/40 bg-[#00B4D8]/10 text-[10px] uppercase tracking-wider text-[#90E0EF]">
-            <Fingerprint className="mr-1.5 h-3 w-3" /> Habilitation niveau 5
-          </Badge>
-        </div>
+        <div className="relative z-10 w-full max-w-[440px]">
+          <div className="rounded-md border border-slate-200 bg-white px-6 py-9 shadow-sm sm:px-10">
+            <h1 className="text-center font-serif text-[28px] font-normal text-slate-800">
+              Ouvrir une session
+            </h1>
 
-        <Card className="rounded-2xl border-white/10 shadow-2xl shadow-black/50">
-          <CardHeader className="space-y-1.5 pb-6 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">Terminal d&apos;Accès</CardTitle>
-            <CardDescription>Entrez vos identifiants pour accéder au système</CardDescription>
-          </CardHeader>
-
-          <CardContent className="pb-6">
-            <form onSubmit={submit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold">Adresse Email</Label>
-                <div className="relative">
-                  <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="prenom.nom@metp.gouv.cg"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 border-transparent bg-muted/60 pl-9 focus-visible:border-input focus-visible:bg-background"
-                  />
-                </div>
+            <form onSubmit={submit} className="mt-8 space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-normal text-slate-700">
+                  Adresse professionnelle
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  autoFocus
+                  placeholder="prenom.nom@metp.gouv.cg"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 rounded-[3px] border-slate-300 bg-white"
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold">Mot de passe</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-normal text-slate-700">
+                  Mot de passe
+                </Label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
                     type={show ? "text" : "password"}
                     required
                     autoComplete="current-password"
-                    placeholder="••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 border-transparent bg-muted/60 pl-9 pr-10 focus-visible:border-input focus-visible:bg-background"
+                    className="h-11 rounded-[3px] border-slate-300 bg-white pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShow((v) => !v)}
                     aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
                   >
                     {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox id="remember" defaultChecked />
-                  <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground">
-                    Se souvenir de moi
-                  </Label>
-                </div>
-                <button
-                  type="button"
-                  className="text-sm text-primary hover:underline"
-                  onClick={() => toast.info("Procédure DGARH", { description: "La réinitialisation est effectuée par la Direction des Ressources Humaines." })}
-                >
-                  Mot de passe oublié ?
-                </button>
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox id="remember" defaultChecked />
+                <Label htmlFor="remember" className="text-sm font-normal text-slate-600">
+                  Se souvenir de moi
+                </Label>
               </div>
 
-              <Button type="submit" className="h-11 w-full text-sm font-semibold uppercase tracking-wide" disabled={pending || isLoading}>
-                {pending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authentification…</>
-                ) : (
-                  <><ShieldCheck className="mr-2 h-4 w-4" /> Accéder au système</>
-                )}
+              <Button
+                type="submit"
+                disabled={pending || isLoading}
+                className="h-11 w-full rounded-[3px] text-sm font-semibold"
+              >
+                {pending
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Authentification…</>
+                  : "Suivant"}
               </Button>
             </form>
 
-            <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4">
-              <div className="flex items-start gap-2.5">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-amber-600">Avis de sécurité</div>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Toutes les tentatives d&apos;accès sont enregistrées et surveillées. L&apos;accès non autorisé est
-                    interdit et sera poursuivi dans toute la mesure du droit.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <p className="mt-5 text-center text-[11px] text-white/40">
-          Protégé par chiffrement quantique · Certifié ISO 27001
-        </p>
-
-        <div className="mt-7 grid grid-cols-2 gap-2.5">
-          {ATOUTS.map((a) => (
-            <div key={a.titre} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-              <a.icon className="h-4 w-4 text-[#00B4D8]" />
-              <div className="mt-2 text-[11px] font-semibold leading-tight text-white/85">{a.titre}</div>
-              <div className="mt-1 text-[10px] leading-relaxed text-white/45">{a.texte}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="my-6 flex items-center gap-3">
-          <Separator className="flex-1 bg-white/15" />
-          <span className="text-[10px] uppercase tracking-widest text-white/40">Maquette</span>
-          <Separator className="flex-1 bg-white/15" />
-        </div>
-
-        <Collapsible open={openDemo} onOpenChange={setOpenDemo}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full justify-between border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-            >
-              Comptes de démonstration ({utilisateurs.length})
-              <ChevronDown className={`h-4 w-4 transition-transform ${openDemo ? "rotate-180" : ""}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 max-h-72 space-y-2 overflow-y-auto scrollbar-thin pr-1">
-            {utilisateurs.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => useDemo(u.email)}
-                className="flex w-full items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 p-3 text-left transition hover:border-[#00B4D8]/50 hover:bg-[#00B4D8]/10"
-              >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-white">{u.nomComplet}</div>
-                  <div className="truncate text-xs text-white/50">{u.email}</div>
-                </div>
-                <Badge variant="outline" className="shrink-0 border-white/15 bg-white/5 text-[10px] text-white/70">
-                  {ROLE_LABELS[u.role]}
-                </Badge>
-              </button>
-            ))}
-            <p className="pt-1 text-center text-xs text-white/50">
-              Mot de passe commun : <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-white/80">Nexus2026</code>
+            <p className="mt-6 text-[13px] leading-relaxed text-slate-600">
+              En me connectant, j&apos;accepte les conditions d&apos;usage du système
+              d&apos;information de la DGARH et confirme avoir pris connaissance des règles de
+              confidentialité applicables aux données personnelles des agents de l&apos;État.
             </p>
-          </CollapsibleContent>
-        </Collapsible>
 
-        <p className="mt-8 text-center text-[11px] leading-relaxed text-white/40">
-          {MINISTERE_NOM}
-          <br />Données fictives — environnement de démonstration
+            <div className="mt-6 space-y-3.5 border-t border-slate-200 pt-6">
+              <button
+                type="button"
+                onClick={() => toast.info(PROCEDURE_COMPTE.titre, { description: PROCEDURE_COMPTE.texte })}
+                className="flex items-center gap-2.5 text-[15px] text-primary hover:underline"
+              >
+                <UserPlus className="h-[18px] w-[18px]" /> Demander l&apos;ouverture d&apos;un compte
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info(PROCEDURE_MDP.titre, { description: PROCEDURE_MDP.texte })}
+                className="flex items-center gap-2.5 text-[15px] text-primary hover:underline"
+              >
+                <HelpCircle className="h-[18px] w-[18px] " /> Impossible de vous connecter ?
+              </button>
+            </div>
+
+            <div className="mt-7 flex items-start gap-2.5 rounded-[3px] border border-amber-200 bg-amber-50 p-3.5">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-[12px] leading-relaxed text-amber-900">
+                Les tentatives d&apos;accès sont enregistrées et contrôlées. L&apos;accès non
+                autorisé à un traitement de données de l&apos;État est passible de poursuites.
+              </p>
+            </div>
+          </div>
+
+          {/* Comptes de démonstration — le seul bloc conservé sous la carte. */}
+          <Collapsible open={openDemo} onOpenChange={setOpenDemo} className="mt-6">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between rounded-[3px] border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              >
+                <span className="flex items-center gap-2">
+                  <Lock className="h-3.5 w-3.5 text-slate-400" />
+                  Comptes de démonstration ({utilisateurs.length})
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${openDemo ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 max-h-80 space-y-1.5 overflow-y-auto scrollbar-thin rounded-[3px] border border-slate-200 bg-white p-2">
+              {utilisateurs.map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => useDemo(u.email)}
+                  className="flex w-full items-center justify-between gap-3 rounded-[3px] border border-transparent p-2.5 text-left transition hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-slate-800">{u.nomComplet}</span>
+                    <span className="block truncate text-xs text-slate-500">{u.email}</span>
+                  </span>
+                  <Badge variant="outline" className="shrink-0 border-slate-200 text-[10px] text-slate-600">
+                    {ROLE_LABELS[u.role]}
+                  </Badge>
+                </button>
+              ))}
+              <p className="pt-1 text-center text-xs text-slate-500">
+                Mot de passe commun :{" "}
+                <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700">Nexus2026</code>
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </main>
+
+      <footer className="relative z-10 border-t border-slate-200 bg-white px-4 py-5 text-center">
+        <p className="text-xs font-medium text-slate-600">{MINISTERE_NOM}</p>
+        <p className="mt-1 text-[11px] text-slate-400">
+          {APP_NAME} · DGARH · Unité · Travail · Progrès — données fictives, environnement de démonstration
         </p>
-      </div>
+      </footer>
+
+      {/* Onglet « Commentaires », fixé au bord droit. */}
+      <FeedbackButton />
     </div>
   );
 }

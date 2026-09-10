@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/nexus/ui-kit";
+import { tonDuRang, type Ton } from "@/components/nexus/tons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,8 @@ export interface Tuile {
   variation?: number;
   /** Où mène le chiffre : une tuile qui ne s'ouvre sur rien est un cul-de-sac. */
   href?: string;
+  /** Ce que dit la couleur. À défaut, la position dans la rangée en donne un. */
+  ton?: Ton;
 }
 
 /**
@@ -56,7 +59,7 @@ export function RangeeKpi({ tuiles }: { tuiles: Tuile[] }) {
             transition={{ duration: 0.28, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
             className="h-full"
           >
-            <KpiCard {...t} />
+            <KpiCard {...t} ton={t.ton ?? tonDuRang(i)} />
           </motion.div>
         );
         return t.href ? (

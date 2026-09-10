@@ -148,10 +148,10 @@ export default function FondsReglementairePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Textes au fonds", valeur: stats.total, sousTitre: "lois, décrets, arrêtés, circulaires", icon: BookMarked },
-        { titre: "Publiés au Journal officiel", valeur: stats.publies, sousTitre: "référence de publication connue", icon: Scale },
-        { titre: "Organisent une entité", valeur: stats.organisent, sousTitre: "rattachés à l'organigramme", icon: Landmark, href: "/dgarh/organigramme" },
-        { titre: "À confirmer", valeur: stats.aVerifier, sousTitre: "texte non consulté intégralement", icon: FileWarning },
+        { ton: "indigo", titre: "Textes au fonds", valeur: stats.total, sousTitre: "lois, décrets, arrêtés, circulaires", icon: BookMarked },
+        { ton: "emeraude", titre: "Publiés au Journal officiel", valeur: stats.publies, sousTitre: "référence de publication connue", icon: Scale },
+        { ton: "bleu", titre: "Organisent une entité", valeur: stats.organisent, sousTitre: "rattachés à l'organigramme", icon: Landmark, href: "/dgarh/organigramme" },
+        { ton: "ambre", titre: "À confirmer", valeur: stats.aVerifier, sousTitre: "texte non consulté intégralement", icon: FileWarning },
       ]} />
 
       <Card className="border-amber-500/30 bg-amber-500/[0.04]">

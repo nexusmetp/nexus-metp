@@ -209,10 +209,10 @@ export default function PilotagePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Effectif piloté", valeur: fmtNum(total.effectif), sousTitre: `${fmtNum(directions.length)} directions suivies`, icon: Users },
-        { titre: "Sous tension", valeur: fmtNum(total.tension), sousTitre: "directions à regarder aujourd'hui", icon: AlertTriangle },
-        { titre: "Dossiers en retard", valeur: fmtNum(total.retard), sousTitre: "au-delà du délai cible de 15 jours", icon: Timer },
-        { titre: "Réclamations ouvertes", valeur: fmtNum(total.tickets), sousTitre: "toutes directions confondues", icon: LifeBuoy },
+        { ton: "bleu", titre: "Effectif piloté", valeur: fmtNum(total.effectif), sousTitre: `${fmtNum(directions.length)} directions suivies`, icon: Users },
+        { ton: "ambre", titre: "Sous tension", valeur: fmtNum(total.tension), sousTitre: "directions à regarder aujourd'hui", icon: AlertTriangle },
+        { ton: "rose", titre: "Dossiers en retard", valeur: fmtNum(total.retard), sousTitre: "au-delà du délai cible de 15 jours", icon: Timer },
+        { ton: "ambre", titre: "Réclamations ouvertes", valeur: fmtNum(total.tickets), sousTitre: "toutes directions confondues", icon: LifeBuoy },
       ]} />
 
       <Card>

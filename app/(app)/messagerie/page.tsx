@@ -137,10 +137,10 @@ export default function MessageriePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Fils suivis", valeur: fmtNum(miens.length), sousTitre: "conversations auxquelles vous participez", icon: MessageSquare },
-        { titre: "Non lus", valeur: fmtNum(totalNonLus), sousTitre: "messages à lire", icon: Hash },
-        { titre: "Messages", valeur: fmtNum(messages.filter((m) => miens.some((c) => c.id === m.conversationId)).length), sousTitre: "dans vos fils", icon: Users2 },
-        { titre: "Interlocuteurs", valeur: fmtNum(new Set(miens.flatMap((c) => c.participants)).size), sousTitre: "comptes joignables", icon: Users2 },
+        { ton: "cyan", titre: "Fils suivis", valeur: fmtNum(miens.length), sousTitre: "conversations auxquelles vous participez", icon: MessageSquare },
+        { ton: "ambre", titre: "Non lus", valeur: fmtNum(totalNonLus), sousTitre: "messages à lire", icon: Hash },
+        { ton: "bleu", titre: "Messages", valeur: fmtNum(messages.filter((m) => miens.some((c) => c.id === m.conversationId)).length), sousTitre: "dans vos fils", icon: Users2 },
+        { ton: "violet", titre: "Interlocuteurs", valeur: fmtNum(new Set(miens.flatMap((c) => c.participants)).size), sousTitre: "comptes joignables", icon: Users2 },
       ]} />
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">

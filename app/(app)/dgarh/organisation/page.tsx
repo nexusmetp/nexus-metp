@@ -119,10 +119,10 @@ export default function OrganisationPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Entités", valeur: ENTITES.length, sousTitre: `dont ${fmtNum(creees)} créées dans l'outil`, icon: Network, href: "/dgarh/organigramme" },
-        { titre: "Directions", valeur: ENTITES.filter((e) => ["DIRECTION", "DIRECTION_GENERALE", "CABINET"].includes(e.niveau)).length, sousTitre: "centrales, générales et cabinet", icon: Building2, href: "/dgarh/pilotage" },
-        { titre: "Sans responsable", valeur: sansChef, sousTitre: "aucun compte rattaché", icon: UserPlus },
-        { titre: "À confirmer", valeur: aVerifier, sousTitre: "provenance non établie par un texte", icon: ShieldCheck, href: "/referentiels" },
+        { ton: "bleu", titre: "Entités", valeur: ENTITES.length, sousTitre: `dont ${fmtNum(creees)} créées dans l'outil`, icon: Network, href: "/dgarh/organigramme" },
+        { ton: "cyan", titre: "Directions", valeur: ENTITES.filter((e) => ["DIRECTION", "DIRECTION_GENERALE", "CABINET"].includes(e.niveau)).length, sousTitre: "centrales, générales et cabinet", icon: Building2, href: "/dgarh/pilotage" },
+        { ton: "rose", titre: "Sans responsable", valeur: sansChef, sousTitre: "aucun compte rattaché", icon: UserPlus },
+        { ton: "ambre", titre: "À confirmer", valeur: aVerifier, sousTitre: "provenance non établie par un texte", icon: ShieldCheck, href: "/referentiels" },
       ]} />
 
       <TableauModule<Entite>

@@ -93,10 +93,10 @@ export default function MonDossierPage() {
           </div>
 
           <RangeeKpi tuiles={[
-            { titre: "Ancienneté", valeur: `${projete.anciennete} ans`, sousTitre: `recruté le ${fmtDate(projete.dateRecrutement)}`, icon: TrendingUp },
-            { titre: "Échelon", valeur: projete.echelon ?? "—", sousTitre: projete.indice ? `indice ${projete.indice}` : "hors carrière statutaire", icon: Landmark },
-            { titre: "Dossier complet", valeur: fmtPct(projete.tauxCompletude), sousTitre: "pièces attendues présentes", icon: ShieldCheck },
-            { titre: "Événements de carrière", valeur: fmtNum(evenements.length), sousTitre: "chacun porté par un acte", icon: CalendarDays },
+            { ton: "bleu", titre: "Ancienneté", valeur: `${projete.anciennete} ans`, sousTitre: `recruté le ${fmtDate(projete.dateRecrutement)}`, icon: TrendingUp },
+            { ton: "cyan", titre: "Échelon", valeur: projete.echelon ?? "—", sousTitre: projete.indice ? `indice ${projete.indice}` : "hors carrière statutaire", icon: Landmark },
+            { ton: "emeraude", titre: "Dossier complet", valeur: fmtPct(projete.tauxCompletude), sousTitre: "pièces attendues présentes", icon: ShieldCheck },
+            { ton: "violet", titre: "Événements de carrière", valeur: fmtNum(evenements.length), sousTitre: "chacun porté par un acte", icon: CalendarDays },
           ]} />
 
           <Card>

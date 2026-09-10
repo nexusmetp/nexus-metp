@@ -126,10 +126,10 @@ export default function BannettePage() {
       </PageHeader>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard titre="Confiés nommément" valeur={fmtNum(mien.length)} sousTitre="dossiers dont vous êtes l'instructeur" icon={UserCheck} />
-        <KpiCard titre="Dans mon périmètre" valeur={fmtNum(perimetreOuvert.length)} sousTitre="étape en cours dans votre branche" icon={Inbox} />
-        <KpiCard titre="Actionnables" valeur={fmtNum(actionnable.length)} sousTitre="une transition vous est ouverte" icon={Clock} />
-        <KpiCard titre="Au-delà du délai" valeur={fmtNum(enRetard.length)} sousTitre="plus de 15 jours d'ouverture" icon={AlertTriangle} />
+        <KpiCard ton="bleu" titre="Confiés nommément" valeur={fmtNum(mien.length)} sousTitre="dossiers dont vous êtes l'instructeur" icon={UserCheck} />
+        <KpiCard ton="cyan" titre="Dans mon périmètre" valeur={fmtNum(perimetreOuvert.length)} sousTitre="étape en cours dans votre branche" icon={Inbox} />
+        <KpiCard ton="emeraude" titre="Actionnables" valeur={fmtNum(actionnable.length)} sousTitre="une transition vous est ouverte" icon={Clock} />
+        <KpiCard ton="rose" titre="Au-delà du délai" valeur={fmtNum(enRetard.length)} sousTitre="plus de 15 jours d'ouverture" icon={AlertTriangle} />
       </div>
 
       <Bloc

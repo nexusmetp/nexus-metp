@@ -227,10 +227,10 @@ export default function TableauDesEmploisPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Emplois", valeur: stats.total, sousTitre: `${fmtNum(stats.budgetises)} budgétisés`, icon: Briefcase },
-        { titre: "Occupés", valeur: stats.occupes, sousTitre: `taux d'occupation ${fmtPct(stats.taux)}`, icon: UserCheck },
-        { titre: "Vacants", valeur: stats.vacants, sousTitre: "à pourvoir par recrutement ou mutation", icon: UserX, href: "/recrutement" },
-        { titre: "Gelés", valeur: stats.geles, sousTitre: "hors budget, non pourvoyables", icon: Snowflake },
+        { ton: "bleu", titre: "Emplois", valeur: stats.total, sousTitre: `${fmtNum(stats.budgetises)} budgétisés`, icon: Briefcase },
+        { ton: "emeraude", titre: "Occupés", valeur: stats.occupes, sousTitre: `taux d'occupation ${fmtPct(stats.taux)}`, icon: UserCheck },
+        { ton: "ambre", titre: "Vacants", valeur: stats.vacants, sousTitre: "à pourvoir par recrutement ou mutation", icon: UserX, href: "/recrutement" },
+        { ton: "ardoise", titre: "Gelés", valeur: stats.geles, sousTitre: "hors budget, non pourvoyables", icon: Snowflake },
       ]} />
 
       <Card>

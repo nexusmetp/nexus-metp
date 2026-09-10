@@ -107,10 +107,10 @@ export default function ActesPage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Actes", valeur: fmtNum(actes.length), sousTitre: "toutes années confondues", icon: FileCheck2 },
-        { titre: "En circulation", valeur: fmtNum(enCirculation), sousTitre: "pas encore notifiés", icon: Timer },
-        { titre: "Au-delà du délai", valeur: fmtNum(horsDelai), sousTitre: "plus de 15 jours d'ouverture", icon: AlertTriangle },
-        { titre: "Délai moyen", valeur: `${delaiMoyen} j`, sousTitre: "de l'ouverture à la signature", icon: CheckCircle2 },
+        { ton: "bleu", titre: "Actes", valeur: fmtNum(actes.length), sousTitre: "toutes années confondues", icon: FileCheck2 },
+        { ton: "cyan", titre: "En circulation", valeur: fmtNum(enCirculation), sousTitre: "pas encore notifiés", icon: Timer },
+        { ton: "rose", titre: "Au-delà du délai", valeur: fmtNum(horsDelai), sousTitre: "plus de 15 jours d'ouverture", icon: AlertTriangle },
+        { ton: "ambre", titre: "Délai moyen", valeur: `${delaiMoyen} j`, sousTitre: "de l'ouverture à la signature", icon: CheckCircle2 },
       ]} />
 
       <TableauModule<Acte>

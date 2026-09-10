@@ -224,10 +224,10 @@ export default function AidePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Modules ouverts", valeur: mesModules.length, sousTitre: `dont ${fmtNum(enEcriture.length)} en écriture`, icon: CheckCircle2 },
-        { titre: "Votre périmètre", valeur: descendantsDe(user.entiteId).length, sousTitre: "entités que vous couvrez", icon: Lock, href: "/dgarh/organigramme" },
-        { titre: "Étapes du circuit", valeur: CIRCUIT_ACTE.length, sousTitre: "de l'ouverture à la notification", icon: FileCheck2, href: "/dgarh/actes" },
-        { titre: "Assistance", valeur: "24 h", sousTitre: "délai de réponse d'une demande normale", icon: LifeBuoy, href: "/tickets" },
+        { ton: "cyan", titre: "Modules ouverts", valeur: mesModules.length, sousTitre: `dont ${fmtNum(enEcriture.length)} en écriture`, icon: CheckCircle2 },
+        { ton: "bleu", titre: "Votre périmètre", valeur: descendantsDe(user.entiteId).length, sousTitre: "entités que vous couvrez", icon: Lock, href: "/dgarh/organigramme" },
+        { ton: "indigo", titre: "Étapes du circuit", valeur: CIRCUIT_ACTE.length, sousTitre: "de l'ouverture à la notification", icon: FileCheck2, href: "/dgarh/actes" },
+        { ton: "emeraude", titre: "Assistance", valeur: "24 h", sousTitre: "délai de réponse d'une demande normale", icon: LifeBuoy, href: "/tickets" },
       ]} />
 
       {parcours && (

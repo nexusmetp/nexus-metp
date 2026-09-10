@@ -164,10 +164,10 @@ export default function BesoinsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard titre="Postes demandés" valeur={fmtNum(stats.demande)} sousTitre={`${filtres.length} états de besoins`} icon={ClipboardList} />
-        <KpiCard titre="Postes retenus" valeur={fmtNum(stats.retenu)} sousTitre={stats.demande ? `${Math.round((stats.retenu / stats.demande) * 100)} % du demandé` : "—"} icon={ArrowUp} />
-        <KpiCard titre="Établissements" valeur={fmtNum(ETABLISSEMENTS.length)} sousTitre="rattachés aux 15 départements" icon={School} />
-        <KpiCard titre="Arbitrés" valeur={fmtNum(stats.arbitres)} sousTitre="dossiers clos" icon={Building2} />
+        <KpiCard ton="bleu" titre="Postes demandés" valeur={fmtNum(stats.demande)} sousTitre={`${filtres.length} états de besoins`} icon={ClipboardList} />
+        <KpiCard ton="emeraude" titre="Postes retenus" valeur={fmtNum(stats.retenu)} sousTitre={stats.demande ? `${Math.round((stats.retenu / stats.demande) * 100)} % du demandé` : "—"} icon={ArrowUp} />
+        <KpiCard ton="cyan" titre="Établissements" valeur={fmtNum(ETABLISSEMENTS.length)} sousTitre="rattachés aux 15 départements" icon={School} />
+        <KpiCard ton="violet" titre="Arbitrés" valeur={fmtNum(stats.arbitres)} sousTitre="dossiers clos" icon={Building2} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">

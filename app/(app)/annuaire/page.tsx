@@ -127,10 +127,10 @@ export default function AnnuairePage() {
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Personnes", valeur: agents.length, sousTitre: "inscrites au fichier", icon: Users, href: "/dgarh/agents" },
-        { titre: "Joignables", valeur: stats.joignables, sousTitre: "téléphone ou adresse renseignés", icon: Contact },
-        { titre: "Comptes ouverts", valeur: stats.comptes, sousTitre: "accès à la plateforme", icon: AtSign },
-        { titre: "Implantations", valeur: stats.entites, sousTitre: "entités où quelqu'un est affecté", icon: Building2, href: "/dgarh/national" },
+        { ton: "bleu", titre: "Personnes", valeur: agents.length, sousTitre: "inscrites au fichier", icon: Users, href: "/dgarh/agents" },
+        { ton: "emeraude", titre: "Joignables", valeur: stats.joignables, sousTitre: "téléphone ou adresse renseignés", icon: Contact },
+        { ton: "cyan", titre: "Comptes ouverts", valeur: stats.comptes, sousTitre: "accès à la plateforme", icon: AtSign },
+        { ton: "violet", titre: "Implantations", valeur: stats.entites, sousTitre: "entités où quelqu'un est affecté", icon: Building2, href: "/dgarh/national" },
       ]} />
 
       <TableauModule<AgentProjete>

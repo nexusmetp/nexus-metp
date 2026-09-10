@@ -1,53 +1,75 @@
 "use client";
 
-import Image from "next/image";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ARMOIRIES_URL, DRAPEAU_URL } from "@/lib/referentiels";
+import { ARMOIRIES_SOURCES, LOGO_SOURCES, DRAPEAU_URL } from "@/lib/referentiels";
 import { useTextes } from "@/lib/langues";
 
 /* ------------------------------------------------------------------ */
 /* La marque de l'État                                                 */
 /*                                                                     */
-/* Le blason et le drapeau ne vivent qu'à un seul endroit :            */
-/* /public/armoiries-congo.svg et /public/drapeau-congo.svg. Pour      */
-/* poser les fichiers officiels du ministère, il suffit d'écraser ces  */
-/* deux fichiers — aucun composant n'est à retoucher.                  */
+/* Où déposer les fichiers officiels — dans /public, sous l'un de ces   */
+/* noms, et rien d'autre n'est à toucher :                             */
 /*                                                                     */
-/* Le bloc-marque n'est volontairement pas une image : le blason reste */
-/* une image, la barre tricolore et le libellé sont du texte. Le nom   */
-/* du ministère se lit donc par un lecteur d'écran, se sélectionne, et */
-/* reste net à toutes les tailles.                                     */
+/*   armoiries : amoirie.png · armoiries-congo.png · armoiries-congo.svg */
+/*   bloc-marque : metplogo.webp · metplogo.png · logo-metp.svg        */
+/*                                                                     */
+/* Le premier fichier réellement présent gagne. Le tracé vectoriel que  */
+/* nous fournissons est le DERNIER de la liste : c'est un dépannage, il */
+/* s'efface dès que l'original est déposé.                             */
 /* ------------------------------------------------------------------ */
 
-/** Le blason seul. `rond` l'inscrit dans un disque blanc (avatar, favicon). */
-export function Armoiries({
-  taille = 48, rond = false, className,
-}: { taille?: number; rond?: boolean; className?: string }) {
+/**
+ * Une image qui essaie plusieurs fichiers dans l'ordre.
+ *
+ * Sans cela, déposer le fichier officiel supposerait de le renommer avec la
+ * bonne extension — donc de savoir laquelle. Ici, on dépose le fichier tel
+ * qu'il est.
+ */
+function ImageEnCascade({
+  sources, alt, className, style,
+}: {
+  sources: readonly string[];
+  alt: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const [rang, setRang] = useState(0);
+  const src = sources[Math.min(rang, sources.length - 1)];
   return (
-    <span
-      className={cn(
-        "relative inline-block shrink-0",
-        rond && "overflow-hidden rounded-full bg-white ring-1 ring-black/10",
-        className
-      )}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      style={style}
+      onError={() => setRang((r) => (r < sources.length - 1 ? r + 1 : r))}
+    />
+  );
+}
+
+/**
+ * Le blason. Il porte son propre cercle — c'est lui qui fait le sceau — et n'a
+ * donc besoin d'aucun cadre autour.
+ */
+export function Armoiries({
+  taille = 48, className,
+}: { taille?: number; className?: string }) {
+  return (
+    <ImageEnCascade
+      sources={ARMOIRIES_SOURCES}
+      alt="Armoiries de la République du Congo"
+      className={cn("shrink-0 object-contain", className)}
       style={{ width: taille, height: taille }}
-    >
-      <Image
-        src={ARMOIRIES_URL}
-        alt="Armoiries de la République du Congo"
-        fill
-        sizes={`${taille}px`}
-        className={cn("object-contain", rond && "p-1")}
-        priority
-      />
-    </span>
+    />
   );
 }
 
 /** Le drapeau national, au format 3:2. */
 export function DrapeauCongo({ largeur = 30, className }: { largeur?: number; className?: string }) {
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={DRAPEAU_URL}
       alt="Drapeau de la République du Congo"
       width={largeur}
@@ -58,18 +80,38 @@ export function DrapeauCongo({ largeur = 30, className }: { largeur?: number; cl
 }
 
 /**
- * Le bloc-marque officiel : blason, filet tricolore, timbre de l'État.
- * `compact` réduit le libellé à une ligne, pour les barres de navigation.
+ * Le bloc-marque : blason, filet tricolore, timbre de l'État.
+ *
+ * Si un bloc-marque officiel est déposé (metplogo.webp), il est servi tel
+ * quel. Sinon le bloc est composé ici — le blason reste une image, le libellé
+ * reste du texte : il se lit à l'écran comme au lecteur d'écran, se
+ * sélectionne, et ne pixellise pas.
  */
 export function LogoMETP({
   taille = 52, compact = false, className,
 }: { taille?: number; compact?: boolean; className?: string }) {
   const t = useTextes();
+  const [officielAbsent, setOfficielAbsent] = useState(false);
+
+  if (!officielAbsent && LOGO_SOURCES.length) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={LOGO_SOURCES[0]}
+        alt={`${t.etat.republique} — ${t.etat.ministere}`}
+        className={cn("w-auto object-contain", className)}
+        style={{ height: taille }}
+        onError={() => setOfficielAbsent(true)}
+      />
+    );
+  }
+
   return (
     <span className={cn("flex items-center gap-3", className)}>
       <Armoiries taille={taille} />
-      {/* Filet tricolore : sépare le blason du timbre, comme sur le papier à en-tête. */}
-      <span aria-hidden className="flex h-full flex-col overflow-hidden rounded-[2px]"
+      {/* Filet tricolore : sépare le blason du timbre, comme sur le papier
+          à en-tête. */}
+      <span aria-hidden className="flex flex-col overflow-hidden rounded-[2px]"
             style={{ height: taille * 0.78, width: 5 }}>
         <span className="flex-1 bg-[#009543]" />
         <span className="flex-1 bg-[#FBDE4A]" />

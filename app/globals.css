@@ -196,3 +196,26 @@
 @media (max-height: 520px) and (max-width: 619px) {
   .ecran-connexion main { align-items: flex-start; overflow-y: auto; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Ce qui déborde d'un téléphone                                       */
+/*                                                                     */
+/* Une page d'application ne doit jamais partir de travers : le         */
+/* défilement horizontal appartient au tableau ou au ruban qui déborde, */
+/* pas à la page entière.                                              */
+/* ------------------------------------------------------------------ */
+
+/* Rubans d'onglets : quatre onglets ne tiennent pas sur 390 px. Ils
+   défilent dans leur propre boîte, sans barre visible. */
+[role="tablist"] {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[role="tablist"]::-webkit-scrollbar { display: none; }
+
+/* Bandeau de notification : sa largeur par défaut (390 px) plus sa marge
+   dépasse l'écran d'un téléphone. */
+@media (max-width: 440px) {
+  [data-sonner-toaster] { --width: calc(100vw - 2rem) !important; }
+}

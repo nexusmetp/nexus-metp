@@ -37,6 +37,34 @@ lib/seed.ts    ->  lib/seed/{aleatoire,collaboration,gestion,archives}.ts + inde
 Les dérogations sont déclarées **avec leur motif** dans
 `scripts/verifier-taille.mjs`. Une dérogation sans motif écrit n'en est pas une.
 
+## La marque de l'État
+
+Le blason, le drapeau et le bloc-marque vivent dans `/public`, et **nulle part
+ailleurs**. Voir `public/LISEZMOI.md` pour les noms de fichiers acceptés : le
+code cherche une **cascade** de noms et sert le premier présent, si bien qu'un
+fichier officiel se dépose *tel quel*, sans être renommé ni converti. Le tracé
+vectoriel fourni est le dernier de chaque cascade — c'est un dépannage, il
+s'efface dès que l'original est là.
+
+Les armoiries d'un ministère ne doivent dépendre d'aucun domaine que la DGARH
+ne contrôle pas, et la plateforme doit s'afficher entièrement hors ligne : rien
+n'est chargé depuis un hébergeur tiers. Le bundle de l'artefact incorpore les
+fichiers en data URI (`bundle/build.mjs`).
+
+Le timbre se porte partout : écran d'ouverture, connexion, barre latérale, et
+barre du haut sur téléphone — là où la barre latérale est repliée. Le filet
+tricolore court sans interruption en haut de l'application.
+
+## Responsive : aucune page ne part de travers
+
+Le défilement horizontal appartient au tableau ou au ruban qui déborde, jamais
+à la page. Vérifié sur **31 routes × 3 largeurs** (390 / 768 / 1440).
+
+Le piège, rencontré trois fois : un enfant de flex ou de grille garde
+`min-width: auto`, donc **refuse de descendre sous la largeur de son contenu**
+— et un `overflow-x: auto` posé à l'intérieur ne sert alors à rien. Le remède
+est `min-w-0` sur l'enfant, pas sur le conteneur défilant.
+
 ## Architecture du domaine
 
 - **Événementiel** : l'état d'un agent est *projeté* depuis ses actes historisés

@@ -171,7 +171,7 @@ export default function BesoinsPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-1">
+        <Card className="min-w-0 xl:col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Besoins par discipline</CardTitle>
             <CardDescription>Postes demandés, toutes catégories</CardDescription>
@@ -180,7 +180,7 @@ export default function BesoinsPage() {
             {stats.parDiscipline.map(([d, n]) => (
               <div key={d}>
                 <div className="flex items-baseline justify-between gap-2 text-sm">
-                  <span className="truncate">{d}</span>
+                  <span className="min-w-0 truncate">{d}</span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">{n}</span>
                 </div>
                 <Progress value={stats.parDiscipline[0] ? (n / stats.parDiscipline[0][1]) * 100 : 0} className="mt-1 h-1.5" />
@@ -189,7 +189,7 @@ export default function BesoinsPage() {
           </CardContent>
         </Card>
 
-        <Card className="xl:col-span-2">
+        <Card className="min-w-0 xl:col-span-2">
           <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <CardTitle className="text-base">États de besoins 2026-2027</CardTitle>

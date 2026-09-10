@@ -13,6 +13,7 @@ import { ROLE_LABELS, STATUTS_EN_COURS, cheminDe, entiteById } from "@/lib/refer
 import {
   useActes, useAgents, useAnnonces, useResetData, useTickets,
 } from "@/lib/queries";
+import { Armoiries } from "@/components/nexus/logo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -101,17 +102,22 @@ export function Topbar() {
   const nonLus = alertes.filter((a) => !vues.includes(a.id)).length;
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur lg:px-6">
+    <header className="sticky top-0 z-20 flex h-16 relative items-center gap-3 border-b bg-background/85 px-4 backdrop-blur lg:px-6">
+      {/* Sur téléphone la barre latérale est repliée : c'est ici que le timbre
+          de l'État se tient, sinon l'application n'en porterait aucun. */}
+      <Armoiries taille={30} className="lg:hidden" />
+      {/* min-w-0 : sans lui, un élément flex refuse de descendre sous la largeur
+          de son contenu, et pousse toute la barre hors de l'écran. */}
       <button
         onClick={() => setOpen(true)}
-        className="flex h-9 flex-1 items-center gap-2 rounded-lg border bg-muted/40 px-3 text-sm text-muted-foreground transition hover:bg-muted lg:max-w-md"
+        className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg border bg-muted/40 px-3 text-sm text-muted-foreground transition hover:bg-muted lg:max-w-md"
       >
         <Search className="h-4 w-4" />
         <span className="truncate">Rechercher un agent, un matricule…</span>
         <kbd className="ml-auto hidden rounded border bg-background px-1.5 py-0.5 text-[10px] lg:inline">Ctrl K</kbd>
       </button>
 
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <Badge variant="outline" className="hidden border-primary/30 bg-primary/5 text-[10px] text-primary md:inline-flex">
           {ent?.sigle ?? "METP"}
         </Badge>
@@ -233,6 +239,14 @@ export function Topbar() {
           </CommandGroup>
         </CommandList>
       </CommandDialog>
+
+      {/* Filet tricolore, dans le prolongement de celui de la barre latérale :
+          la même règle court sans interruption en haut de l'application. */}
+      <div aria-hidden className="absolute inset-x-0 bottom-0 flex h-[2px]">
+        <span className="flex-1 bg-[#009543]" />
+        <span className="flex-1 bg-[#FBDE4A]" />
+        <span className="flex-1 bg-[#DC241F]" />
+      </div>
     </header>
   );
 }

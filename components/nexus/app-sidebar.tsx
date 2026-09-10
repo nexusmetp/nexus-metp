@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import {
   Archive, Award, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, ScrollText, Settings, UserCircle, UserMinus, Users,
 } from "lucide-react";
-import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
+import { APP_NAME, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
+import { Armoiries } from "@/components/nexus/logo";
 import { useAuth, useUi } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -126,16 +127,23 @@ export function AppSidebar() {
         sidebarOpen ? "w-[272px]" : "w-[76px]"
       )}
     >
-      <div className="flex h-16 items-center gap-3 border-b px-4">
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border bg-white">
-          <Image src={LOGO_URL} alt="METP" fill sizes="40px" className="object-contain p-0.5" unoptimized />
+      {/* Le timbre de l'État ouvre la barre, sous le filet tricolore : la même
+          marque qu'à l'écran d'ouverture et sur les documents imprimés. */}
+      <div>
+        <div className="flex h-16 items-center gap-3 px-4">
+          <Armoiries taille={38} />
+          {sidebarOpen && (
+            <div className="min-w-0">
+              <div className="truncate text-sm font-extrabold tracking-tight">{APP_NAME}</div>
+              <div className="truncate text-[9px] uppercase tracking-[0.18em] text-muted-foreground">SIRH · DGARH</div>
+            </div>
+          )}
         </div>
-        {sidebarOpen && (
-          <div className="min-w-0">
-            <div className="truncate text-sm font-extrabold tracking-tight">{APP_NAME}</div>
-            <div className="truncate text-[9px] uppercase tracking-[0.18em] text-muted-foreground">SIRH · DGARH</div>
-          </div>
-        )}
+        <div aria-hidden className="flex h-[3px]">
+          <span className="flex-1 bg-[#009543]" />
+          <span className="flex-1 bg-[#FBDE4A]" />
+          <span className="flex-1 bg-[#DC241F]" />
+        </div>
       </div>
 
       <ScrollArea className="flex-1 px-3 py-4">
@@ -262,7 +270,10 @@ export function MobileNav() {
       <Sheet open={menu} onOpenChange={setMenu}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto lg:hidden">
           <SheetHeader className="text-left">
-            <SheetTitle>Navigation</SheetTitle>
+            <SheetTitle className="flex items-center gap-2.5">
+              <Armoiries taille={26} />
+              Navigation
+            </SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-5 pb-6">
             {groupes.map((g) => (

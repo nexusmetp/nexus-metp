@@ -22,10 +22,36 @@ export const MINISTERE_NOM = "Ministère de l'Enseignement Technique et Professi
  * que la DGARH ne contrôle pas, et la plateforme doit s'afficher entièrement
  * hors ligne.
  */
-export const ARMOIRIES_URL = "/armoiries-congo.svg";
+/**
+ * Le blason, cherché dans cet ordre. On dépose le fichier officiel dans
+ * /public sous l'un de ces noms — TEL QUEL, sans le renommer ni le convertir —
+ * et l'application le sert partout : écran d'ouverture, connexion, barre
+ * latérale, filigrane, en-têtes de documents imprimés.
+ *
+ * Le tracé vectoriel de dépannage est volontairement le DERNIER : il ne sert
+ * que tant que l'original n'est pas là, et s'efface dès qu'il l'est.
+ */
+export const ARMOIRIES_SOURCES = [
+  "/amoirie.png",
+  "/armoiries-congo.png",
+  "/armoiries-congo.svg",
+] as const;
+
+/**
+ * Le bloc-marque complet du ministère (blason + filet + libellé). S'il est
+ * absent, le bloc est composé par <LogoMETP /> à partir du blason et du texte.
+ */
+export const LOGO_SOURCES = [
+  "/metplogo.webp",
+  "/metplogo.png",
+  "/logo-metp.svg",
+] as const;
+
 export const DRAPEAU_URL = "/drapeau-congo.svg";
 
-/** @deprecated Utilisez ARMOIRIES_URL, ou le composant <Armoiries />. */
+/** @deprecated Utilisez ARMOIRIES_SOURCES, ou le composant <Armoiries />. */
+export const ARMOIRIES_URL = ARMOIRIES_SOURCES[ARMOIRIES_SOURCES.length - 1];
+/** @deprecated Idem. */
 export const LOGO_URL = ARMOIRIES_URL;
 
 /* ------------------------------------------------------------------ */

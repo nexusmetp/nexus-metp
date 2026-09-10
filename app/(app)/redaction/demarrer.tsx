@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { FilePlus2, FileText, Library, Search, Users } from "lucide-react";
-import { MODELES, type CleModele } from "@/lib/documents";
+import { useMemo, useRef, useState } from "react";
+import { FileUp, FilePlus2, FileText, Library, Loader2, Search, Users } from "lucide-react";
+import { MODELES, type CleModele, type ContexteDocument } from "@/lib/documents";
 import { peut } from "@/lib/referentiels";
 import { useAuth } from "@/lib/store";
-import { useContexteExemple } from "@/components/nexus/contexte-exemple";
-import { depuisModele, fusionner, pageVierge } from "@/lib/redaction";
+import { depuisModele, fusionner, importerDocx, pageVierge, IMPORT_DISPONIBLE } from "@/lib/redaction";
 import { useModelesMaison } from "@/lib/queries";
 import type { ModeleMaison } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -25,15 +24,18 @@ import { cn } from "@/lib/utils";
  * puis les modèles, déjà remplis avec les données du dossier — timbre,
  * référence et formule exécutoire conformes avant la première phrase.
  */
-export function Demarrer({ ouvert, surFermeture, surChoix }: {
+export function Demarrer({ ouvert, surFermeture, surChoix, contexte }: {
   ouvert: boolean;
   surFermeture: () => void;
   surChoix: (contenu: string, titre: string, modele?: CleModele, modeleMaisonId?: string) => void;
+  /** Le dossier sur lequel les modèles se composeront. */
+  contexte: ContexteDocument;
 }) {
   const user = useAuth((s) => s.user)!;
-  const contexte = useContexteExemple();
   const { data: maison = [] } = useModelesMaison();
   const [recherche, setRecherche] = useState("");
+  const [importation, setImportation] = useState(false);
+  const fichier = useRef<HTMLInputElement | null>(null);
 
   const visibles = useMemo(() => {
     const t = recherche.trim().toLowerCase();
@@ -72,6 +74,31 @@ export function Demarrer({ ouvert, surFermeture, surChoix }: {
     surFermeture();
   };
 
+  /* Un .docx reçu d'ailleurs entre dans la feuille de l'administration :
+     on en garde la structure, jamais la maquette de l'expéditeur. */
+  const ouvrirFichier = async (f: File | undefined) => {
+    if (!f) return;
+    setImportation(true);
+    try {
+      const { contenu, titre, avertissements } = await importerDocx(f);
+      surChoix(`<article class="doc-feuille">${contenu}</article>`, titre);
+      if (avertissements.length) {
+        toast.info("Le document a été simplifié", {
+          description: `${avertissements.length} élément(s) non repris : ${avertissements.slice(0, 2).join(" ; ")}`,
+        });
+      } else {
+        toast.success("Document importé", { description: titre });
+      }
+      surFermeture();
+    } catch (e: any) {
+      toast.error("Import impossible", {
+        description: e?.message ?? "Le fichier n'a pas pu être lu.",
+      });
+    } finally {
+      setImportation(false);
+    }
+  };
+
   return (
     <Dialog open={ouvert} onOpenChange={(o) => !o && surFermeture()}>
       <DialogContent className="max-h-[88vh] w-[min(46rem,94vw)] overflow-y-auto">
@@ -91,6 +118,34 @@ export function Demarrer({ ouvert, surFermeture, surChoix }: {
             </span>
           </span>
         </Button>
+
+        {IMPORT_DISPONIBLE && (
+          <>
+            <input
+              ref={fichier}
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(e) => { void ouvrirFichier(e.target.files?.[0]); e.target.value = ""; }}
+            />
+            <Button
+              variant="outline"
+              className="h-auto justify-start gap-3 py-3"
+              disabled={importation}
+              onClick={() => fichier.current?.click()}
+            >
+              {importation
+                ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                : <FileUp className="h-5 w-5 shrink-0 text-primary" />}
+              <span className="min-w-0 text-left">
+                <span className="block text-sm font-semibold">Ouvrir un fichier Word reçu</span>
+                <span className="block text-[11px] font-normal text-muted-foreground">
+                  Le texte entre dans la feuille du ministère ; la mise en page de l'expéditeur reste dehors.
+                </span>
+              </span>
+            </Button>
+          </>
+        )}
 
         {!!visiblesMaison.length && (
           <div className="space-y-2">

@@ -139,6 +139,20 @@ brouillons conservés dans `lib/db.ts`.
    se remplissent au dossier ouvert ; un champ resté vide devient une ligne de
    pointillés, comme sur un imprimé.
 
+**On rédige *pour* un dossier, jamais à côté.** Le contexte du document
+(`components/nexus/contexte-exemple.ts`) accepte un sujet — agent, acte,
+entité — porté dans l'adresse (`/redaction?agent=…&modele=…`). « Éditer un
+document » et la visionneuse mènent tous deux à l'éditeur en emportant le
+dossier ouvert. Sans sujet, on sert un exemple.
+
+**Les fichiers Word entrent et sortent** (`lib/redaction/docx.ts`,
+`import.ts`) : `.docx` véritable en sortie, `.docx` reçu de l'extérieur en
+entrée — dont on ne garde que la structure, jamais la maquette de
+l'expéditeur. Les deux moteurs pèsent un mégaoctet et plus : ils sont
+chargés au geste, jamais à l'ouverture d'une page, et remplacés par un
+talon dans la maquette autonome (`bundle/build.mjs`), où l'interface
+cesse alors d'offrir les deux formats.
+
 **Assainissement — la porte se ferme des deux côtés.** `assainir()` s'applique
 avant d'enregistrer *et* avant de poser un corps dans le DOM. Nettoyer
 seulement à l'écriture ne protégerait que l'auteur : un modèle de la maison se

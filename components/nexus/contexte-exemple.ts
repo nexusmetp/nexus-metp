@@ -6,25 +6,39 @@ import { useAuth } from "@/lib/store";
 import { DGARH_ID, descendantsDe, entiteById } from "@/lib/referentiels";
 import type { ContexteDocument } from "@/lib/documents";
 
+/** Le dossier sur lequel la pièce se compose, quand il est désigné. */
+export interface Sujet {
+  agentId?: string | null;
+  acteId?: string | null;
+  entiteId?: string | null;
+}
+
 /**
- * Un sujet d'exemple par source de modèle.
+ * Le dossier que reçoit un modèle.
  *
- * Un modèle se juge sur ce qu'il produit, pas sur sa description : la
- * bibliothèque comme le traitement de texte l'ouvrent donc sur un dossier
- * réel — celui de l'utilisateur quand il en a un — plutôt que sur une page
- * de champs vides.
+ * Sans sujet, on sert un exemple — le dossier de l'utilisateur s'il en a un,
+ * sinon le premier venu : un modèle se juge sur ce qu'il produit, pas sur sa
+ * description. Avec un sujet, on sert le dossier désigné, et c'est ce qui
+ * permet de rédiger *pour* un agent plutôt qu'à côté de lui.
  */
-export function useContexteExemple(): ContexteDocument {
+export function useContexteDocument(sujet: Sujet = {}): ContexteDocument {
   const user = useAuth((s) => s.user);
   const { data: agents = [] } = useAgentsProjetes();
   const { data: actes = [] } = useActes();
   const { data: conges = [] } = useConges();
 
   return useMemo<ContexteDocument>(() => {
-    const agent = agents.find((a) => a.id === user?.agentId) ?? agents[0];
-    const acte = actes.find((a) => a.statut === "SIGNE" || a.statut === "NOTIFIE") ?? actes[0];
-    const entite = entiteById(user?.entiteId ?? DGARH_ID) ?? entiteById(DGARH_ID) ?? undefined;
-    const conge = conges.find((c) => c.statut === "ACCORDE") ?? conges[0];
+    const agent = (sujet.agentId && agents.find((a) => a.id === sujet.agentId))
+      || agents.find((a) => a.id === user?.agentId)
+      || agents[0];
+    const acte = (sujet.acteId && actes.find((a) => a.id === sujet.acteId))
+      || actes.find((a) => a.statut === "SIGNE" || a.statut === "NOTIFIE")
+      || actes[0];
+    const entite = entiteById(sujet.entiteId ?? agent?.entiteId ?? user?.entiteId ?? DGARH_ID)
+      ?? entiteById(DGARH_ID) ?? undefined;
+    const conge = (agent && conges.find((c) => c.agentId === agent.id && c.statut === "ACCORDE"))
+      || conges.find((c) => c.statut === "ACCORDE")
+      || conges[0];
     const effectifs = entite
       ? descendantsDe(entite.id)
         .filter((e) => e.parentId === entite.id)
@@ -44,5 +58,8 @@ export function useContexteExemple(): ContexteDocument {
       },
       signataire: { nom: user?.nomComplet },
     };
-  }, [agents, actes, conges, user]);
+  }, [agents, actes, conges, user, sujet.agentId, sujet.acteId, sujet.entiteId]);
 }
+
+/** Le cas sans dossier désigné — la bibliothèque, l'éditeur ouvert à vide. */
+export const useContexteExemple = () => useContexteDocument();

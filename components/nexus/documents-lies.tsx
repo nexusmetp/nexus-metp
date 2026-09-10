@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FileOutput } from "lucide-react";
+import Link from "next/link";
+import { FileOutput, PenLine } from "lucide-react";
+import { useAuth } from "@/lib/store";
+import { peut } from "@/lib/referentiels";
 import { modelesPourSource, type CleModele, type ContexteDocument, type SourceModele } from "@/lib/documents";
 import { VisionneuseDocument } from "@/components/nexus/document";
 import { Button } from "@/components/ui/button";
@@ -27,9 +30,20 @@ export function DocumentsLies({
   taille?: "sm" | "default";
   surTransfert?: (texte: string, titre: string) => void;
 }) {
+  const user = useAuth((s) => s.user);
   const [choisi, setChoisi] = useState<CleModele | null>(null);
   const modeles = modelesPourSource(source);
   if (!modeles.length) return null;
+
+  /* Le dossier ouvert, porté dans l'adresse : l'éditeur compose alors sur
+     lui, et non sur un exemple. Sans cela, l'agent rédigerait à côté du
+     dossier qu'il a sous les yeux. */
+  const dossier = new URLSearchParams(
+    Object.entries({
+      agent: contexte.agent?.id, acte: contexte.acte?.id, entite: contexte.entite?.id,
+    }).filter(([, v]) => !!v) as [string, string][]
+  ).toString();
+  const redacteur = !!user && peut(user.role, "redaction", "W");
 
   return (
     <>
@@ -54,6 +68,17 @@ export function DocumentsLies({
               <span className="line-clamp-2 text-[11px] leading-snug text-muted-foreground">{m.usage}</span>
             </DropdownMenuItem>
           ))}
+          {redacteur && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild className="py-2">
+                <Link href={`/redaction?${dossier}`} className="flex items-center gap-2">
+                  <PenLine className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-sm font-medium">Rédiger dans le traitement de texte</span>
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

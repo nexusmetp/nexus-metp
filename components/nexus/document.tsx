@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Copy, Download, Eye, Pencil, Printer, RotateCcw, Send, X,
+  Copy, Download, Eye, Pencil, PenLine, Printer, RotateCcw, Send, X,
 } from "lucide-react";
 import {
   composer, exporter, LIBELLE_FORMAT, modeleParCle, nomFichier, rendreDocument,
@@ -12,6 +13,7 @@ import {
 import { copier, telecharger } from "@/lib/export";
 import { useEnregistrerDocument } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
+import { peut } from "@/lib/referentiels";
 import type { DocumentEmis } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -83,6 +85,14 @@ export function VisionneuseDocument({
   }, [modification, html, repris]);
 
   if (!doc) return null;
+
+  /* Le modèle et le dossier, portés dans l'adresse de l'éditeur. */
+  const lienDossier = new URLSearchParams(
+    Object.entries({
+      modele: doc.cle,
+      agent: contexte.agent?.id, acte: contexte.acte?.id, entite: contexte.entite?.id,
+    }).filter(([, v]) => !!v) as [string, string][]
+  ).toString();
 
   /** Le document tel qu'il est à l'écran, reprises comprises. */
   const corpsCourant = () => feuille.current?.innerHTML ?? html;
@@ -171,6 +181,17 @@ export function VisionneuseDocument({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-t bg-muted/30 px-6 py-3">
+          {/* La reprise dans le dialogue suffit pour corriger une phrase.
+              Au-delà — refondre le plan, ajouter des articles, garder le
+              texte pour demain — c'est le traitement de texte qu'il faut,
+              et le dossier le suit dans l'adresse. */}
+          {user && peut(user.role, "redaction", "W") && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/redaction?${lienDossier}`}>
+                <PenLine className="mr-1.5 h-3.5 w-3.5" /> Reprendre au traitement de texte
+              </Link>
+            </Button>
+          )}
           <Button
             variant={modification ? "default" : "outline"}
             size="sm"

@@ -10,3 +10,4 @@ export * from "./assainir";
 export * from "./depart";
 export * from "./jetons";
 export { versDocx, DOCX_DISPONIBLE } from "./docx";
+export { importerDocx, IMPORT_DISPONIBLE, type Importation } from "./import";

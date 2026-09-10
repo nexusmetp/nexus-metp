@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/store";
 import { useIA } from "@/lib/ia";
 import { compterMots, depuisModele, fusionner } from "@/lib/redaction";
 import { MODELES } from "@/lib/documents";
-import { useContexteExemple } from "@/components/nexus/contexte-exemple";
+import { useContexteDocument } from "@/components/nexus/contexte-exemple";
 import { fmtDateHeure, fmtNum } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import { RangeeKpi, TableauModule, type Colonne } from "@/components/nexus/module";
@@ -61,7 +61,13 @@ function EspaceRedaction() {
   const [demarrage, setDemarrage] = useState(false);
 
   const params = useSearchParams();
-  const contexte = useContexteExemple();
+  /* Le dossier vient de l'URL : c'est ce qui permet d'arriver ici depuis la
+     fiche d'un agent et d'écrire pour lui, pas pour un exemple. */
+  const contexte = useContexteDocument({
+    agentId: params?.get("agent"),
+    acteId: params?.get("acte"),
+    entiteId: params?.get("entite"),
+  });
   const { data: maison = [] } = useModelesMaison();
   const amorce = useRef(false);
 
@@ -102,7 +108,12 @@ function EspaceRedaction() {
     if (amorce.current || isLoading) return;
     const livre = params?.get("modele");
     const propre = params?.get("maison");
-    if (!livre && !propre) return;
+    const dossier = params?.get("agent") || params?.get("acte") || params?.get("entite");
+    // Un dossier sans modèle : on ouvre le choix du départ, déjà lié au dossier.
+    if (!livre && !propre) {
+      if (dossier) { amorce.current = true; setDemarrage(true); }
+      return;
+    }
     if (livre && !MODELES.some((m) => m.cle === livre)) return;
     if (propre && !maison.length) return;
     amorce.current = true;
@@ -220,7 +231,12 @@ function EspaceRedaction() {
         parPage={10}
       />
 
-      <Demarrer ouvert={demarrage} surFermeture={() => setDemarrage(false)} surChoix={creer} />
+      <Demarrer
+        ouvert={demarrage}
+        surFermeture={() => setDemarrage(false)}
+        surChoix={creer}
+        contexte={contexte}
+      />
     </>
   );
 }

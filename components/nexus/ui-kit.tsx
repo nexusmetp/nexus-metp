@@ -19,7 +19,7 @@ export function KpiCard({
   titre: string; valeur: string | number; sousTitre?: string; icon: any; variation?: number;
 }) {
   return (
-    <Card className="relative overflow-hidden p-5">
+    <Card className="relative flex min-h-[122px] flex-col justify-center overflow-hidden p-5">
       <div className="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">

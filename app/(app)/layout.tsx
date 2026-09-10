@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, ShieldOff } from "lucide-react";
 import { useAuth } from "@/lib/store";
+import { useArbreVivant } from "@/lib/queries";
 import { ROLE_LABELS, moduleDeRoute, peut } from "@/lib/referentiels";
 import { AppSidebar, MobileNav } from "@/components/nexus/app-sidebar";
 import { Topbar } from "@/components/nexus/topbar";
@@ -12,12 +13,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, hydrated } = useAuth();
+  // L'arborescence de la base remplace la semence. Les pages calculent leur
+  // périmètre dès le premier rendu : les faire attendre l'hydratation évite
+  // qu'elles ignorent une entité créée par le directeur général.
+  const { pret: arbrePret } = useArbreVivant();
 
   useEffect(() => {
     if (hydrated && !user) router.replace("/login");
   }, [hydrated, user, router]);
 
-  if (!hydrated || !user) {
+  if (!hydrated || !user || !arbrePret) {
     return (
       <div className="grid min-h-screen place-items-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />

@@ -5,10 +5,12 @@ import {
   ROLE_LABELS, TEXTES, TYPES_ACTE, corpsById, entiteById,
 } from "@/lib/referentiels";
 import { BadgeProvenance, BadgeStatutaire, PageHeader } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
+import { fmtNum } from "@/lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, Minus } from "lucide-react";
+import { AlertTriangle, Check, Library, Layers, Minus, ShieldCheck } from "lucide-react";
 
 const Oui = () => <Check className="h-3.5 w-3.5 text-emerald-500" />;
 const Non = () => <Minus className="h-3.5 w-3.5 text-muted-foreground/40" />;
@@ -22,6 +24,13 @@ export default function ReferentielsPage() {
       >
         <BadgeProvenance v="A_VERIFIER" reference={TEXTES.ARR_25567} />
       </PageHeader>
+
+      <RangeeKpi tuiles={[
+        { titre: "Corps", valeur: fmtNum(CORPS.length), sousTitre: "familles de métiers", icon: Library },
+        { titre: "Grades", valeur: fmtNum(GRADES.length), sousTitre: "avec échelons et indices", icon: Layers },
+        { titre: "Types d'acte", valeur: fmtNum(TYPES_ACTE.length), sousTitre: "instruits par le circuit", icon: ShieldCheck },
+        { titre: "Lacunes", valeur: fmtNum(LACUNES.length), sousTitre: "points à confirmer avant mise en service", icon: AlertTriangle },
+      ]} />
 
       <Card className="border-amber-500/30 bg-amber-500/[0.04]">
         <CardHeader className="pb-3">

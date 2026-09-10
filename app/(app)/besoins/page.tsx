@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { ArrowUp, Building2, ClipboardList, School } from "lucide-react";
 import { useBesoins } from "@/lib/queries";
-import { REGLES_CATEGORIE, ETABLISSEMENTS, entiteById } from "@/lib/referentiels";
+import { REGLES_CATEGORIE, ETABLISSEMENTS, cheminDe, entiteById } from "@/lib/referentiels";
 import { fmtNum } from "@/lib/format";
 import { BadgeCategorie, KpiCard, PageHeader } from "@/components/nexus/ui-kit";
+import { Jauge, LigneInfo, PanneauDetail, Section } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +35,7 @@ export default function BesoinsPage() {
   const { data: besoins = [], isLoading } = useBesoins();
   const [departement, setDepartement] = useState("all");
   const [statut, setStatut] = useState("all");
+  const [selection, setSelection] = useState<BesoinPersonnel | null>(null);
 
   const departements = useMemo(
     () => Array.from(new Set(besoins.map((b) => b.departementId))).map((id) => entiteById(id)!).filter(Boolean),
@@ -153,7 +155,11 @@ export default function BesoinsPage() {
                   {filtres.map((b) => {
                     const etb = entiteById(b.etablissementId);
                     return (
-                      <TableRow key={b.id}>
+                      <TableRow
+                        key={b.id}
+                        onClick={() => setSelection(b)}
+                        className={`cursor-pointer ${selection?.id === b.id ? "bg-primary/5" : ""}`}
+                      >
                         <TableCell className="font-mono text-xs">{b.reference}</TableCell>
                         <TableCell>
                           <div className="max-w-[190px] truncate text-sm" title={etb?.nom}>{etb?.nom ?? "—"}</div>
@@ -179,6 +185,70 @@ export default function BesoinsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PanneauDetail
+        ouvert={!!selection}
+        surFermeture={() => setSelection(null)}
+        titre={selection ? `${selection.discipline} — ${entiteById(selection.etablissementId)?.nom ?? "établissement"}` : ""}
+        sousTitre={selection ? `${selection.reference} — année scolaire ${selection.anneeScolaire}` : undefined}
+        etiquette={selection && (
+          <>
+            <Badge variant="outline" className={`text-[10px] ${COULEUR[selection.statut]}`}>
+              {STATUT_LABELS[selection.statut]}
+            </Badge>
+            <BadgeCategorie v={selection.categorie} />
+          </>
+        )}
+      >
+        {selection && (
+          <>
+            <Section titre="Expression du besoin">
+              <LigneInfo k="Référence" v={<span className="font-mono text-xs">{selection.reference}</span>} />
+              <LigneInfo k="Établissement" v={entiteById(selection.etablissementId)?.nom ?? "—"} />
+              <LigneInfo k="Département" v={entiteById(selection.departementId)?.nom ?? "—"} />
+              <LigneInfo k="Chaîne" v={
+                <span className="text-[11px]">
+                  {cheminDe(selection.etablissementId).map((e) => e.sigle).join(" › ")}
+                </span>
+              } />
+              <LigneInfo k="Discipline" v={selection.discipline} />
+              <LigneInfo k="Catégorie demandée" v={REGLES_CATEGORIE[selection.categorie].libelle} />
+            </Section>
+
+            <Section titre="Arbitrage">
+              <LigneInfo k="Effectif demandé" v={fmtNum(selection.effectifDemande)} />
+              <LigneInfo k="Effectif retenu" v={
+                selection.effectifRetenu === undefined
+                  ? <span className="italic text-muted-foreground">pas encore arbitré</span>
+                  : fmtNum(selection.effectifRetenu)
+              } />
+              {selection.effectifRetenu !== undefined && (
+                <>
+                  <div className="pt-3">
+                    <Jauge
+                      valeur={Math.round((selection.effectifRetenu / Math.max(1, selection.effectifDemande)) * 100)}
+                      teinte={selection.effectifRetenu >= selection.effectifDemande ? "bg-emerald-500" : "bg-amber-500"}
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    {selection.effectifRetenu >= selection.effectifDemande
+                      ? "Le besoin est couvert intégralement."
+                      : `Écart de ${fmtNum(selection.effectifDemande - selection.effectifRetenu)} poste(s) entre la demande et l'arbitrage.`}
+                  </p>
+                </>
+              )}
+            </Section>
+
+            <Section titre="Remontée">
+              <p className="rounded-lg border bg-muted/30 p-3 text-[11px] leading-relaxed text-muted-foreground">
+                Le besoin part de l'établissement, remonte à la direction départementale, puis au bureau
+                gestionnaire qui l'arbitre. Un besoin arbitré ne crée pas de poste par lui-même : il faut
+                un acte de recrutement pour qu'un agent y soit affecté (§05).
+              </p>
+            </Section>
+          </>
+        )}
+      </PanneauDetail>
     </>
   );
 }

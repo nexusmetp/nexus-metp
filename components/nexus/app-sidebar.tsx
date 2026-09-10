@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
   Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
-  UserCircle, ChevronLeft,
+  UserCircle, ChevronLeft, Gauge, Landmark, LifeBuoy, Megaphone, MessageSquare,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
@@ -24,6 +24,8 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     titre: "Direction générale",
     items: [
       { href: "/dgarh", label: "Espace DGARH", icon: Building2, mod: "dgarh", pret: true },
+      { href: "/dgarh/pilotage", label: "Pilotage des directions", icon: Gauge, mod: "pilotage", pret: true },
+      { href: "/dgarh/organisation", label: "Organisation", icon: Landmark, mod: "organisation", pret: true },
       { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
       { href: "/dgarh/bannette", label: "Ma bannette", icon: Inbox, mod: "actes", pret: true },
       { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
@@ -52,6 +54,14 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     ],
   },
   {
+    titre: "Collaboration",
+    items: [
+      { href: "/messagerie", label: "Messagerie", icon: MessageSquare, mod: "messagerie", pret: true },
+      { href: "/tickets", label: "Réclamations", icon: LifeBuoy, mod: "tickets", pret: true },
+      { href: "/annonces", label: "Notes et circulaires", icon: Megaphone, mod: "annonces", pret: true },
+    ],
+  },
+  {
     titre: "Espace personnel",
     items: [{ href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier", pret: true }],
   },
@@ -59,7 +69,7 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     titre: "Système",
     items: [
       { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal", pret: true },
-      { href: "/administration", label: "Administration", icon: Settings, mod: "administration", pret: true },
+      { href: "/administration", label: "Système", icon: Settings, mod: "administration", pret: true },
     ],
   },
 ];

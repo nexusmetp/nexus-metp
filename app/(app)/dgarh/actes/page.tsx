@@ -3,13 +3,14 @@
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { FileCheck2, Search, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileCheck2, Search, Timer, X } from "lucide-react";
 import { useActes, useAgents } from "@/lib/queries";
 import {
   STATUTS_EN_COURS, STATUT_ACTE_LABELS, TYPES_ACTE, entiteById, typeActeById,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, joursDepuis } from "@/lib/format";
-import { BadgeStatutActe, PageHeader  } from "@/components/nexus/ui-kit";
+import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,21 @@ export default function ActesPage() {
   const visibles = filtres.slice((courante - 1) * PAR_PAGE, courante * PAR_PAGE);
   const filtreActif = q || type !== "all" || statut !== "en_cours";
 
+  /* Les indicateurs portent sur tout le registre, pas sur le filtre courant :
+     un chiffre qui bouge quand on filtre n'est plus un indicateur. */
+  const { enCirculation, horsDelai, delaiMoyen } = useMemo(() => {
+    const ouverts = actes.filter((a) => STATUTS_EN_COURS.includes(a.statut));
+    const clos = actes.filter((a) => a.dateSignature);
+    return {
+      enCirculation: ouverts.length,
+      horsDelai: ouverts.filter((a) => joursDepuis(a.dateCreation) > 15).length,
+      delaiMoyen: clos.length
+        ? Math.round(clos.reduce((s, a) =>
+            s + (new Date(a.dateSignature!).getTime() - new Date(a.dateCreation).getTime()) / 864e5, 0) / clos.length)
+        : 0,
+    };
+  }, [actes]);
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   return (
@@ -110,6 +126,13 @@ export default function ActesPage() {
           <Link href="/dgarh/actes/nouveau"><Plus className="mr-1.5 h-3.5 w-3.5" /> Nouvelle mutation</Link>
         </Button>
       </PageHeader>
+
+      <RangeeKpi tuiles={[
+        { titre: "Actes", valeur: fmtNum(actes.length), sousTitre: "toutes années confondues", icon: FileCheck2 },
+        { titre: "En circulation", valeur: fmtNum(enCirculation), sousTitre: "pas encore notifiés", icon: Timer },
+        { titre: "Au-delà du délai", valeur: fmtNum(horsDelai), sousTitre: "plus de 15 jours d'ouverture", icon: AlertTriangle },
+        { titre: "Délai moyen", valeur: `${delaiMoyen} j`, sousTitre: "de l'ouverture à la signature", icon: CheckCircle2 },
+      ]} />
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center">

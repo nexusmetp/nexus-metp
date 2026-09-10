@@ -7,6 +7,7 @@ import { useActes, useAgents } from "@/lib/queries";
 import { entiteById, typeActeById } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { KpiCard, PageHeader } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,11 +55,12 @@ export default function DocumentsPage() {
         description="Deux fonds distincts au §14 : les pièces des dossiers d'agents, rattachées à un acte, et la documentation administrative. Aucune pièce n'est déposée en vrac."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard titre="Pièces au dossier" valeur={fmtNum(pieces.length)} sousTitre={`réparties sur ${fmtNum(actes.length)} actes`} icon={FolderOpen} />
-        <KpiCard titre="Catégories" valeur={fmtNum(categories.length)} sousTitre={categories.join(" · ")} icon={FileText} />
-        <KpiCard titre="Rattachement" valeur="100 %" sousTitre="toute pièce relève d'un acte" icon={ShieldCheck} />
-      </div>
+      <RangeeKpi tuiles={[
+        { titre: "Pièces au dossier", valeur: fmtNum(pieces.length), sousTitre: `réparties sur ${fmtNum(actes.length)} actes`, icon: FolderOpen },
+        { titre: "Catégories", valeur: fmtNum(categories.length), sousTitre: categories.join(" · "), icon: FileText },
+        { titre: "Rattachement", valeur: "100 %", sousTitre: "toute pièce relève d'un acte", icon: ShieldCheck },
+        { titre: "Fonds documentaire", valeur: "0", sousTitre: "second corpus du §14, non constitué", icon: Archive },
+      ]} />
 
       <Card className="border-amber-500/30 bg-amber-500/[0.04]">
         <CardHeader className="flex flex-row items-start gap-3 pb-3">

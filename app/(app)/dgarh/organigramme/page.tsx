@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronRight, Network, Users } from "lucide-react";
+import { ChevronRight, Landmark, Network, ShieldCheck, Users } from "lucide-react";
 import {
   DGARH_ID, ENTITES, NIVEAU_LABELS, PROVENANCE_LABELS, cheminDe, descendantsDe, enfantsDe, entiteById,
 } from "@/lib/referentiels";
 import { useAgentsProjetes } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
-import { BadgeProvenance, PageHeader  } from "@/components/nexus/ui-kit";
+import { BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -119,6 +120,13 @@ export default function OrganigrammePage() {
         titre="Organigramme"
         description={`${cheminDe(DGARH_ID).map((e) => e.sigle).join(" › ")} — ${descendantsDe(DGARH_ID).length} entités. Chaque niveau porte sa provenance : ce qui est établi par un texte, et ce qui reste à confirmer.`}
       />
+
+      <RangeeKpi tuiles={[
+        { titre: "Entités", valeur: fmtNum(descendantsDe(DGARH_ID).length), sousTitre: "sous la direction générale", icon: Network },
+        { titre: "Effectif rattaché", valeur: fmtNum(total[DGARH_ID] ?? 0), sousTitre: "agents du périmètre", icon: Users },
+        { titre: "Établies par un texte", valeur: fmtNum(compteProvenance.TEXTE), sousTitre: "fondement juridique connu", icon: ShieldCheck },
+        { titre: "À confirmer", valeur: fmtNum(compteProvenance.A_VERIFIER + compteProvenance.RECOMMANDATION), sousTitre: "provenance non établie", icon: Landmark },
+      ]} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         {(["TEXTE", "A_VERIFIER", "RECOMMANDATION"] as Provenance[]).map((p) => (

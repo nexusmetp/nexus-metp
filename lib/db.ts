@@ -4,13 +4,17 @@ import { openDB, type IDBPDatabase } from "idb";
 import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
-/** v3 : ajout du niveau établissement (§10). v2 : passage au modèle événementiel du cahier (§15). */
-const DB_VERSION = 4;
+/**
+ * v5 : collaboration (tickets, messagerie, annonces) et paramétrage système.
+ * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
+ */
+const DB_VERSION = 5;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
   "situations", "affectations", "positions",
-  "actes", "besoins", "utilisateurs", "journal", "notifications", "meta",
+  "actes", "besoins", "utilisateurs", "journal", "notifications",
+  "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres", "meta",
 ] as const;
 export type StoreName = (typeof STORES)[number];
 
@@ -22,7 +26,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 3) {
+        if (ancienne < 5) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {
@@ -41,7 +45,15 @@ export async function ensureSeed(force = false): Promise<void> {
   const meta = await db.get("meta", "seed");
   if (meta?.version === DB_VERSION && !force) return;
 
-  const data: Dataset = buildDataset();
+  let data: Dataset;
+  try {
+    data = buildDataset();
+  } catch (e) {
+    // Sans ce relais, un semis qui échoue laisse une base vide et muette :
+    // l'application s'ouvre sur des listes vides sans dire pourquoi.
+    console.error("[semis] construction du jeu de données impossible", e);
+    throw e;
+  }
   const tx = db.transaction(STORES as unknown as string[], "readwrite");
   await Promise.all(STORES.map((s) => tx.objectStore(s).clear()));
 
@@ -60,6 +72,12 @@ export async function ensureSeed(force = false): Promise<void> {
     ...put("utilisateurs", data.utilisateurs),
     ...put("journal", data.journal),
     ...put("notifications", data.notifications),
+    ...put("tickets", data.tickets),
+    ...put("messagesTicket", data.messagesTicket),
+    ...put("conversations", data.conversations),
+    ...put("messages", data.messages),
+    ...put("annonces", data.annonces),
+    tx.objectStore("parametres").put(data.parametres),
     tx.objectStore("meta").put({
       id: "seed",
       version: DB_VERSION,

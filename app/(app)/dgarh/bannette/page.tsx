@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Inbox, Clock, UserCheck } from "lucide-react";
 import { useActes, useAgents } from "@/lib/queries";
+import type { Acte } from "@/lib/types";
 import { useAuth } from "@/lib/store";
 import { etapeCourante, transitionsPour } from "@/lib/actes";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, KpiCard, PageHeader } from "@/components/nexus/ui-kit";
+import { LigneInfo, PanneauDetail, Section } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,7 @@ export default function BannettePage() {
   const user = useAuth((s) => s.user)!;
   const { data: actes = [], isLoading } = useActes();
   const { data: agents = [] } = useAgents();
+  const [selection, setSelection] = useState<Acte | null>(null);
 
   const perimetre = useMemo(() => new Set(descendantsDe(user.entiteId).map((e) => e.id)), [user.entiteId]);
 
@@ -82,7 +85,11 @@ export default function BannettePage() {
                   const age = joursDepuis(a.dateCreation);
                   const etape = a.etapes[etapeCourante(a.statut)];
                   return (
-                    <TableRow key={a.id}>
+                    <TableRow
+                      key={a.id}
+                      onClick={() => setSelection(a)}
+                      className={cn("cursor-pointer", selection?.id === a.id && "bg-primary/5")}
+                    >
                       <TableCell className="font-mono text-xs">
                         <Link href={`/dgarh/actes/${a.id}`} className="hover:text-primary hover:underline">{a.reference}</Link>
                       </TableCell>
@@ -138,6 +145,87 @@ export default function BannettePage() {
         lignes={perimetreOuvert}
         vide="Rien n'attend dans votre périmètre."
       />
+
+      <PanneauDetail
+        ouvert={!!selection}
+        surFermeture={() => setSelection(null)}
+        titre={selection?.objet ?? ""}
+        sousTitre={selection ? `${selection.reference} — ouvert le ${fmtDate(selection.dateCreation)}` : undefined}
+        etiquette={selection && (
+          <>
+            <BadgeStatutActe v={selection.statut} />
+            <Badge variant="secondary" className="text-[10px]">{typeActeById(selection.type)?.libelle}</Badge>
+            {joursDepuis(selection.dateCreation) > 15 && (
+              <Badge variant="destructive" className="text-[10px]">hors délai</Badge>
+            )}
+          </>
+        )}
+        actions={selection && (
+          <Button size="sm" asChild>
+            <Link href={`/dgarh/actes/${selection.id}`}>Instruire ce dossier</Link>
+          </Button>
+        )}
+      >
+        {selection && (
+          <>
+            <Section titre="Dossier">
+              <LigneInfo k="Référence" v={<span className="font-mono text-xs">{selection.reference}</span>} />
+              <LigneInfo k="Agent concerné" v={nomAgent(selection.agentId)} />
+              <LigneInfo k="Instruit par" v={entiteById(selection.entiteInstructriceId)?.nom ?? "—"} />
+              <LigneInfo k="Ouvert le" v={fmtDate(selection.dateCreation)} />
+              <LigneInfo k="Âge" v={`${joursDepuis(selection.dateCreation)} jours`} />
+            </Section>
+
+            <Section titre="Ce que vous pouvez faire">
+              <div className="space-y-1.5">
+                {transitionsPour(selection, user).map((t) => (
+                  <div
+                    key={t.code}
+                    className={cn(
+                      "rounded-lg border px-3 py-2",
+                      t.blocage ? "border-dashed bg-muted/30" : "border-primary/30 bg-primary/5"
+                    )}
+                  >
+                    <div className="text-xs font-medium">{t.libelle}</div>
+                    {t.blocage && <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">{t.blocage}</p>}
+                  </div>
+                ))}
+                {transitionsPour(selection, user).length === 0 && (
+                  <p className="text-xs text-muted-foreground">Aucune action ne vous est ouverte sur ce dossier.</p>
+                )}
+              </div>
+            </Section>
+
+            {selection.etapes?.length > 0 && (
+              <Section titre="Circuit">
+                <ol className="space-y-1.5">
+                  {selection.etapes.map((e) => (
+                    <li
+                      key={e.id}
+                      className={cn(
+                        "flex items-center justify-between gap-3 rounded-lg border px-3 py-2",
+                        e.statut === "TERMINEE" && "bg-muted/40",
+                        e.statut === "EN_COURS" && "border-primary/40 bg-primary/5",
+                        e.statut === "A_VENIR" && "border-dashed"
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium">{e.libelle}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {entiteById(e.entiteId)?.sigle ?? "—"}{e.utilisateur ? ` — ${e.utilisateur}` : ""}
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {e.dateSortie ? fmtDate(e.dateSortie) : e.statut === "EN_COURS" ? "en cours" : "à venir"}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </Section>
+            )}
+          </>
+        )}
+      </PanneauDetail>
     </>
   );
 }

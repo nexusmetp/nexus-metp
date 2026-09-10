@@ -221,9 +221,18 @@ const etablissements: E[] = DEPARTEMENTS.flatMap((d, i) => {
   );
 });
 
-export const ENTITES: Entite[] = [
+/** La semence : l'organigramme tel que les textes et le cahier le décrivent. */
+export const ENTITES_SEMENCE: Entite[] = [
   ...sommet, ...secretariat, ...dpcef, ...dobas, ...dafm, ...deconcentration, ...etablissements,
 ] as Entite[];
+
+/**
+ * L'arborescence vivante. Elle part de la semence puis suit la base :
+ * l'administrateur système crée des directions, et tout ce qui calcule un
+ * périmètre doit en tenir compte immédiatement. Le tableau garde la même
+ * référence pour ne pas invalider les appelants — il est modifié sur place.
+ */
+export const ENTITES: Entite[] = [...ENTITES_SEMENCE];
 
 export const ETABLISSEMENTS = etablissements as Entite[];
 /** Département (direction départementale) dont relève une entité locale. */
@@ -232,9 +241,20 @@ export const departementDe = (entiteId?: string | null) =>
 
 /* — Accès à l'arborescence — */
 
-const parIdIndex = new Map(ENTITES.map((x) => [x.id, x]));
+let parIdIndex = new Map(ENTITES.map((x) => [x.id, x]));
+
+/**
+ * Remplace l'arborescence vivante par celle de la base. Appelé une fois au
+ * démarrage, puis après chaque création ou modification d'entité.
+ */
+export function hydraterEntites(liste: Entite[]): void {
+  if (!liste?.length) return;
+  ENTITES.splice(0, ENTITES.length, ...liste);
+  parIdIndex = new Map(ENTITES.map((x) => [x.id, x]));
+}
+
 export const entiteById = (id?: string | null) => (id ? parIdIndex.get(id) : undefined);
-export const enfantsDe = (id: string) => ENTITES.filter((x) => x.parentId === id);
+export const enfantsDe = (id: string) => ENTITES.filter((x) => x.parentId === id && x.actif !== false);
 
 /** Toutes les entités sous `id`, `id` compris. Base du calcul de périmètre. §11 */
 export function descendantsDe(id: string): Entite[] {
@@ -262,7 +282,7 @@ export function cheminDe(id: string): Entite[] {
 
 export const DGARH_ID = "ENT-DGARH";
 export const entitesDGARH = () => descendantsDe(DGARH_ID);
-export const BUREAUX = ENTITES.filter((x) => x.niveau === "BUREAU");
+export const bureaux = () => ENTITES.filter((x) => x.niveau === "BUREAU" && x.actif !== false);
 export const SERVICES = ENTITES.filter((x) => x.niveau === "SERVICE");
 
 export const NIVEAU_LABELS: Record<Entite["niveau"], string> = {
@@ -417,9 +437,33 @@ export const POSITION_LABELS: Record<NaturePosition, string> = {
 /* ------------------------------------------------------------------ */
 
 export type ModuleKey =
-  | "dgarh" | "organigramme" | "agents" | "actes" | "carrieres" | "conges"
-  | "formations" | "contentieux" | "besoins" | "referentiels" | "documents"
-  | "rapports" | "journal" | "administration" | "mon-dossier";
+  | "dgarh" | "organigramme" | "organisation" | "pilotage" | "agents" | "actes"
+  | "carrieres" | "conges" | "formations" | "contentieux" | "besoins"
+  | "referentiels" | "documents" | "rapports" | "journal" | "administration"
+  | "messagerie" | "tickets" | "annonces" | "mon-dossier";
+
+export const MODULE_LABELS: Record<ModuleKey, string> = {
+  dgarh: "Espace DGARH",
+  organigramme: "Organigramme",
+  organisation: "Organisation",
+  pilotage: "Pilotage des directions",
+  agents: "Agents",
+  actes: "Actes",
+  carrieres: "Carrières",
+  conges: "Congés et positions",
+  formations: "Formation",
+  contentieux: "Contentieux",
+  besoins: "États de besoins",
+  referentiels: "Référentiels",
+  documents: "Archives et GED",
+  rapports: "Rapports",
+  journal: "Journal d'audit",
+  administration: "Système",
+  messagerie: "Messagerie",
+  tickets: "Réclamations",
+  annonces: "Notes et circulaires",
+  "mon-dossier": "Mon dossier",
+};
 
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN_SYSTEME: "Administrateur système",
@@ -436,44 +480,46 @@ export const ROLE_LABELS: Record<Role, string> = {
 /** R = lecture, W = écriture (inclut la lecture), absent = aucun accès. */
 export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   ADMIN_SYSTEME: {
-    dgarh: "R", organigramme: "W", referentiels: "W", administration: "W", journal: "R",
-    "mon-dossier": "W",
+    organigramme: "R", referentiels: "W", administration: "W", journal: "W",
+    messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
   },
   DIRECTEUR_GENERAL: {
-    dgarh: "W", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
-    formations: "R", contentieux: "R", besoins: "R", referentiels: "R", documents: "R",
-    rapports: "W", journal: "R",
-    "mon-dossier": "W",
+    dgarh: "W", organigramme: "W", organisation: "W", pilotage: "W", agents: "W",
+    actes: "W", carrieres: "R", conges: "R", formations: "R", contentieux: "R",
+    besoins: "R", referentiels: "R", documents: "R", rapports: "W", journal: "R",
+    messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
   },
   DIRECTEUR_CENTRAL: {
-    dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
-    formations: "R", contentieux: "R", besoins: "R", referentiels: "R", documents: "R", rapports: "R",
-    "mon-dossier": "W",
+    dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
+    carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
+    referentiels: "R", documents: "R", rapports: "R",
+    messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
   },
   CHEF_SERVICE: {
-    dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
+    dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "R", rapports: "R",
-    "mon-dossier": "W",
+    messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   CHEF_BUREAU: {
-    dgarh: "R", organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R",
+    dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "W",
-    "mon-dossier": "W",
+    messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   AGENT_INSTRUCTEUR: {
     organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W",
-    "mon-dossier": "W",
+    messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   DIRECTEUR_DEPARTEMENTAL: {
-    organigramme: "R", agents: "R", actes: "R", conges: "R", besoins: "W", documents: "R", rapports: "R",
-    "mon-dossier": "W",
+    organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R",
+    rapports: "R", messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   CHEF_ETABLISSEMENT: {
-    organigramme: "R", agents: "R", besoins: "W", documents: "R",
-    "mon-dossier": "W",
+    organigramme: "R", agents: "W", besoins: "W", documents: "R",
+    messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
   },
   AGENT: {
     "mon-dossier": "W", conges: "R", formations: "R", documents: "R", organigramme: "R",
+    messagerie: "W", tickets: "W", annonces: "R",
   },
 };
 
@@ -504,6 +550,7 @@ export const peutValider = (utilisateurId: string, instruitPar?: string) =>
 /** Où atterrit un utilisateur après connexion, selon ce que son rôle ouvre. */
 export const pageAccueil = (role: Role) =>
   peut(role, "dgarh") ? "/dgarh"
+  : peut(role, "administration") ? "/administration"
   : peut(role, "agents") ? "/dgarh/agents"
   : peut(role, "mon-dossier") ? "/mon-dossier"
   : "/dgarh/organigramme";
@@ -512,6 +559,8 @@ export const pageAccueil = (role: Role) =>
 export function moduleDeRoute(pathname: string): ModuleKey | null {
   const routes: [string, ModuleKey][] = [
     ["/dgarh/organigramme", "organigramme"],
+    ["/dgarh/organisation", "organisation"],
+    ["/dgarh/pilotage", "pilotage"],
     ["/dgarh/agents", "agents"],
     ["/dgarh/bannette", "actes"],
     ["/dgarh/actes", "actes"],
@@ -527,6 +576,9 @@ export function moduleDeRoute(pathname: string): ModuleKey | null {
     ["/rapports", "rapports"],
     ["/journal", "journal"],
     ["/administration", "administration"],
+    ["/messagerie", "messagerie"],
+    ["/tickets", "tickets"],
+    ["/annonces", "annonces"],
   ];
   return routes.find(([r]) => pathname === r || pathname.startsWith(r + "/"))?.[1] ?? null;
 }

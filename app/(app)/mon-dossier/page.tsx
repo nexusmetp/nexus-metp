@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo } from "react";
-import { CalendarDays, FileText, GraduationCap, Landmark, User } from "lucide-react";
+import { CalendarDays, FileText, GraduationCap, Landmark, ShieldCheck, TrendingUp, User } from "lucide-react";
 import { useAgents, useHistorique } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { projeter, ligneDeVie } from "@/lib/carriere";
 import {
   POSITION_LABELS, REGLES_CATEGORIE, cheminDe, entiteById, gradeById,
 } from "@/lib/referentiels";
-import { fmtDate } from "@/lib/format";
+import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import {
   BadgeCategorie, BadgePosition, BadgeStatutaire, GardeModule, PageHeader,
 } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +71,13 @@ export default function MonDossierPage() {
             <BadgeCategorie v={projete.categorie} />
             <BadgePosition v={projete.nature} />
           </PageHeader>
+
+          <RangeeKpi tuiles={[
+            { titre: "Ancienneté", valeur: `${projete.anciennete} ans`, sousTitre: `recruté le ${fmtDate(projete.dateRecrutement)}`, icon: TrendingUp },
+            { titre: "Échelon", valeur: projete.echelon ?? "—", sousTitre: projete.indice ? `indice ${projete.indice}` : "hors carrière statutaire", icon: Landmark },
+            { titre: "Dossier complet", valeur: fmtPct(projete.tauxCompletude), sousTitre: "pièces attendues présentes", icon: ShieldCheck },
+            { titre: "Événements de carrière", valeur: fmtNum(evenements.length), sousTitre: "chacun porté par un acte", icon: CalendarDays },
+          ]} />
 
           <Card>
             <CardHeader className="pb-3">

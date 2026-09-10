@@ -6,6 +6,7 @@ import { Search, ScrollText, ShieldCheck } from "lucide-react";
 import { useJournal } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { KpiCard, PageHeader } from "@/components/nexus/ui-kit";
+import { RangeeKpi } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,16 +60,12 @@ export default function JournalPage() {
         description="Écriture en ajout seul : aucune entrée ne peut être modifiée ni supprimée, y compris par l'administrateur. Une correction est une nouvelle entrée (§12)."
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <KpiCard titre="Écritures" valeur={fmtNum(journal.length)} sousTitre="depuis le semis de la base" icon={ScrollText} />
-        <KpiCard titre="Rattachées à un acte" valeur={fmtNum(journal.length - sansActe)} sousTitre="traçabilité complète" icon={ShieldCheck} />
-        <KpiCard
-          titre="Sans acte de référence"
-          valeur={fmtNum(sansActe)}
-          sousTitre={sansActe ? "à signaler comme anomalie" : "aucune anomalie"}
-          icon={ShieldCheck}
-        />
-      </div>
+      <RangeeKpi tuiles={[
+        { titre: "Écritures", valeur: fmtNum(journal.length), sousTitre: "en ajout seul, jamais modifiées", icon: ScrollText },
+        { titre: "Rattachées à un acte", valeur: fmtNum(journal.length - sansActe), sousTitre: "traçabilité complète", icon: ShieldCheck },
+        { titre: "Sans acte de référence", valeur: fmtNum(sansActe), sousTitre: sansActe ? "à signaler comme anomalie" : "aucune anomalie", icon: ShieldCheck },
+        { titre: "Intervenants", valeur: fmtNum(new Set(journal.map((j) => j.utilisateurId)).size), sousTitre: "comptes ayant écrit au journal", icon: ScrollText },
+      ]} />
 
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center">

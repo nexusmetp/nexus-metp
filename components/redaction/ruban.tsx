@@ -35,6 +35,8 @@ export interface RubanProps {
   surChangement: () => void;
   /** Écrit du texte brut au curseur — les champs de fusion. */
   surInsertion: (texte: string) => void;
+  /** Pose une propriété de style sur le passage sélectionné. */
+  surStyle: (propriete: string, valeur: string) => void;
   /** Déposer le texte courant comme modèle de la bibliothèque. */
   surDepot: () => void;
   libelleDepot: string;
@@ -107,7 +109,7 @@ const LIBELLE_ONGLET: Record<Onglet, string> = {
 };
 
 export function Ruban({
-  surFocus, surChangement, surInsertion, surDepot, libelleDepot, desactive, className,
+  surFocus, surChangement, surInsertion, surStyle, surDepot, libelleDepot, desactive, className,
 }: RubanProps) {
   const [onglet, setOnglet] = useState<Onglet>("accueil");
 
@@ -176,7 +178,7 @@ export function Ruban({
                 ))}
               </SelectContent>
             </Select>
-            <Select onValueChange={(v: string) => executer("fontName", v)}>
+            <Select onValueChange={(v: string) => surStyle("font-family", v)}>
               <SelectTrigger className="h-8 w-[8.5rem] text-xs" aria-label="Police">
                 <SelectValue placeholder="Times New Roman" />
               </SelectTrigger>
@@ -209,13 +211,13 @@ export function Ruban({
 
         {onglet === "mise-en-page" && (
           <>
-            <Select onValueChange={(v: string) => executer("fontSize", v)}>
+            <Select onValueChange={(v: string) => surStyle("font-size", v)}>
               <SelectTrigger className="h-8 w-[7.5rem] text-xs" aria-label="Corps du texte">
                 <SelectValue placeholder="Taille" />
               </SelectTrigger>
               <SelectContent>
-                {TAILLES.map((t, i) => (
-                  <SelectItem key={t} value={String(i + 2)} className="text-xs">{t} points</SelectItem>
+                {TAILLES.map((t) => (
+                  <SelectItem key={t} value={`${t}pt`} className="text-xs">{t} points</SelectItem>
                 ))}
               </SelectContent>
             </Select>

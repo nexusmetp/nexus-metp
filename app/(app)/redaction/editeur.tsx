@@ -7,9 +7,9 @@ import {
   Sparkles, ZoomIn, ZoomOut,
 } from "lucide-react";
 import type { Brouillon, DocumentEmis } from "@/lib/types";
-import { compterMots, porterMention, titreDeduit } from "@/lib/redaction";
+import { compterMots, porterMention, titreDeduit, versDocx, DOCX_DISPONIBLE } from "@/lib/redaction";
 import { envelopper, LIBELLE_FORMAT } from "@/lib/documents";
-import { telecharger } from "@/lib/export";
+import { telecharger, telechargerBinaire } from "@/lib/export";
 import {
   useArreterBrouillon, useEnregistrerBrouillon, useEnregistrerDocument, useModelesMaison,
 } from "@/lib/queries";
@@ -61,6 +61,7 @@ export function Editeur({ brouillon, surFermeture }: {
   const [empreinte, setEmpreinte] = useState(brouillon.id);
   const [depot, setDepot] = useState(false);
   const [corpsADeposer, setCorpsADeposer] = useState("");
+  const [sortie, setSortie] = useState<string | null>(null);
 
   const enregistrer = useEnregistrerBrouillon();
   const arreter = useArreterBrouillon();
@@ -157,13 +158,34 @@ export function Editeur({ brouillon, surFermeture }: {
     window.print();
   };
 
-  const exporterVers = async (format: "word" | "html") => {
+  const exporterVers = async (format: "docx" | "word" | "html") => {
+    const nom = titre || brouillon.titre;
     const corps = porterMention(feuille.current?.corps() ?? brouillon.contenu, assiste);
-    const sortie = envelopper(corps, titre || brouillon.titre, format);
-    const etat = await telecharger(nomDeFichier(titre || brouillon.titre, sortie.extension), sortie.contenu, sortie.mime);
+    let etat: Awaited<ReturnType<typeof telecharger>>;
+
+    if (format === "docx") {
+      // Le moteur pèse un mégaoctet : il n'arrive qu'ici, à la demande.
+      setSortie("docx");
+      try {
+        etat = await telechargerBinaire(nomDeFichier(nom, "docx"), await versDocx(corps, nom));
+      } catch {
+        toast.error("La composition du fichier Word a échoué", {
+          description: "Exportez en HTML ou en Word compatible en attendant.",
+        });
+        setSortie(null);
+        return;
+      }
+      setSortie(null);
+    } else {
+      const s = envelopper(corps, nom, format);
+      etat = await telecharger(nomDeFichier(nom, s.extension), s.contenu, s.mime);
+    }
+
     if (etat === "enregistre") {
       tracerEmission("TELECHARGEMENT");
-      toast.success(`Document exporté en ${LIBELLE_FORMAT[format]}`);
+      toast.success(format === "docx"
+        ? "Document exporté en Word (.docx)"
+        : `Document exporté en ${LIBELLE_FORMAT[format]}`);
     } else if (etat === "impossible") {
       toast.error("Le téléchargement a échoué");
     }
@@ -253,11 +275,18 @@ export function Editeur({ brouillon, surFermeture }: {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9" title="Exporter">
-                <Download className="h-4 w-4" />
+                {sortie ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => exporterVers("word")}>{LIBELLE_FORMAT.word}</DropdownMenuItem>
+              {DOCX_DISPONIBLE && (
+                <DropdownMenuItem onClick={() => exporterVers("docx")}>
+                  Word véritable (.docx)
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => exporterVers("word")}>
+                {LIBELLE_FORMAT.word} — compatible
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => exporterVers("html")}>{LIBELLE_FORMAT.html}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -301,6 +330,7 @@ export function Editeur({ brouillon, surFermeture }: {
           surFocus={() => feuille.current?.focus()}
           surChangement={marquerModifie}
           surInsertion={(t) => feuille.current?.insererTexte(t)}
+          surStyle={(propriete, valeur) => feuille.current?.appliquerStyle(propriete, valeur)}
           surDepot={() => {
             setCorpsADeposer(feuille.current?.corps() ?? brouillon.contenu);
             setDepot(true);

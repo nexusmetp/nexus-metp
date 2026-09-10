@@ -70,3 +70,38 @@ export async function copier(csv: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Enregistre un fichier binaire — un `.docx` n'est pas du texte.
+ *
+ * Même parcours que `telecharger` : l'API du visualiseur d'abord, l'ancre
+ * classique ensuite. Le contenu passe en octets, sans jamais transiter par
+ * une chaîne de caractères, qui corromprait l'archive ZIP du document.
+ */
+export async function telechargerBinaire(nom: string, blob: Blob): Promise<Resultat> {
+  const hote = (globalThis as any).claude;
+  if (hote?.use) {
+    try {
+      const downloads = await hote.use("downloads");
+      if (downloads) {
+        await downloads.save({ filename: nom, data: new Uint8Array(await blob.arrayBuffer()) });
+        return "enregistre";
+      }
+    } catch (e: any) {
+      return e?.code === "declined" ? "refuse" : "impossible";
+    }
+  }
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nom;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return "enregistre";
+  } catch {
+    return "impossible";
+  }
+}

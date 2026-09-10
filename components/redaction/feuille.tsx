@@ -25,6 +25,8 @@ export interface PoigneeFeuille {
   ajouter: (html: string) => void;
   /** Écrit du texte brut là où se trouve le curseur — un champ de fusion. */
   insererTexte: (texte: string) => void;
+  /** Applique une propriété de style au passage sélectionné. */
+  appliquerStyle: (propriete: string, valeur: string) => void;
   /** Remplace tout le corps — nouveau modèle, retour à une version. */
   remplacerTout: (html: string) => void;
   focus: () => void;
@@ -133,6 +135,31 @@ export const Feuille = forwardRef<PoigneeFeuille, Props>(function Feuille(
         s?.removeAllRanges();
         s?.addRange(apres);
       }
+      surChangement();
+    },
+    /* `execCommand` ne connaît que sept tailles relatives héritées du HTML 3 :
+       impossible d'y demander « 12 points ». On entoure donc la sélection
+       nous-mêmes, ce qui donne la valeur exacte annoncée par le ruban. */
+    appliquerStyle: (propriete, valeur) => {
+      hote.current?.focus();
+      const r = restaurer();
+      if (!r || r.collapsed) return;
+      const enveloppe = document.createElement("span");
+      enveloppe.setAttribute("style", `${propriete}: ${valeur}`);
+      try {
+        enveloppe.appendChild(r.extractContents());
+        r.insertNode(enveloppe);
+      } catch {
+        // Une sélection à cheval sur plusieurs blocs ne s'entoure pas d'un
+        // seul nœud : on laisse le texte intact plutôt que de le déplacer.
+        return;
+      }
+      const apres = document.createRange();
+      apres.selectNodeContents(enveloppe);
+      plage.current = apres;
+      const s = window.getSelection();
+      s?.removeAllRanges();
+      s?.addRange(apres);
       surChangement();
     },
     insererTexte: (texte) => {

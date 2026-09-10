@@ -75,7 +75,7 @@ export default function MonDossierPage() {
             <DocumentsLies
               source="agent"
               libelle="Mes documents"
-              contexte={{ agent: projete, signataire: { nom: user.nomComplet } }}
+              contexte={{ agent: projete, evenements, signataire: { nom: user.nomComplet } }}
             />
           </PageHeader>
 

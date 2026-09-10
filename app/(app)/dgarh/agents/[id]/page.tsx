@@ -65,7 +65,10 @@ export default function DossierAgentPage() {
       >
         <BadgeCategorie v={a.categorie} />
         <BadgePosition v={a.nature} />
-        <DocumentsLies source="agent" contexte={{ agent: a, signataire: { nom: user.nomComplet } }} />
+        <DocumentsLies
+          source="agent"
+          contexte={{ agent: a, evenements, signataire: { nom: user.nomComplet } }}
+        />
         <Button size="sm" asChild>
           <Link href="/dgarh/actes/nouveau"><GitBranch className="mr-2 h-3.5 w-3.5" /> Nouvelle mutation</Link>
         </Button>

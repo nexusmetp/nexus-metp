@@ -1,4 +1,4 @@
-import type { Communicabilite, SerieArchive, SortFinal } from "@/lib/types";
+import type { Communicabilite, Role, SerieArchive, SortFinal } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
 /* Plan de classement des archives — cahier §14                        */
@@ -128,3 +128,15 @@ export function communicable(dateFin: string, c: Communicabilite, aujourdHui = n
 /** Vrai quand la durée d'utilité administrative est échue : le sort final s'applique. */
 export const duaEchue = (echeance: string, aujourdHui = new Date()) =>
   echeance <= aujourdHui.toISOString().slice(0, 10);
+
+/**
+ * Qui peut éliminer.
+ *
+ * Le droit d'écriture sur le module suffit à préparer un versement ou à
+ * sortir un article du rayon : ces gestes se rattrapent. L'élimination, non.
+ * Elle est donc réservée au service des archives lui-même — un agent
+ * instructeur verse et consulte, il ne détruit pas.
+ */
+export const ROLES_ELIMINATION: Role[] = ["ADMIN_SYSTEME", "CHEF_SERVICE", "CHEF_BUREAU"];
+
+export const peutEliminer = (role: Role) => ROLES_ELIMINATION.includes(role);

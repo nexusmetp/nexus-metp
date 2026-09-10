@@ -6,7 +6,7 @@ import { ShieldAlert, Trash2 } from "lucide-react";
 import { useArticlesArchives, useEliminerArticles } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  PLAN_CLASSEMENT, SORT_FINAL_LABELS, duaEchue, peut, serieParCode,
+  PLAN_CLASSEMENT, SORT_FINAL_LABELS, duaEchue, peut, peutEliminer, serieParCode,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { ChampTexte, DialogueFormulaire, Section } from "@/components/nexus/module";
@@ -31,7 +31,9 @@ export function SortFinalArchives() {
   const eliminer = useEliminerArticles();
   const [coches, setCoches] = useState<Set<string>>(new Set());
   const [visa, setVisa] = useState<string | null>(null);
+  // Deux droits distincts : verser se rattrape, éliminer non.
   const archiviste = peut(user.role, "archives", "W");
+  const habiliteAEliminer = archiviste && peutEliminer(user.role);
 
   const echus = useMemo(
     () => articles.filter((a) => a.statut !== "ELIMINE" && duaEchue(a.echeanceDua)),
@@ -110,7 +112,7 @@ export function SortFinalArchives() {
                 libelle="Bordereau d'élimination"
                 contexte={{ articlesArchives: selection.length ? selection : eliminables, signataire: { nom: user.nomComplet } }}
               />
-              {archiviste && (
+              {habiliteAEliminer && (
                 <Button
                   size="sm" variant="destructive"
                   disabled={!selection.length}
@@ -137,9 +139,9 @@ export function SortFinalArchives() {
               </TableHeader>
               <TableBody>
                 {eliminables.map((a) => (
-                  <TableRow key={a.id} className="cursor-pointer" onClick={() => archiviste && basculer(a.id)}>
+                  <TableRow key={a.id} className="cursor-pointer" onClick={() => habiliteAEliminer && basculer(a.id)}>
                     <TableCell>
-                      <Checkbox checked={coches.has(a.id)} disabled={!archiviste} />
+                      <Checkbox checked={coches.has(a.id)} disabled={!habiliteAEliminer} />
                     </TableCell>
                     <TableCell className="font-mono text-[11px]">{a.cote}</TableCell>
                     <TableCell className="hidden md:table-cell text-xs">{a.intitule}</TableCell>
@@ -163,6 +165,14 @@ export function SortFinalArchives() {
           </div>
         </CardContent>
       </Card>
+
+      {archiviste && !habiliteAEliminer && (
+        <p className="rounded-lg border border-dashed p-3 text-[11px] leading-relaxed text-muted-foreground">
+          Vous pouvez préparer un versement et consulter le fonds, mais pas éliminer :
+          la destruction relève du service des archives lui-même. Le bordereau ci-dessus
+          reste éditable pour la lui transmettre.
+        </p>
+      )}
 
       <Card>
         <CardHeader className="pb-3">

@@ -235,6 +235,7 @@
     url("/bureau-ministre.webp"),
     url("/bureau-ministre.jpg"),
     url("/bureau-ministre.png"),
+    url("/bkImagePropre.webp"),
     url("/bkImage.png"),
     url("/login-bg.jpg");
   background-size: cover;
@@ -247,7 +248,15 @@
    bas, là où se trouve le pied de page. */
 .voile-connexion {
   background:
-    linear-gradient(to bottom, rgba(2, 6, 23, 0.34) 0%, rgba(2, 6, 23, 0.52) 55%, rgba(2, 6, 23, 0.66) 100%);
+    /* Bande sombre en pied : c'est là que se tiennent le sélecteur de comptes
+       et la mention légale, en blanc, sur la partie la plus claire de la
+       photographie — la table et les papiers. Sans cette bande, ils
+       disparaissaient purement et simplement. */
+    linear-gradient(to bottom,
+      rgba(2, 6, 23, 0.46) 0%,
+      rgba(2, 6, 23, 0.56) 45%,
+      rgba(2, 6, 23, 0.74) 78%,
+      rgba(2, 6, 23, 0.86) 100%);
 }
 
 /* Écran d'ouverture : le texte est posé À MÊME la photo, sans carte pour le

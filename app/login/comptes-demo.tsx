@@ -28,7 +28,10 @@ export function ComptesDemo({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="bouton-demo h-10 w-full justify-between rounded-[3px] border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
+          /* Fond sombre et non translucide-clair : le bouton se tient sur la
+             photographie, dont la partie basse est vive. Du blanc sur du
+             blanc à 10 % ne se lisait pas. */
+          className="bouton-demo h-10 w-full justify-between rounded-[3px] border-white/30 bg-slate-950/60 text-white shadow-lg backdrop-blur-md hover:bg-slate-950/75 hover:text-white"
         >
           <span className="flex items-center gap-2 text-[13px]">
             <Lock className="h-3.5 w-3.5 text-white/70" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ARMOIRIES_SOURCES, LOGO_SOURCES, DRAPEAU_URL } from "@/lib/referentiels";
 import { useTextes } from "@/lib/langues";
@@ -20,6 +20,22 @@ import { useTextes } from "@/lib/langues";
 /* ------------------------------------------------------------------ */
 
 /**
+ * Rattrape une image déjà tombée avant l'hydratation.
+ *
+ * Le serveur rend la balise, le navigateur lance le chargement aussitôt, et
+ * l'échec survient le plus souvent AVANT que React n'ait posé son
+ * gestionnaire `onError`. La cascade restait alors bloquée sur un fichier
+ * absent, et la page affichait le texte de remplacement à la place du
+ * blason. On interroge donc l'élément au moment où il nous arrive : une
+ * image « complète » de largeur nulle est une image qui a échoué.
+ */
+function useEchecPrecoce(surEchec: () => void) {
+  return useCallback((el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth === 0) surEchec();
+  }, [surEchec]);
+}
+
+/**
  * Une image qui essaie plusieurs fichiers dans l'ordre.
  *
  * Sans cela, déposer le fichier officiel supposerait de le renommer avec la
@@ -27,23 +43,35 @@ import { useTextes } from "@/lib/langues";
  * qu'il est.
  */
 function ImageEnCascade({
-  sources, alt, className, style,
+  sources, alt, className, style, secours = null,
 }: {
   sources: readonly string[];
   alt: string;
   className?: string;
   style?: React.CSSProperties;
+  /** Ce qu'on montre quand aucun fichier n'a répondu. */
+  secours?: React.ReactNode;
 }) {
   const [rang, setRang] = useState(0);
-  const src = sources[Math.min(rang, sources.length - 1)];
+  const avancer = useCallback(() => setRang((r) => Math.min(r + 1, sources.length)), [sources.length]);
+  const verifier = useEchecPrecoce(avancer);
+
+  // Plutôt qu'une icône de fichier cassé, qui n'apprend rien à personne.
+  if (rang >= sources.length) return <>{secours}</>;
+
+  const src = sources[rang];
   return (
     // eslint-disable-next-line @next/next/no-img-element
+    // `key` : chaque source obtient son propre nœud, sans quoi la vérification
+    // au montage ne se rejouerait pas d'un fichier au suivant.
     <img
+      key={src}
+      ref={verifier}
       src={src}
       alt={alt}
       className={className}
       style={style}
-      onError={() => setRang((r) => (r < sources.length - 1 ? r + 1 : r))}
+      onError={avancer}
     />
   );
 }
@@ -91,22 +119,8 @@ export function LogoMETP({
   taille = 52, compact = false, className,
 }: { taille?: number; compact?: boolean; className?: string }) {
   const t = useTextes();
-  const [officielAbsent, setOfficielAbsent] = useState(false);
 
-  if (!officielAbsent && LOGO_SOURCES.length) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={LOGO_SOURCES[0]}
-        alt={`${t.etat.republique} — ${t.etat.ministere}`}
-        className={cn("w-auto object-contain", className)}
-        style={{ height: taille }}
-        onError={() => setOfficielAbsent(true)}
-      />
-    );
-  }
-
-  return (
+  const compose = (
     <span className={cn("flex items-center gap-3", className)}>
       <Armoiries taille={taille} />
       {/* Filet tricolore : sépare le blason du timbre, comme sur le papier
@@ -131,5 +145,17 @@ export function LogoMETP({
         </span>
       </span>
     </span>
+  );
+
+  if (!LOGO_SOURCES.length) return compose;
+
+  return (
+    <ImageEnCascade
+      sources={LOGO_SOURCES}
+      alt={`${t.etat.republique} — ${t.etat.ministere}`}
+      className={cn("w-auto object-contain", className)}
+      style={{ height: taille }}
+      secours={compose}
+    />
   );
 }

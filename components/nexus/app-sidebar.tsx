@@ -7,7 +7,7 @@ import {
   Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
   Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
   UserCircle, ChevronLeft, Gauge, Landmark, LayoutDashboard, LifeBuoy, Map, Megaphone,
-  MessageSquare, MoreHorizontal,
+  MessageSquare, MoreHorizontal, PenLine, Award, BookMarked, Briefcase, CircleHelp, Contact, UserMinus,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
@@ -43,6 +43,15 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
       { href: "/conges", label: "Congés et positions", icon: CalendarDays, mod: "conges", pret: true },
       { href: "/formations", label: "Formation", icon: GraduationCap, mod: "formations", pret: true },
       { href: "/contentieux", label: "Contentieux", icon: Gavel, mod: "contentieux", pret: true },
+      { href: "/retraite", label: "Départs à la retraite", icon: UserMinus, mod: "retraite", pret: true },
+    ],
+  },
+  {
+    titre: "Emplois et recrutement",
+    items: [
+      { href: "/postes", label: "Tableau des emplois", icon: Briefcase, mod: "postes", pret: true },
+      { href: "/recrutement", label: "Recrutement et concours", icon: Award, mod: "recrutement", pret: true },
+      { href: "/delegations", label: "Délégations et intérims", icon: PenLine, mod: "delegations", pret: true },
     ],
   },
   {
@@ -52,7 +61,9 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Ressources",
     items: [
+      { href: "/annuaire", label: "Annuaire", icon: Contact, mod: "annuaire", pret: true },
       { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
+      { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
       { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents", pret: true },
       { href: "/rapports", label: "Rapports", icon: BarChart3, mod: "rapports", pret: true },
     ],
@@ -67,7 +78,10 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   },
   {
     titre: "Espace personnel",
-    items: [{ href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier", pret: true }],
+    items: [
+      { href: "/mon-dossier", label: "Mon dossier", icon: UserCircle, mod: "mon-dossier", pret: true },
+      { href: "/aide", label: "Aide", icon: CircleHelp, mod: "aide", pret: true },
+    ],
   },
   {
     titre: "Système",

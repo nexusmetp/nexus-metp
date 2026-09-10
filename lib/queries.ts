@@ -7,9 +7,11 @@ import { projeterTous, type Historique } from "@/lib/carriere";
 import { appliquerTransition, calculerEffets, entreeJournal, type CodeTransition } from "@/lib/actes";
 import { hydraterEntites } from "@/lib/referentiels";
 import type {
-  Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, Conversation, Corps,
-  EntreeJournal, Entite, Grade, Message, MessageTicket, Notification, ParametresSysteme,
-  Position, Poste, Role, SituationCarriere, StatutTicket, Ticket, Utilisateur,
+  Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, CampagneRecrutement,
+  Candidature, Conge, Conversation, Corps, Delegation, EntreeJournal, Entite, Grade,
+  InscriptionFormation, Message, MessageTicket, Notification, OffreFormation,
+  ParametresSysteme, Position, Poste, Role, SituationCarriere, StatutTicket,
+  TexteReglementaire, Ticket, Utilisateur,
 } from "@/lib/types";
 
 const liste = <T,>(store: StoreName) =>
@@ -33,6 +35,13 @@ export const useMessagesTicket = () => liste<MessageTicket>("messagesTicket");
 export const useConversations = () => liste<Conversation>("conversations");
 export const useMessages = () => liste<Message>("messages");
 export const useAnnonces = () => liste<Annonce>("annonces");
+export const useConges = () => liste<Conge>("conges");
+export const useDelegations = () => liste<Delegation>("delegations");
+export const useTextes = () => liste<TexteReglementaire>("textes");
+export const useCampagnes = () => liste<CampagneRecrutement>("campagnes");
+export const useCandidatures = () => liste<Candidature>("candidatures");
+export const useOffresFormation = () => liste<OffreFormation>("offresFormation");
+export const useInscriptions = () => liste<InscriptionFormation>("inscriptions");
 
 export const useAgent = (id: string) =>
   useQuery<Agent | undefined>({ queryKey: ["agents", id], queryFn: () => one<Agent>("agents", id), enabled: !!id });
@@ -501,5 +510,98 @@ export function useMajParametres() {
     onSuccess: () => {
       ["parametres", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
     },
+  });
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Délégations — ce qui débloque le circuit quand le signataire manque */
+/* ------------------------------------------------------------------ */
+
+export function useEnregistrerDelegation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ delegation, utilisateur, creation }: {
+      delegation: Delegation; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<Delegation>("delegations", delegation);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Delegation", delegation.id, {
+        nouvelleValeur: `${delegation.delegantNom} → ${delegation.delegataireNom}`,
+        justification: delegation.motif,
+      });
+      return delegation;
+    },
+    onSuccess: () => {
+      ["delegations", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonds documentaire, recrutement, formation                          */
+/* ------------------------------------------------------------------ */
+
+export function useEnregistrerTexte() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ texte, utilisateur, creation }: {
+      texte: TexteReglementaire; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<TexteReglementaire>("textes", texte);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Texte", texte.id, {
+        nouvelleValeur: texte.reference, justification: texte.titre,
+      });
+      return texte;
+    },
+    onSuccess: () => {
+      ["textes", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+export function useEnregistrerCampagne() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ campagne, utilisateur, creation }: {
+      campagne: CampagneRecrutement; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<CampagneRecrutement>("campagnes", campagne);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Campagne", campagne.id, {
+        nouvelleValeur: campagne.statut, justification: campagne.intitule,
+      });
+      return campagne;
+    },
+    onSuccess: () => {
+      ["campagnes", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+export function useEnregistrerOffre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ offre, utilisateur, creation }: {
+      offre: OffreFormation; utilisateur: Utilisateur; creation: boolean;
+    }) => {
+      await save<OffreFormation>("offresFormation", offre);
+      await journaliser(utilisateur, creation ? "CREATION" : "MODIFICATION", "Formation", offre.id, {
+        nouvelleValeur: offre.statut, justification: offre.intitule,
+      });
+      return offre;
+    },
+    onSuccess: () => {
+      ["offresFormation", "journal"].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    },
+  });
+}
+
+export function useInscrireFormation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ inscription }: { inscription: InscriptionFormation }) => {
+      await save<InscriptionFormation>("inscriptions", inscription);
+      return inscription;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["inscriptions"] }),
   });
 }

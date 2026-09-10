@@ -14,10 +14,12 @@ import {
   entiteById, enfantsDe, descendantsDe, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
 } from "@/lib/referentiels";
 import type {
-  Acte, Affectation, Agent, Annonce, BesoinPersonnel, CategoriePersonnel, CategorieTicket,
-  Conversation, EntreeJournal, EtapeActe, Message, MessageTicket, Notification,
-  ParametresSysteme, Position, Poste, PrioriteTicket, SituationCarriere, StatutActe,
-  StatutTicket, Ticket, TypeActe, Utilisateur,
+  Acte, Affectation, Agent, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature,
+  CategoriePersonnel, CategorieTicket, Conge, Conversation, Delegation, EntreeJournal,
+  EtapeActe, InscriptionFormation, Message, MessageTicket, NatureConge, NatureFormation,
+  NatureTexte, Notification, OffreFormation, ParametresSysteme, Position, Poste,
+  PrioriteTicket, SituationCarriere, StatutActe, StatutTicket, TexteReglementaire,
+  Ticket, TypeActe, Utilisateur,
 } from "@/lib/types";
 
 /* ---------- PRNG déterministe ---------- */
@@ -167,6 +169,13 @@ export interface Dataset {
   messages: Message[];
   annonces: Annonce[];
   parametres: ParametresSysteme;
+  conges: Conge[];
+  delegations: Delegation[];
+  textes: TexteReglementaire[];
+  campagnes: CampagneRecrutement[];
+  candidatures: Candidature[];
+  offresFormation: OffreFormation[];
+  inscriptions: InscriptionFormation[];
 }
 
 export function buildDataset(): Dataset {
@@ -649,10 +658,311 @@ export function buildDataset(): Dataset {
     maj: "2026-09-09T08:00:00.000Z",
   };
 
+  /* ---------- Emplois vacants et gelés —
+     Un tableau des emplois où tout est occupé ne sert à rien : ce sont les
+     postes vides qui appellent un recrutement, et les postes gelés qui
+     expliquent qu'un besoin reste sans suite. §03 ---------- */
+  ENTITES.filter((x) => effectifDe(x.niveau) > 0).forEach((ent) => {
+    const enseignant = ent.niveau === "ETABLISSEMENT";
+    const nb = int(0, ent.niveau === "ETABLISSEMENT" ? 6 : 3);
+    for (let k = 0; k < nb; k++) {
+      nPoste++;
+      const gele = chance(0.28);
+      postes.push({
+        id: `PST-${pad(nPoste, 5)}`,
+        code: `${ent.sigle}-V${pad(k + 1, 2)}`,
+        intitule: enseignant ? `Enseignant — ${pick(DISCIPLINES)}` : `Agent — ${ent.sigle}`,
+        entiteId: ent.id,
+        gradeRequisId: pick(gradesPour(ent.niveau, enseignant)),
+        statut: gele ? "GELE" : "VACANT",
+        budgetise: !gele,
+      });
+    }
+  });
+
+  /* ---------- Congés — le solde ne se déduit pas d'un acte isolé ---------- */
+  const DROIT_ANNUEL = 30;
+  const conges: Conge[] = [];
+  let nConge = 0;
+  agents.forEach((a) => {
+    if (!chance(0.55)) return;
+    const nb = int(1, 3);
+    for (let k = 0; k < nb; k++) {
+      nConge++;
+      const nature = pick<NatureConge>(["ANNUEL", "ANNUEL", "ANNUEL", "MALADIE", "MATERNITE", "EXCEPTIONNEL", "SANS_SOLDE"]);
+      const debut = `2026-${pad(int(1, 11), 2)}-${pad(int(1, 25), 2)}`;
+      const jours = nature === "ANNUEL" ? int(5, 20) : nature === "MATERNITE" ? 98 : int(2, 12);
+      conges.push({
+        id: `CNG-${pad(nConge, 5)}`,
+        agentId: a.id,
+        nature,
+        dateDebut: debut,
+        dateFin: plusJours(debut, jours),
+        jours,
+        exercice: 2026,
+        statut: pick(["PRIS", "PRIS", "ACCORDE", "DEMANDE", "REFUSE"]) as Conge["statut"],
+        acteId: chance(0.7) ? pick(actes).id : null,
+        motif: nature === "EXCEPTIONNEL" ? pick(["Événement familial", "Mariage", "Deuil"]) : undefined,
+      });
+    }
+  });
+
+  /* ---------- Délégations de signature et intérims ---------- */
+  const delegations: Delegation[] = [
+    {
+      id: "DEL-0001", reference: "DEC-014/METP/DGARH-2026", portee: "SIGNATURE",
+      delegantId: "USR-002", delegantNom: "Alphonse NGATSE",
+      delegataireId: "USR-003", delegataireNom: "Berthe MOUKALA",
+      entiteId: "ENT-DGARH",
+      typesActe: ["AFFECTATION", "MUTATION", "CONGE"],
+      dateDebut: "2026-09-01", dateFin: "2026-12-31",
+      motif: "Délégation permanente pour les actes de gestion courante.",
+      acteId: null,
+    },
+    {
+      id: "DEL-0002", reference: "DEC-015/METP/DGARH-2026", portee: "INTERIM",
+      delegantId: "USR-003", delegantNom: "Berthe MOUKALA",
+      delegataireId: "USR-005", delegataireNom: "Rodrigue OKEMBA",
+      entiteId: "ENT-DPCEF", typesActe: [],
+      dateDebut: "2026-09-15", dateFin: "2026-09-30",
+      motif: "Mission à l'intérieur du pays — intérim de la direction.",
+      acteId: null,
+    },
+    {
+      id: "DEL-0003", reference: "DEC-009/METP/DGARH-2026", portee: "SIGNATURE",
+      delegantId: "USR-002", delegantNom: "Alphonse NGATSE",
+      delegataireId: "USR-005", delegataireNom: "Rodrigue OKEMBA",
+      entiteId: "ENT-DPCEF-SPC", typesActe: ["CONGE", "FORMATION"],
+      dateDebut: "2026-03-01", dateFin: "2026-08-31",
+      motif: "Délégation venue à échéance, conservée pour mémoire.",
+      acteId: null, revoquee: false,
+    },
+    {
+      id: "DEL-0004", reference: "DEC-011/METP/DGARH-2026", portee: "SIGNATURE",
+      delegantId: "USR-002", delegantNom: "Alphonse NGATSE",
+      delegataireId: "USR-006", delegataireNom: "Ghislain MABIALA",
+      entiteId: "ENT-SPC-BRM", typesActe: ["AFFECTATION"],
+      dateDebut: "2026-05-01", dateFin: "2026-10-31",
+      motif: "Délégation révoquée à la suite d'une réorganisation du bureau.",
+      acteId: null, revoquee: true,
+    },
+  ];
+
+  /* ---------- Fonds documentaire réglementaire (§14) ---------- */
+  const textes: TexteReglementaire[] = [
+    {
+      id: "TXT-0001", reference: "Loi n° 021-89 du 14 novembre 1989",
+      titre: "Portant refonte de la grille des salaires des agents civils de l'État",
+      nature: "LOI", dateSignature: "1989-11-14", datePublication: "1989-11-30",
+      journalOfficiel: "JO n° 48 de 1989",
+      resume: "Fixe la grille indiciaire applicable aux fonctionnaires : catégories, échelles, échelons et indices. C'est elle qui donne un sens chiffré au grade porté par un acte.",
+      motsCles: ["grille", "indice", "salaire", "catégorie"], provenance: "A_VERIFIER",
+    },
+    {
+      id: "TXT-0002", reference: "Loi n° 15-2019 du 22 juillet 2019",
+      titre: "Portant statut général de la fonction publique",
+      nature: "LOI", dateSignature: "2019-07-22", datePublication: "2019-08-05",
+      journalOfficiel: "JO n° 31 de 2019",
+      resume: "Droits et obligations, recrutement, positions administratives, avancement, discipline, cessation de fonctions. Texte de référence de toute décision de carrière.",
+      motsCles: ["statut", "fonction publique", "position", "discipline"], provenance: "A_VERIFIER",
+    },
+    {
+      id: "TXT-0003", reference: "Arrêté n° 25567 du 30 décembre 2022",
+      titre: "Portant attributions et organisation de la direction générale de l'administration et des ressources humaines",
+      nature: "ARRETE", dateSignature: "2022-12-30", datePublication: "2022-12-30",
+      journalOfficiel: "JO n° 44 de 2022 — non consulté",
+      resume: "Crée la direction générale, ses directions centrales et son secrétariat. C'est le texte qui fonde l'essentiel de l'organigramme retenu par l'outil.",
+      motsCles: ["DGARH", "organisation", "directions"], entiteId: "ENT-DGARH", provenance: "TEXTE",
+    },
+    {
+      id: "TXT-0004", reference: "Arrêté n° 25569 du 30 décembre 2022",
+      titre: "Portant attributions et organisation de l'inspection générale",
+      nature: "ARRETE", dateSignature: "2022-12-30", datePublication: "2022-12-30",
+      journalOfficiel: "JO n° 44 de 2022 — non consulté",
+      resume: "Institue l'inspection générale de l'enseignement technique et professionnel et fixe ses missions de contrôle.",
+      motsCles: ["inspection", "contrôle"], entiteId: "ENT-IG", provenance: "TEXTE",
+    },
+    {
+      id: "TXT-0005", reference: "Arrêté n° 25570 du 30 décembre 2022",
+      titre: "Portant création des inspections interdépartementales et des antennes départementales d'appui et de contrôle",
+      nature: "ARRETE", dateSignature: "2022-12-30", datePublication: "2022-12-30",
+      journalOfficiel: "JO n° 44 de 2022 — non consulté",
+      resume: "Crée l'échelon interdépartemental de contrôle et ses antennes. Le découpage précis n'a pas pu être consulté.",
+      motsCles: ["inspection", "déconcentration", "antenne"], entiteId: "ENT-INTERDEP", provenance: "TEXTE",
+    },
+    {
+      id: "TXT-0006", reference: "Arrêté n° 25571 du 30 décembre 2022",
+      titre: "Portant attributions et organisation des directions départementales de l'enseignement technique",
+      nature: "ARRETE", dateSignature: "2022-12-30", datePublication: "2022-12-30",
+      journalOfficiel: "JO n° 44 de 2022 — non consulté",
+      resume: "Fixe l'organisation des quinze directions départementales, échelon de gestion de proximité du personnel.",
+      motsCles: ["direction départementale", "déconcentration"], provenance: "TEXTE",
+    },
+    {
+      id: "TXT-0007", reference: "Circulaire n° 004/METP/DGARH-2026",
+      titre: "Régularisation des dossiers physiques incomplets",
+      nature: "CIRCULAIRE", dateSignature: "2026-08-11",
+      resume: "Impartit soixante jours aux bureaux gestionnaires pour réclamer les pièces manquantes et consigner la demande dans l'outil.",
+      motsCles: ["dossier", "pièces", "régularisation"], entiteId: "ENT-DPCEF", provenance: "RECOMMANDATION",
+    },
+    {
+      id: "TXT-0008", reference: "Note de service n° 012/METP/DGARH-2026",
+      titre: "Ouverture de la campagne d'avancement 2026",
+      nature: "NOTE_SERVICE", dateSignature: "2026-09-02",
+      resume: "Invite les chefs de service à transmettre la liste des agents remplissant les conditions d'avancement d'échelon avant le 30 septembre.",
+      motsCles: ["avancement", "campagne"], entiteId: "ENT-DGARH", provenance: "RECOMMANDATION",
+    },
+    {
+      id: "TXT-0009", reference: "Décret n° 2009-514 du 30 décembre 2009",
+      titre: "Portant organisation du ministère de l'enseignement technique et professionnel",
+      nature: "DECRET", dateSignature: "2009-12-30", datePublication: "2010-01-15",
+      resume: "Texte d'organisation générale du ministère, cité par les arrêtés d'application. Sa version en vigueur n'a pas pu être consultée.",
+      motsCles: ["organisation", "ministère"], entiteId: "ENT-METP", provenance: "A_VERIFIER",
+    },
+  ];
+
+  /* ---------- Recrutement : campagnes et candidatures ---------- */
+  const campagnes: CampagneRecrutement[] = [
+    {
+      id: "CMP-0001", reference: "CON-01/METP-2026",
+      intitule: "Concours direct de recrutement de professeurs techniques adjoints",
+      annee: 2026, categorie: "FONCTIONNAIRE", postesOuverts: 180,
+      disciplines: ["Génie civil", "Électrotechnique", "Mécanique", "Informatique", "Comptabilité"],
+      dateOuverture: "2026-06-01", dateCloture: "2026-07-15", dateEpreuves: "2026-09-20",
+      statut: "CORRECTION", entiteId: "ENT-SPC-BRM",
+      besoinIds: besoins.slice(0, 12).map((b) => b.id),
+    },
+    {
+      id: "CMP-0002", reference: "CON-02/METP-2026",
+      intitule: "Recrutement de vacataires pour l'année scolaire 2026-2027",
+      annee: 2026, categorie: "VACATAIRE", postesOuverts: 240,
+      disciplines: ["Froid et climatisation", "Hôtellerie-restauration", "Secrétariat", "Agriculture"],
+      dateOuverture: "2026-08-10", dateCloture: "2026-09-30",
+      statut: "OUVERTE", entiteId: "ENT-SPC-BRM",
+      besoinIds: besoins.slice(12, 40).map((b) => b.id),
+    },
+    {
+      id: "CMP-0003", reference: "CON-03/METP-2026",
+      intitule: "Concours professionnel d'accès au corps des inspecteurs",
+      annee: 2026, categorie: "FONCTIONNAIRE", postesOuverts: 24,
+      disciplines: ["Inspection pédagogique", "Inspection administrative"],
+      dateOuverture: "2026-04-02", dateCloture: "2026-05-20", dateEpreuves: "2026-06-28",
+      statut: "PROCLAMEE", entiteId: "ENT-SPC-BRM", besoinIds: [],
+    },
+    {
+      id: "CMP-0004", reference: "CON-04/METP-2027",
+      intitule: "Concours direct de recrutement de personnel administratif",
+      annee: 2027, categorie: "FONCTIONNAIRE", postesOuverts: 60,
+      disciplines: ["Gestion administrative", "Comptabilité publique", "Archivage"],
+      dateOuverture: "2027-01-15", dateCloture: "2027-03-01",
+      statut: "PREPARATION", entiteId: "ENT-SPC-BRM", besoinIds: [],
+    },
+  ];
+
+  const candidatures: Candidature[] = [];
+  let nCand = 0;
+  campagnes.forEach((c) => {
+    if (c.statut === "PREPARATION") return;
+    const nb = c.statut === "OUVERTE" ? int(60, 90) : int(100, 160);
+    for (let k = 0; k < nb; k++) {
+      nCand++;
+      const sexe = chance(0.42) ? "F" : "M";
+      const proclame = c.statut === "PROCLAMEE";
+      const note = c.statut === "OUVERTE" ? null : Math.round((6 + rnd() * 13) * 10) / 10;
+      candidatures.push({
+        id: `CAND-${pad(nCand, 5)}`,
+        campagneId: c.id,
+        numero: `${c.reference.split("/")[0]}-${pad(k + 1, 4)}`,
+        nom: pick(NOMS),
+        prenom: sexe === "F" ? pick(PRENOMS_F) : pick(PRENOMS_M),
+        sexe,
+        dateNaissance: dateEntre(1988, 2003),
+        diplome: pick(DIPLOMES),
+        discipline: pick(c.disciplines),
+        departement: pick(DEPARTEMENTS).nom,
+        statut: c.statut === "OUVERTE"
+          ? pick(["DEPOSEE", "DEPOSEE", "RECEVABLE", "IRRECEVABLE"]) as Candidature["statut"]
+          : proclame
+            ? (note! >= 12 ? "ADMIS" : note! >= 10 ? "ADMISSIBLE" : "NON_ADMIS")
+            : pick(["RECEVABLE", "RECEVABLE", "ADMISSIBLE", "IRRECEVABLE"]) as Candidature["statut"],
+        note,
+        rang: null,
+        agentId: null,
+      });
+    }
+  });
+  // Le rang ne se tire pas au sort : il découle de la note, par campagne.
+  campagnes.forEach((c) => {
+    candidatures
+      .filter((x) => x.campagneId === c.id && typeof x.note === "number")
+      .sort((a, b) => (b.note ?? 0) - (a.note ?? 0))
+      .forEach((x, i) => { x.rang = i + 1; });
+  });
+
+  /* ---------- Formation : catalogue et inscriptions ---------- */
+  const ORGANISMES = ["ENAM Brazzaville", "École nationale supérieure polytechnique",
+    "Institut de formation des cadres", "AFD — programme d'appui", "UNESCO-UNEVOC",
+    "Centre de perfectionnement des enseignants"];
+  const INTITULES_FORMATION = [
+    "Ingénierie de la formation professionnelle",
+    "Rédaction des actes administratifs",
+    "Gestion de la paie et des carrières",
+    "Approche par compétences en enseignement technique",
+    "Maintenance des équipements d'atelier",
+    "Passation des marchés publics",
+    "Encadrement et gestion d'équipe",
+    "Numérique éducatif et plateformes d'apprentissage",
+    "Comptabilité publique et exécution budgétaire",
+    "Archivage et gestion documentaire",
+  ];
+
+  const offresFormation: OffreFormation[] = INTITULES_FORMATION.map((intitule, i) => {
+    const debut = `2026-${pad(int(1, 11), 2)}-${pad(int(1, 25), 2)}`;
+    const duree = int(3, 20);
+    return {
+      id: `FRM-${pad(i + 1, 4)}`,
+      reference: `PF-${pad(i + 1, 3)}/METP-2026`,
+      intitule,
+      nature: pick<NatureFormation>(["CONTINUE", "CONTINUE", "PERFECTIONNEMENT", "CERTIFIANTE", "RECONVERSION"]),
+      organisme: pick(ORGANISMES),
+      lieu: pick(["Brazzaville", "Pointe-Noire", "Dolisie", "À distance"]),
+      dureeJours: duree,
+      places: int(12, 40),
+      dateDebut: debut,
+      dateFin: plusJours(debut, duree),
+      coutUnitaire: int(120, 850) * 1000,
+      publicVise: pick(["Enseignants techniques", "Personnel administratif", "Encadrement", "Chefs d'établissement"]),
+      statut: pick(["REALISEE", "OUVERTE", "PROGRAMMEE", "COMPLETE"]) as OffreFormation["statut"],
+      entiteId: "ENT-SPC-BFC",
+    };
+  });
+
+  const inscriptions: InscriptionFormation[] = [];
+  let nIns = 0;
+  offresFormation.forEach((o) => {
+    const nb = Math.min(o.places, int(6, 34));
+    for (let k = 0; k < nb; k++) {
+      nIns++;
+      const suivie = o.statut === "REALISEE";
+      inscriptions.push({
+        id: `INS-${pad(nIns, 5)}`,
+        offreId: o.id,
+        agentId: pick(agents).id,
+        dateInscription: o.dateDebut,
+        statut: suivie
+          ? pick(["SUIVIE", "SUIVIE", "SUIVIE", "ABANDONNEE"]) as InscriptionFormation["statut"]
+          : pick(["PROPOSEE", "RETENUE", "RETENUE", "REFUSEE"]) as InscriptionFormation["statut"],
+        acteId: chance(0.4) ? pick(actes).id : null,
+        resultat: suivie ? pick(["ACQUIS", "ACQUIS", "PARTIEL", "NON_ACQUIS"]) as any : null,
+      });
+    }
+  });
+
   return {
     entites: ENTITES, corps: CORPS, grades: GRADES,
     postes, agents, situations, affectations, positions, actes, besoins,
     utilisateurs, journal, notifications,
     tickets, messagesTicket, conversations, messages, annonces, parametres,
+    conges, delegations, textes, campagnes, candidatures, offresFormation, inscriptions,
   };
 }

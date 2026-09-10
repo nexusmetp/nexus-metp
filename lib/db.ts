@@ -5,17 +5,19 @@ import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
 /**
- * v6 : cabinet du ministre dans l'arborescence. v5 : collaboration (tickets,
- * messagerie, annonces) et paramétrage. v4 : dossier personnel pour tous les
- * rôles. v3 : niveau établissement (§10).
+ * v8 : emplois, délégations, fonds documentaire, recrutement et formation.
+ * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
+ * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
   "situations", "affectations", "positions",
   "actes", "besoins", "utilisateurs", "journal", "notifications",
-  "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres", "meta",
+  "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres",
+  "conges", "delegations", "textes", "campagnes", "candidatures",
+  "offresFormation", "inscriptions", "meta",
 ] as const;
 export type StoreName = (typeof STORES)[number];
 
@@ -27,7 +29,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 7) {
+        if (ancienne < 8) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {
@@ -78,6 +80,13 @@ export async function ensureSeed(force = false): Promise<void> {
     ...put("conversations", data.conversations),
     ...put("messages", data.messages),
     ...put("annonces", data.annonces),
+    ...put("conges", data.conges),
+    ...put("delegations", data.delegations),
+    ...put("textes", data.textes),
+    ...put("campagnes", data.campagnes),
+    ...put("candidatures", data.candidatures),
+    ...put("offresFormation", data.offresFormation),
+    ...put("inscriptions", data.inscriptions),
     tx.objectStore("parametres").put(data.parametres),
     tx.objectStore("meta").put({
       id: "seed",

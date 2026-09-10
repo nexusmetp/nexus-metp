@@ -613,7 +613,8 @@ export const POSITION_LABELS: Record<NaturePosition, string> = {
 export type ModuleKey =
   | "dgarh" | "national" | "organigramme" | "organisation" | "pilotage" | "agents" | "actes"
   | "carrieres" | "conges" | "formations" | "contentieux" | "besoins"
-  | "referentiels" | "documents" | "rapports" | "journal" | "administration"
+  | "referentiels" | "documents" | "textes" | "rapports" | "journal" | "administration"
+  | "postes" | "recrutement" | "delegations" | "annuaire" | "retraite" | "aide"
   | "messagerie" | "tickets" | "annonces" | "mon-dossier";
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
@@ -631,6 +632,13 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   besoins: "États de besoins",
   referentiels: "Référentiels",
   documents: "Archives et GED",
+  textes: "Fonds réglementaire",
+  postes: "Tableau des emplois",
+  recrutement: "Recrutement et concours",
+  delegations: "Délégations et intérims",
+  annuaire: "Annuaire",
+  retraite: "Départs à la retraite",
+  aide: "Aide",
   rapports: "Rapports",
   journal: "Journal d'audit",
   administration: "Système",
@@ -658,6 +666,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     organigramme: "R", referentiels: "W", administration: "W", journal: "W",
     national: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
+    textes: "W", annuaire: "R", aide: "R",
   },
   DIRECTEUR_GENERAL: {
     dgarh: "W", organigramme: "W", organisation: "W", pilotage: "W", agents: "W",
@@ -665,6 +674,8 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     actes: "W", carrieres: "R", conges: "R", formations: "R", contentieux: "R",
     besoins: "R", referentiels: "R", documents: "R", rapports: "W", journal: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
+    postes: "W", recrutement: "W", delegations: "W", textes: "W",
+    annuaire: "R", retraite: "W", aide: "R",
   },
   DIRECTEUR_CENTRAL: {
     dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
@@ -672,33 +683,42 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
     referentiels: "R", documents: "R", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
+    postes: "W", recrutement: "W", delegations: "R", textes: "R",
+    annuaire: "R", retraite: "R", aide: "R",
   },
   CHEF_SERVICE: {
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "R", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
+    postes: "R", recrutement: "R", delegations: "R", textes: "R",
+    annuaire: "R", retraite: "R", aide: "R",
   },
   CHEF_BUREAU: {
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
+    postes: "R", recrutement: "W", textes: "R", annuaire: "R", retraite: "R", aide: "R",
   },
   AGENT_INSTRUCTEUR: {
     organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
+    postes: "R", textes: "R", annuaire: "R", aide: "R",
   },
   DIRECTEUR_DEPARTEMENTAL: {
     organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R",
     national: "R",
     rapports: "R", messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
+    postes: "R", recrutement: "R", textes: "R", annuaire: "R", retraite: "R", aide: "R",
   },
   CHEF_ETABLISSEMENT: {
     organigramme: "R", agents: "W", besoins: "W", documents: "R",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
+    postes: "R", textes: "R", annuaire: "R", aide: "R",
   },
   AGENT: {
     "mon-dossier": "W", conges: "R", formations: "R", documents: "R", organigramme: "R",
     messagerie: "W", tickets: "W", annonces: "R",
+    annuaire: "R", textes: "R", aide: "R",
   },
 };
 
@@ -753,6 +773,13 @@ export function moduleDeRoute(pathname: string): ModuleKey | null {
     ["/besoins", "besoins"],
     ["/referentiels", "referentiels"],
     ["/documents", "documents"],
+    ["/textes", "textes"],
+    ["/postes", "postes"],
+    ["/recrutement", "recrutement"],
+    ["/delegations", "delegations"],
+    ["/annuaire", "annuaire"],
+    ["/retraite", "retraite"],
+    ["/aide", "aide"],
     ["/rapports", "rapports"],
     ["/journal", "journal"],
     ["/administration", "administration"],

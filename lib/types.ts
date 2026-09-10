@@ -520,3 +520,167 @@ export interface ParametresSysteme {
   annoncesActives: boolean;
   maj: string;
 }
+
+/* ------------------------------------------------------------------ */
+/* Emplois — §03 : le poste existe avant l'agent qui l'occupe          */
+/* ------------------------------------------------------------------ */
+
+export type NatureConge =
+  | "ANNUEL" | "MALADIE" | "MATERNITE" | "EXCEPTIONNEL" | "SANS_SOLDE";
+
+/**
+ * Un congé pris. La décision reste portée par un acte ; cet enregistrement
+ * n'existe que pour tenir le solde et le planning, qui ne se déduisent pas
+ * d'un acte isolé.
+ */
+export interface Conge {
+  id: string;
+  agentId: string;
+  nature: NatureConge;
+  dateDebut: string;
+  dateFin: string;
+  jours: number;
+  /** Exercice d'imputation : le droit annuel se compte par année civile. */
+  exercice: number;
+  statut: "DEMANDE" | "ACCORDE" | "REFUSE" | "PRIS";
+  acteId?: string | null;
+  motif?: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Délégation de signature et intérim — §11                            */
+/* ------------------------------------------------------------------ */
+
+export type PorteeDelegation = "SIGNATURE" | "INTERIM";
+
+/**
+ * Ce qui permet au circuit de continuer quand le signataire est absent.
+ * Une délégation est bornée dans le temps et fondée sur un acte : sans elle,
+ * un directeur général en mission bloque tous les dossiers.
+ */
+export interface Delegation {
+  id: string;
+  reference: string;
+  portee: PorteeDelegation;
+  delegantId: string;
+  delegantNom: string;
+  delegataireId: string;
+  delegataireNom: string;
+  entiteId: string;
+  /** Types d'acte couverts ; vide = tous ceux du délégant. */
+  typesActe: TypeActe[];
+  dateDebut: string;
+  dateFin: string;
+  motif: string;
+  acteId?: string | null;
+  revoquee?: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fonds documentaire réglementaire — §14, second corpus               */
+/* ------------------------------------------------------------------ */
+
+export type NatureTexte =
+  | "LOI" | "DECRET" | "ARRETE" | "CIRCULAIRE" | "NOTE_SERVICE" | "CONVENTION";
+
+/**
+ * Le texte qui fonde une décision. Sans ce fonds, un acte cite une référence
+ * que personne ne peut ouvrir.
+ */
+export interface TexteReglementaire {
+  id: string;
+  reference: string;
+  titre: string;
+  nature: NatureTexte;
+  dateSignature: string;
+  datePublication?: string;
+  /** Numéro du Journal officiel, quand la publication y est faite. */
+  journalOfficiel?: string;
+  resume: string;
+  motsCles: string[];
+  /** Entité que le texte organise, s'il en organise une. */
+  entiteId?: string | null;
+  /** Texte qui l'abroge ou le modifie. */
+  abrogePar?: string | null;
+  provenance: Provenance;
+}
+
+/* ------------------------------------------------------------------ */
+/* Recrutement — de l'état de besoins à la prise de service            */
+/* ------------------------------------------------------------------ */
+
+export type StatutCampagne =
+  | "PREPARATION" | "OUVERTE" | "CLOSE" | "CORRECTION" | "PROCLAMEE" | "ANNULEE";
+
+export interface CampagneRecrutement {
+  id: string;
+  reference: string;
+  intitule: string;
+  annee: number;
+  categorie: CategoriePersonnel;
+  /** Postes ouverts au concours, par discipline. */
+  postesOuverts: number;
+  disciplines: string[];
+  dateOuverture: string;
+  dateCloture: string;
+  dateEpreuves?: string;
+  statut: StatutCampagne;
+  entiteId: string;
+  /** États de besoins qui la justifient. */
+  besoinIds: string[];
+}
+
+export type StatutCandidature =
+  | "DEPOSEE" | "RECEVABLE" | "IRRECEVABLE" | "ADMISSIBLE" | "ADMIS" | "NON_ADMIS";
+
+export interface Candidature {
+  id: string;
+  campagneId: string;
+  numero: string;
+  nom: string;
+  prenom: string;
+  sexe: Sexe;
+  dateNaissance: string;
+  diplome: string;
+  discipline: string;
+  departement: string;
+  statut: StatutCandidature;
+  note?: number | null;
+  rang?: number | null;
+  /** Renseigné à la nomination : l'agent créé au fichier. */
+  agentId?: string | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Formation — catalogue et sessions                                   */
+/* ------------------------------------------------------------------ */
+
+export type NatureFormation =
+  | "INITIALE" | "CONTINUE" | "PERFECTIONNEMENT" | "RECONVERSION" | "CERTIFIANTE";
+
+export interface OffreFormation {
+  id: string;
+  reference: string;
+  intitule: string;
+  nature: NatureFormation;
+  organisme: string;
+  lieu: string;
+  dureeJours: number;
+  places: number;
+  dateDebut: string;
+  dateFin: string;
+  coutUnitaire: number;
+  publicVise: string;
+  statut: "PROGRAMMEE" | "OUVERTE" | "COMPLETE" | "REALISEE" | "ANNULEE";
+  entiteId: string;
+}
+
+export interface InscriptionFormation {
+  id: string;
+  offreId: string;
+  agentId: string;
+  dateInscription: string;
+  statut: "PROPOSEE" | "RETENUE" | "REFUSEE" | "SUIVIE" | "ABANDONNEE";
+  acteId?: string | null;
+  resultat?: "ACQUIS" | "PARTIEL" | "NON_ACQUIS" | null;
+}

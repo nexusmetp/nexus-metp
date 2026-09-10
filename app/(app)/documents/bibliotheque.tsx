@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileOutput, Search } from "lucide-react";
+import { FileOutput, PenLine, Search } from "lucide-react";
 import { MODELES, type CleModele, type ContexteDocument } from "@/lib/documents";
 import { useAgentsProjetes, useActes, useConges } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
@@ -12,6 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ModelesMaison } from "./modeles-maison";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const FAMILLES = ["Actes", "Attestations", "États", "Correspondance"] as const;
@@ -89,6 +91,8 @@ export function Bibliotheque() {
         ))}
       </div>
 
+      <ModelesMaison />
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {visibles.map((m) => {
           const redacteur = peut(user.role, m.module, "W");
@@ -107,8 +111,23 @@ export function Bibliotheque() {
                 </div>
                 <div className="text-sm font-semibold leading-tight">{m.libelle}</div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">{m.usage}</p>
-                <div className="pt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                  {redacteur ? "Éditer un exemple" : "Consultation seule"}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    {redacteur ? "Éditer un exemple" : "Consultation seule"}
+                  </span>
+                  {peut(user.role, "redaction", "W") && (
+                    <Button
+                      variant="ghost" size="sm" className="h-6 shrink-0 px-1.5 text-[10px]"
+                      title="Reprendre ce modèle dans le traitement de texte"
+                      asChild
+                    >
+                      {/* stopPropagation : la carte s'ouvre sur un aperçu, le
+                          bouton mène à l'éditeur — deux gestes distincts. */}
+                      <Link href={`/redaction?modele=${m.cle}`} onClick={(e) => e.stopPropagation()}>
+                        <PenLine className="mr-1 h-3 w-3" /> Personnaliser
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

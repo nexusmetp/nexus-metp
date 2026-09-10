@@ -5,6 +5,8 @@ import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
 /**
+ * v14 : modèles écrits par la maison, rangés à côté des modèles livrés.
+ * v13 : brouillons de rédaction et échanges avec l'assistant.
  * v12 : fonds d'archives — versements, articles cotés, communications.
  * v11 : horodatages du semis ramenés avant le jour de référence.
  * v10 : registre des documents établis.
@@ -13,7 +15,7 @@ const DB_NAME = "nexus-metp";
  * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
  * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 12;
+const DB_VERSION = 14;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -22,9 +24,22 @@ const STORES = [
   "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres",
   "conges", "delegations", "textes", "campagnes", "candidatures",
   "offresFormation", "inscriptions", "cartes", "documents",
-  "versements", "articlesArchives", "communications", "meta",
+  "versements", "articlesArchives", "communications",
+  "brouillons", "modelesMaison", "conversationsIA", "echangesIA", "meta",
 ] as const;
 export type StoreName = (typeof STORES)[number];
+
+/**
+ * Ce que le semis n'a pas le droit d'effacer.
+ *
+ * Le reste de la base est un jeu de données fictif qu'on peut refaire à
+ * volonté ; un brouillon, lui, a été écrit par quelqu'un. Le réinitialiser
+ * avec le décor reviendrait à jeter son travail pour rafraîchir l'exemple.
+ */
+const STORES_UTILISATEUR: StoreName[] = [
+  "brouillons", "modelesMaison", "conversationsIA", "echangesIA",
+];
+const STORES_SEMES = STORES.filter((s) => !STORES_UTILISATEUR.includes(s));
 
 let dbp: Promise<IDBPDatabase> | null = null;
 
@@ -34,6 +49,8 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
+        // À partir de v12, les montées de version ajoutent des tiroirs sans
+        // vider ceux qui existent — les brouillons survivent à la mise à jour.
         if (ancienne < 12) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
@@ -62,8 +79,8 @@ export async function ensureSeed(force = false): Promise<void> {
     console.error("[semis] construction du jeu de données impossible", e);
     throw e;
   }
-  const tx = db.transaction(STORES as unknown as string[], "readwrite");
-  await Promise.all(STORES.map((s) => tx.objectStore(s).clear()));
+  const tx = db.transaction(STORES_SEMES as unknown as string[], "readwrite");
+  await Promise.all(STORES_SEMES.map((s) => tx.objectStore(s).clear()));
 
   const put = (s: StoreName, rows: any[]) => rows.map((r) => tx.objectStore(s).put(r));
   await Promise.all([

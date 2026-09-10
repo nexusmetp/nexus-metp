@@ -1,3 +1,4 @@
+import type { ReglagesIA } from "./ia";
 import type { Acte } from "./acte";
 import type { Agent } from "./agent";
 
@@ -127,5 +128,7 @@ export interface ParametresSysteme {
   messagerieActive: boolean;
   ticketsActifs: boolean;
   annoncesActives: boolean;
+  /** Réglages de l'assistant. Absent = jamais configuré, donc éteint. */
+  ia?: ReglagesIA;
   maj: string;
 }

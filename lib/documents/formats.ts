@@ -62,15 +62,23 @@ ${STYLES_DOCUMENT}</style></head>
  */
 export function exporter(d: DocumentAdministratif, format: Format, corps?: string): Sortie {
   const titre = `${d.reference} — ${d.objet}`;
-  const html = corps ?? rendreDocument(d);
-  switch (format) {
-    case "word":
-      return { extension: "doc", mime: "application/msword", contenu: versWord(html, titre) };
-    case "html":
-      return { extension: "html", mime: "text/html;charset=utf-8", contenu: versHTML(html, titre) };
-    case "texte":
-      return { extension: "txt", mime: "text/plain;charset=utf-8", contenu: rendreTexte(d) };
+  if (format === "texte") {
+    return { extension: "txt", mime: "text/plain;charset=utf-8", contenu: rendreTexte(d) };
   }
+  return envelopper(corps ?? rendreDocument(d), titre, format);
+}
+
+/**
+ * Même mise sous enveloppe, pour un corps qui ne vient pas d'un modèle.
+ *
+ * Le traitement de texte interne produit du HTML libre : il doit sortir dans
+ * les mêmes fichiers que les pièces composées, sinon deux documents du même
+ * ministère s'ouvriraient différemment.
+ */
+export function envelopper(corps: string, titre: string, format: Exclude<Format, "texte">): Sortie {
+  return format === "word"
+    ? { extension: "doc", mime: "application/msword", contenu: versWord(corps, titre) }
+    : { extension: "html", mime: "text/html;charset=utf-8", contenu: versHTML(corps, titre) };
 }
 
 export const LIBELLE_FORMAT: Record<Format, string> = {

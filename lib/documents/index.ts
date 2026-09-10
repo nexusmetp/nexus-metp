@@ -28,8 +28,8 @@ import {
 export * from "./types";
 export * from "./contexte";
 export { rendreDocument, rendreFichier, rendreTexte, STYLES_DOCUMENT } from "./rendu";
-export { exporter, LIBELLE_FORMAT, nomFichier, type Format, type Sortie } from "./formats";
-export { dateLongue, AVERTISSEMENT } from "./commun";
+export { exporter, envelopper, LIBELLE_FORMAT, nomFichier, type Format, type Sortie } from "./formats";
+export { dateLongue, timbreDe, AVERTISSEMENT } from "./commun";
 
 export const MODELES: DescripteurModele[] = [
   {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Archive, Award, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, ScrollText, Settings, UserCircle, UserMinus, Users,
+  Archive, Award, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FileSignature, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, ScrollText, Settings, UserCircle, UserMinus, Users,
 } from "lucide-react";
 import { APP_NAME, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { Armoiries } from "@/components/nexus/logo";
@@ -77,6 +77,7 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
       { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
       { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
       { href: "/documents", label: "Documents et GED", icon: FolderOpen, mod: "documents", pret: true },
+      { href: "/redaction", label: "Rédaction", icon: FileSignature, mod: "redaction", pret: true },
       { href: "/archives", label: "Archives", icon: Archive, mod: "archives", pret: true },
     ],
   },

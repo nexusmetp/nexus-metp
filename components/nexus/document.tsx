@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import {
   composer, exporter, LIBELLE_FORMAT, modeleParCle, nomFichier, rendreDocument,
-  STYLES_DOCUMENT, type CleModele, type ContexteDocument, type Format,
+  type CleModele, type ContexteDocument, type Format,
 } from "@/lib/documents";
 import { copier, telecharger } from "@/lib/export";
 import { useEnregistrerDocument } from "@/lib/queries";
@@ -19,6 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { ID_IMPRESSION, useStylesDocument } from "@/components/nexus/styles-document";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,29 +32,6 @@ import { cn } from "@/lib/utils";
  * relu est exactement ce qui s'imprime et ce qui s'exporte.
  */
 
-const ID_IMPRESSION = "document-a-imprimer";
-
-function useStylesImpression() {
-  useEffect(() => {
-    const cle = "styles-document-administratif";
-    if (document.getElementById(cle)) return;
-    const el = document.createElement("style");
-    el.id = cle;
-    // `visibility` plutôt que `display` : la feuille est rendue dans un portail,
-    // masquer les enfants de `body` masquerait aussi ses ancêtres.
-    el.textContent = `${STYLES_DOCUMENT}
-@media print {
-  body * { visibility: hidden !important; }
-  #${ID_IMPRESSION}, #${ID_IMPRESSION} * { visibility: visible !important; }
-  #${ID_IMPRESSION} {
-    position: absolute !important; left: 0; top: 0;
-    transform: none !important; margin: 0 !important; box-shadow: none !important;
-  }
-}`;
-    document.head.appendChild(el);
-  }, []);
-}
-
 export function VisionneuseDocument({
   ouvert, surFermeture, cle, contexte, surTransfert,
 }: {
@@ -63,7 +41,7 @@ export function VisionneuseDocument({
   contexte: ContexteDocument;
   surTransfert?: (texte: string, titre: string) => void;
 }) {
-  useStylesImpression();
+  useStylesDocument();
   const [occupe, setOccupe] = useState(false);
   const [modification, setModification] = useState(false);
   const [repris, setRepris] = useState(false);

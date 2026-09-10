@@ -116,8 +116,68 @@ La connexion se fait **en deux temps** : vérification de l'identité, puis un
 donnée personnelle ne s'affiche. Tout ce qui pousse la page vers le bas — la
 liste des comptes de démonstration — s'ouvre en panneau flottant.
 
+## Rédaction et assistance
+
+`/redaction` est le traitement de texte de la maison : une feuille A4 au
+format administratif, un ruban rangé comme les suites bureautiques que les
+agents connaissent (Accueil, Insertion, Mise en page, Révision), et les
+brouillons conservés dans `lib/db.ts`.
+
+**Trois étages de modèles, et l'ordre compte :**
+
+1. **Les modèles livrés** (`lib/documents/`) sont du **code** et ne se
+   modifient jamais depuis l'écran. Ils portent la forme réglementaire —
+   timbre, visas, formule exécutoire, ampliations, « Article premier ». Une
+   correction maladroite s'y répandrait sur toutes les pièces établies après
+   elle, sans relecture.
+2. **Les modèles de la maison** (`modelesMaison`) sont la reprise d'un modèle
+   livré, ou une feuille blanche, déposée par un rédacteur. Ils se distinguent
+   à l'œil dans la bibliothèque : un modèle écrit par un service n'a pas été
+   relu par un juriste. Ils portent leur propre historique.
+3. **Les brouillons** : employer un modèle n'y touche pas, il en fait une
+   copie. Les **champs de fusion** (`{{agent.matricule}}`, `lib/redaction/jetons.ts`)
+   se remplissent au dossier ouvert ; un champ resté vide devient une ligne de
+   pointillés, comme sur un imprimé.
+
+**Assainissement — la porte se ferme des deux côtés.** `assainir()` s'applique
+avant d'enregistrer *et* avant de poser un corps dans le DOM. Nettoyer
+seulement à l'écriture ne protégerait que l'auteur : un modèle de la maison se
+partage, et un corps piégé s'exécuterait chez le collègue qui l'ouvre.
+
+**L'assistant est éteint par défaut et l'application n'en dépend jamais.** La
+clé se pose dans Système → Assistant. Deux montages : le relais serveur
+(`ASSISTANT_CLE` dans l'environnement, la clé ne descend pas au navigateur —
+à retenir en production) et l'appel direct depuis le navigateur, qui fait
+marcher la maquette sans serveur au prix d'une clé lisible sur le poste. La
+bascule est automatique, et l'espace Système dit lequel est en vigueur.
+Aucun nom de modèle n'est écrit en dur : la liste est demandée au fournisseur
+avec la clé du ministère, et ne vieillit donc pas.
+
+Un texte passé par l'assistant porte la mention au document et le brouillon
+est marqué `assiste`. L'assistant rédige, il ne décide pas : rien de ce qu'il
+produit n'a de portée avant relecture, signature et notification.
+
+**Les données de l'utilisateur ne se réinitialisent pas avec le semis.**
+`STORES_UTILISATEUR` (brouillons, modèles, échanges) est exclu du nettoyage :
+le reste de la base est un décor qu'on refait à volonté, un brouillon a été
+écrit par quelqu'un.
+
 ## Ce qui reste à faire
 
 Le **serveur** : la plateforme est aujourd'hui une maquette complète qui garde
 son état dans IndexedDB (`lib/db.ts`). Le passage à une base et une API reste le
-seul chantier structurel, différé volontairement.
+seul chantier structurel, différé volontairement. C'est lui, et non l'éditeur,
+qui borne le passage à l'échelle : deux postes valent aujourd'hui deux jeux de
+brouillons.
+
+Deux reprises attendent ce serveur, dans cet ordre :
+
+- **l'éditeur sur Tiptap** (MIT, ProseMirror) plutôt que sur
+  `document.execCommand`, que la spécification a déclaré obsolète et que chaque
+  navigateur interprète à sa façon — et qui n'ouvre pas la co-édition ;
+- **le `.docx` réel** (`docx`, MIT ; `docxtemplater`, MIT ; `mammoth`, BSD-2)
+  à la place du HTML compatible Word.
+
+Pour éditer un fichier Word quelconque avec fidélité, la voie est d'embarquer
+une suite auto-hébergée **à côté** de la plateforme (Collabora Online, MPL-2.0),
+jamais dedans.

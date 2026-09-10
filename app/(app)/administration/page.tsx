@@ -29,6 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatriceDroits } from "./matrice-droits";
+import { ReglageAssistant } from "./assistant";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Role, Utilisateur } from "@/lib/types";
 
@@ -193,6 +194,7 @@ export default function AdministrationPage() {
           <TabsTrigger value="comptes">Comptes et accès</TabsTrigger>
           <TabsTrigger value="droits">Matrice des droits</TabsTrigger>
           <TabsTrigger value="parametres">Paramétrage</TabsTrigger>
+          <TabsTrigger value="assistant">Assistant</TabsTrigger>
           <TabsTrigger value="sante">Santé et maintenance</TabsTrigger>
         </TabsList>
 
@@ -289,6 +291,10 @@ export default function AdministrationPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="assistant">
+          <ReglageAssistant />
         </TabsContent>
 
         <TabsContent value="sante" className="space-y-4">

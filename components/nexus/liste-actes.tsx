@@ -107,10 +107,10 @@ export function ListeActes({
       <PageHeader titre={titre} description={description}>{actions}</PageHeader>
 
       <RangeeKpi tuiles={[
-        { titre: "Dossiers", valeur: fmtNum(stats.total), sousTitre: "toutes années confondues", icon: FileCheck2 },
-        { titre: "En circulation", valeur: fmtNum(stats.ouverts), sousTitre: "pas encore notifiés", icon: TrendingUp },
-        { titre: "Au-delà du délai", valeur: fmtNum(stats.retard), sousTitre: "plus de 15 jours d'ouverture", icon: Timer },
-        { titre: "Délai moyen", valeur: `${stats.delai} j`, sousTitre: "de l'ouverture à la signature", icon: CheckCircle2 },
+        { ton: "bleu", titre: "Dossiers", valeur: fmtNum(stats.total), sousTitre: "toutes années confondues", icon: FileCheck2 },
+        { ton: "cyan", titre: "En circulation", valeur: fmtNum(stats.ouverts), sousTitre: "pas encore notifiés", icon: TrendingUp },
+        { ton: stats.retard ? "rose" : "emeraude", titre: "Au-delà du délai", valeur: fmtNum(stats.retard), sousTitre: "plus de 15 jours d'ouverture", icon: Timer },
+        { ton: "violet", titre: "Délai moyen", valeur: `${stats.delai} j`, sousTitre: "de l'ouverture à la signature", icon: CheckCircle2 },
       ]} />
 
       <TableauModule<Acte>

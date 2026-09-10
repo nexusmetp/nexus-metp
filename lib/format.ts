@@ -10,6 +10,22 @@ export const fmtDate = (d?: string | null) => {
   return dt.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+/**
+ * Date et heure — « 14 nov. 2026, 09:32 ».
+ *
+ * L'heure ne s'affiche que là où elle porte une information : un
+ * enregistrement, une version, une trace d'audit. Sur une date d'effet
+ * d'acte, elle n'en porte aucune.
+ */
+export const fmtDateHeure = (d?: string | null) => {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return d;
+  return dt.toLocaleString("fr-FR", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+};
+
 export const ans = (d?: string) => {
   if (!d) return 0;
   return Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / (365.25 * 864e5)));

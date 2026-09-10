@@ -14,6 +14,7 @@ import {
   useActes, useAgents, useAnnonces, useResetData, useTickets,
 } from "@/lib/queries";
 import { Armoiries } from "@/components/nexus/logo";
+import { FilAssistance } from "@/components/ia/fil-assistance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -121,6 +122,10 @@ export function Topbar() {
         <Badge variant="outline" className="hidden border-primary/30 bg-primary/5 text-[10px] text-primary md:inline-flex">
           {ent?.sigle ?? "METP"}
         </Badge>
+
+        {/* L'assistant ne s'affiche que si l'administrateur l'a ouvert :
+            un bouton qui échoue vaut moins qu'un bouton absent. */}
+        <FilAssistance />
 
         <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

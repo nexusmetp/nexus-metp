@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MessagesSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTextes } from "@/lib/langues";
 import { FeedbackDrawer } from "./FeedbackDrawer";
 
 /**
@@ -18,6 +18,7 @@ import { FeedbackDrawer } from "./FeedbackDrawer";
  */
 export function FeedbackButton({ className }: { className?: string }) {
   const [ouvert, setOuvert] = useState(false);
+  const t = useTextes();
 
   return (
     <>
@@ -35,9 +36,10 @@ export function FeedbackButton({ className }: { className?: string }) {
           className
         )}
       >
-        <span className="flex flex-col items-center gap-2.5 [writing-mode:vertical-rl] rotate-180">
-          <MessagesSquare aria-hidden className="h-4 w-4 rotate-180" />
-          <span className="text-[13px] font-semibold tracking-wide">Commentaires</span>
+        {/* Le libellé seul : une icône couchée dans un texte vertical se lit
+            de travers, et n'ajoute rien que le mot ne dise déjà. */}
+        <span className="[writing-mode:vertical-rl] rotate-180 text-[13px] font-semibold tracking-wide">
+          {t.commentaires.onglet}
         </span>
       </button>
 

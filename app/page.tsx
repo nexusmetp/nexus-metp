@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { APP_NAME, APP_TAGLINE, MINISTERE_NOM, pageAccueil } from "@/lib/referentiels";
+import { APP_NAME, APP_TAGLINE, pageAccueil } from "@/lib/referentiels";
+import { useTextes } from "@/lib/langues";
 import { ensureSeed } from "@/lib/db";
 import { useAuth } from "@/lib/store";
 import { Armoiries } from "@/components/nexus/logo";
@@ -18,18 +19,12 @@ import { Progress } from "@/components/ui/progress";
 /* détourner l'œil du timbre de l'État.                                */
 /* ------------------------------------------------------------------ */
 
-const ETAPES = [
-  "Initialisation du noyau NEXUS",
-  "Chargement des référentiels METP",
-  "Mise en cache navigateur (IndexedDB)",
-  "Sécurisation de la session",
-  "Prêt",
-];
-
 export default function SplashPage() {
   const router = useRouter();
   const user = useAuth((s) => s.user);
   const reduceMotion = useReducedMotion();
+  const t = useTextes();
+  const ETAPES = t.ouverture.etapes;
   const [progress, setProgress] = useState(0);
   const [etape, setEtape] = useState(0);
 
@@ -80,11 +75,11 @@ export default function SplashPage() {
 
       <motion.p {...monter} transition={{ delay: 0.25, duration: 0.5 }}
         className="mt-6 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-        République du Congo
+        {t.etat.republique}
       </motion.p>
       <motion.h1 {...monter} transition={{ delay: 0.35, duration: 0.5 }}
         className="mt-2 max-w-xl text-balance text-lg font-extrabold uppercase leading-snug tracking-tight text-slate-900 sm:text-xl">
-        {MINISTERE_NOM}
+        {t.etat.ministere}
       </motion.h1>
 
       <motion.div {...monter} transition={{ delay: 0.5, duration: 0.5 }} className="mt-9">
@@ -119,7 +114,7 @@ export default function SplashPage() {
       </motion.div>
 
       <p className="mt-14 text-[10px] uppercase tracking-[0.28em] text-slate-400">
-        DGARH · Unité · Travail · Progrès
+        DGARH · {t.etat.devise}
       </p>
     </div>
   );

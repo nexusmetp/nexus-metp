@@ -5,6 +5,7 @@ import {
   Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useTextes } from "@/lib/langues";
 import { FeedbackForm } from "./FeedbackForm";
 
 /**
@@ -21,6 +22,7 @@ export function FeedbackDrawer({
   ouvert: boolean;
   onOuvertChange: (ouvert: boolean) => void;
 }) {
+  const t = useTextes();
   return (
     <Sheet open={ouvert} onOpenChange={onOuvertChange}>
       <SheetContent
@@ -38,11 +40,10 @@ export function FeedbackDrawer({
         <SheetHeader className="space-y-2 border-b px-6 py-5 text-left">
           <SheetTitle className="flex items-center gap-2.5 text-lg">
             <MessagesSquare className="h-5 w-5 text-primary" />
-            Commentaires
+            {t.commentaires.titre}
           </SheetTitle>
           <SheetDescription className="text-sm leading-relaxed">
-            Votre avis oriente les prochaines versions de NEXUS-METP. Dites-nous
-            ce qui vous a aidé, ce qui vous a manqué, ou ce qui vous a arrêté.
+            {t.commentaires.description}
           </SheetDescription>
         </SheetHeader>
 
@@ -53,7 +54,7 @@ export function FeedbackDrawer({
 
         <div className="shrink-0 border-t px-6 py-4">
           <SheetClose asChild>
-            <Button variant="outline" className="w-full">Fermer</Button>
+            <Button variant="outline" className="w-full">{t.commentaires.fermer}</Button>
           </SheetClose>
         </div>
       </SheetContent>

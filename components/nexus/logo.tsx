@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { ARMOIRIES_URL, DRAPEAU_URL, MINISTERE_NOM } from "@/lib/referentiels";
+import { ARMOIRIES_URL, DRAPEAU_URL } from "@/lib/referentiels";
+import { useTextes } from "@/lib/langues";
 
 /* ------------------------------------------------------------------ */
 /* La marque de l'État                                                 */
@@ -63,6 +64,7 @@ export function DrapeauCongo({ largeur = 30, className }: { largeur?: number; cl
 export function LogoMETP({
   taille = 52, compact = false, className,
 }: { taille?: number; compact?: boolean; className?: string }) {
+  const t = useTextes();
   return (
     <span className={cn("flex items-center gap-3", className)}>
       <Armoiries taille={taille} />
@@ -75,7 +77,7 @@ export function LogoMETP({
       </span>
       <span className="min-w-0 leading-tight">
         <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          République du Congo
+          {t.etat.republique}
         </span>
         <span
           className={cn(
@@ -83,7 +85,7 @@ export function LogoMETP({
             compact ? "truncate text-[13px]" : "text-[15px] sm:text-[17px]"
           )}
         >
-          {compact ? "Ministère de l'Enseignement Technique" : MINISTERE_NOM}
+          {t.etat.ministere}
         </span>
       </span>
     </span>

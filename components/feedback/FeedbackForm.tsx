@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useTextes } from "@/lib/langues";
 
 /** Un commentaire déposé depuis la page de connexion. */
 export interface Commentaire {
@@ -52,6 +53,7 @@ export function commentairesDeposes(): Commentaire[] {
 const MAX = 2000;
 
 export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
+  const t = useTextes();
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [envoi, setEnvoi] = useState(false);
@@ -73,9 +75,7 @@ export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
     setEnvoi(false);
     setMessage("");
     setEmail("");
-    toast.success("Merci, votre commentaire est enregistré", {
-      description: "La DGARH en prend connaissance. Aucune réponse n'est envoyée automatiquement.",
-    });
+    toast.success(t.commentaires.merci, { description: t.commentaires.merciDetail });
     onEnvoye?.();
   };
 
@@ -83,7 +83,7 @@ export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
     <form onSubmit={soumettre} className="flex min-h-0 flex-1 flex-col gap-5">
       <div className="space-y-2">
         <Label htmlFor="commentaire-message" className="text-sm font-semibold">
-          Votre commentaire
+          {t.commentaires.champ}
         </Label>
         <Textarea
           id="commentaire-message"
@@ -91,7 +91,7 @@ export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
           rows={7}
           maxLength={MAX}
           autoComplete="off"
-          placeholder="Ce qui fonctionne, ce qui manque, ce qui vous a bloqué…"
+          placeholder={t.commentaires.champExemple}
           value={message}
           onChange={(e) => setMessage(e.target.value.slice(0, MAX))}
           className="resize-none"
@@ -103,7 +103,8 @@ export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
 
       <div className="space-y-2">
         <Label htmlFor="commentaire-email" className="text-sm font-semibold">
-          Adresse électronique <span className="font-normal text-muted-foreground">(facultatif)</span>
+          {t.commentaires.email}{" "}
+          <span className="font-normal text-muted-foreground">{t.commentaires.facultatif}</span>
         </Label>
         <Input
           id="commentaire-email"
@@ -114,14 +115,14 @@ export function FeedbackForm({ onEnvoye }: { onEnvoye?: () => void }) {
           onChange={(e) => setEmail(e.target.value)}
         />
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          Sans adresse, votre commentaire reste anonyme — et sans réponse possible.
+          {t.commentaires.anonyme}
         </p>
       </div>
 
       <Button type="submit" disabled={vide || envoi} className="mt-auto h-11 w-full font-semibold">
         {envoi
-          ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Envoi…</>
-          : <><Send className="mr-2 h-4 w-4" /> Envoyer</>}
+          ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.commentaires.envoi}</>
+          : <><Send className="mr-2 h-4 w-4" /> {t.commentaires.envoyer}</>}
       </Button>
     </form>
   );

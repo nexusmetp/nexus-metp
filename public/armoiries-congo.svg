@@ -15,7 +15,7 @@
   <defs>
     <!-- L'écu, défini une fois : sert de tracé, de bordure et de masque. -->
     <path id="ecu-forme"
-          d="M70 46 h60 v46 c0 26 -15 45 -30 53 c-15 -8 -30 -27 -30 -53 z"/>
+          d="M74 44 h52 v48 c0 27 -14 47 -26 55 c-12 -8 -26 -28 -26 -55 z"/>
     <clipPath id="ecu-masque"><use href="#ecu-forme"/></clipPath>
 
     <!--
@@ -56,19 +56,20 @@
   </defs>
 
   <!-- Supports : posés avant l'écu, qui les recouvre. -->
-  <use href="#elephant-support" transform="translate(2 34) scale(0.86)"/>
-  <use href="#elephant-support" transform="translate(198 34) scale(-0.86 0.86)"/>
+  <use href="#elephant-support" transform="translate(-6 20) scale(0.95)"/>
+  <use href="#elephant-support" transform="translate(206 20) scale(-0.95 0.95)"/>
 
   <!-- Couronne murale de sinople -->
   <g>
-    <rect x="66" y="26" width="68" height="15" rx="2" fill="#009543"/>
+    <rect x="68" y="24" width="64" height="15" rx="2" fill="#009543"/>
     <g fill="#009543">
-      <rect x="66" y="14" width="12" height="13" rx="1.5"/>
-      <rect x="83" y="14" width="12" height="13" rx="1.5"/>
-      <rect x="100" y="14" width="12" height="13" rx="1.5"/>
-      <rect x="117" y="14" width="12" height="13" rx="1.5"/>
+      <rect x="68" y="12" width="11" height="13" rx="1.5"/>
+      <rect x="82" y="12" width="11" height="13" rx="1.5"/>
+      <rect x="96" y="12" width="11" height="13" rx="1.5"/>
+      <rect x="110" y="12" width="11" height="13" rx="1.5"/>
+      <rect x="124" y="12" width="8" height="13" rx="1.5"/>
     </g>
-    <rect x="66" y="38" width="68" height="4" rx="2" fill="#FBDE4A"/>
+    <rect x="68" y="36" width="64" height="4" rx="2" fill="#FBDE4A"/>
   </g>
 
   <!-- Écu -->
@@ -76,8 +77,8 @@
     <use href="#ecu-forme" fill="#FBDE4A"/>
     <g clip-path="url(#ecu-masque)">
       <!-- bande ondée de sinople, de l'angle senestre au flanc dextre -->
-      <path d="M46 40 C68 56 72 74 92 88 C110 100 116 118 136 134 L158 118
-               C138 102 132 84 114 72 C94 58 90 40 68 22 Z" fill="#009543"/>
+      <path d="M50 38 C70 54 74 72 92 86 C108 98 114 116 132 132 L152 116
+               C134 100 128 82 112 70 C94 56 90 38 70 22 Z" fill="#009543"/>
       <!-- lion de gueules, rampant, tenant une torche -->
       <g fill="#CE1126">
         <!-- corps, membres et queue d'un seul tenant -->

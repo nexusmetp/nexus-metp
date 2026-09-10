@@ -65,6 +65,29 @@ Les dérogations sont déclarées **avec leur motif** dans
 - Les tuiles de KPI portent un **ton** (`components/nexus/tons.ts`) — la couleur
   dit la nature du chiffre, pas la décoration.
 
+## Langue de l'interface
+
+`lib/langues/` — français (référence) et anglais. Portée : les écrans
+d'accueil (ouverture, connexion, confirmation, commentaires). L'intérieur de
+l'application reste en français, délibérément : « arrêté », « corps »,
+« échelon », « position statutaire » désignent des catégories du droit
+congolais, et les traduire donnerait à lire un texte sans valeur juridique.
+
+`fr.ts` fait foi. `Dictionnaire = typeof fr` : toute langue ajoutée doit
+remplir chaque clé, sans quoi la compilation échoue.
+
+## Écran de connexion
+
+Il tient dans la fenêtre et **ne défile jamais**. Les paliers de compacité sont
+dans `globals.css`, sur la **hauteur** de la fenêtre et non sa largeur — c'est
+la hauteur qui manque sur un portable de service ou un téléphone en paysage.
+Vérifié à neuf tailles, de 1920×1080 à 844×390.
+
+La connexion se fait **en deux temps** : vérification de l'identité, puis un
+écran de confirmation qui porte les conditions d'usage avant que la moindre
+donnée personnelle ne s'affiche. Tout ce qui pousse la page vers le bas — la
+liste des comptes de démonstration — s'ouvre en panneau flottant.
+
 ## Ce qui reste à faire
 
 Le **serveur** : la plateforme est aujourd'hui une maquette complète qui garde

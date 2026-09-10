@@ -50,6 +50,7 @@ const DISCIPLINES = ["Génie civil","Électrotechnique","Mécanique","Comptabili
 
 const effectifDe = (niveau: string) => {
   switch (niveau) {
+    case "CABINET": return int(2, 4);
     case "BUREAU": return int(4, 11);
     case "SERVICE": return int(2, 4);
     case "DIRECTION": return int(2, 4);

@@ -1,7 +1,9 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KpiCard } from "@/components/nexus/ui-kit";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -36,16 +35,41 @@ export interface Tuile {
   sousTitre?: string;
   icon: any;
   variation?: number;
+  /** Où mène le chiffre : une tuile qui ne s'ouvre sur rien est un cul-de-sac. */
+  href?: string;
 }
 
-/** Toujours quatre colonnes en grand écran : les tuiles s'alignent partout. */
+/**
+ * Toujours quatre colonnes en grand écran, toujours la même hauteur : les
+ * tuiles s'alignent d'une page à l'autre. Elles apparaissent en cascade —
+ * assez pour que l'œil suive, assez court pour ne pas faire attendre.
+ */
 export function RangeeKpi({ tuiles }: { tuiles: Tuile[] }) {
   if (!tuiles.length) return null;
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {tuiles.slice(0, 4).map((t) => (
-        <KpiCard key={t.titre} {...t} />
-      ))}
+      {tuiles.slice(0, 4).map((t, i) => {
+        const carte = (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="h-full"
+          >
+            <KpiCard {...t} />
+          </motion.div>
+        );
+        return t.href ? (
+          <Link
+            key={t.titre} href={t.href}
+            className="group h-full rounded-xl outline-none ring-offset-background transition-transform focus-visible:ring-2 focus-visible:ring-ring hover:-translate-y-0.5"
+          >
+            {carte}
+          </Link>
+        ) : (
+          <Fragment key={t.titre}>{carte}</Fragment>
+        );
+      })}
     </div>
   );
 }
@@ -191,11 +215,15 @@ export function TableauModule<T extends { id: string }>({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibles.map((l) => (
-                <TableRow
+              {visibles.map((l, i) => (
+                <motion.tr
                   key={l.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2, delay: Math.min(i, 12) * 0.012 }}
                   onClick={() => surSelection?.(l)}
                   className={cn(
+                    "border-b transition-colors hover:bg-muted/50",
                     surSelection && "cursor-pointer",
                     ligneActive === l.id && "bg-primary/5"
                   )}
@@ -208,7 +236,7 @@ export function TableauModule<T extends { id: string }>({
                       {c.rendu(l)}
                     </TableCell>
                   ))}
-                </TableRow>
+                </motion.tr>
               ))}
               {visibles.length === 0 && (
                 <TableRow>
@@ -241,9 +269,14 @@ export function TableauModule<T extends { id: string }>({
   );
 }
 
-/** Panneau latéral de détail — la prévisualisation d'une ligne. */
+/**
+ * Fiche de détail — la prévisualisation d'une ligne.
+ *
+ * Une fenêtre centrée, pas un tiroir pleine hauteur : la fiche se lit d'un
+ * regard, l'en-tête et les actions restent en place, seul le corps défile.
+ */
 export function PanneauDetail({
-  ouvert, surFermeture, titre, sousTitre, etiquette, children, actions,
+  ouvert, surFermeture, titre, sousTitre, etiquette, children, actions, large = false,
 }: {
   ouvert: boolean;
   surFermeture: () => void;
@@ -252,23 +285,29 @@ export function PanneauDetail({
   etiquette?: React.ReactNode;
   children: React.ReactNode;
   actions?: React.ReactNode;
+  large?: boolean;
 }) {
   return (
-    <Sheet open={ouvert} onOpenChange={(o) => !o && surFermeture()}>
-      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
-        <SheetHeader className="space-y-2 border-b px-6 py-5 text-left">
+    <Dialog open={ouvert} onOpenChange={(o) => !o && surFermeture()}>
+      <DialogContent
+        className={cn(
+          "flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0",
+          large ? "sm:max-w-3xl" : "sm:max-w-2xl"
+        )}
+      >
+        <DialogHeader className="shrink-0 space-y-2 border-b px-6 py-5 text-left">
           {etiquette && <div className="flex flex-wrap items-center gap-2">{etiquette}</div>}
-          <SheetTitle className="pr-8 text-lg leading-tight">{titre}</SheetTitle>
-          {sousTitre && <SheetDescription>{sousTitre}</SheetDescription>}
-        </SheetHeader>
-        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">{children}</div>
+          <DialogTitle className="pr-8 text-lg leading-tight">{titre}</DialogTitle>
+          {sousTitre && <DialogDescription>{sousTitre}</DialogDescription>}
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">{children}</div>
         {actions && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t bg-muted/30 px-6 py-4">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t bg-muted/30 px-6 py-4">
             {actions}
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -315,7 +354,7 @@ export function DialogueFormulaire({
   return (
     <Dialog open={ouvert} onOpenChange={(o) => !o && surFermeture()}>
       <DialogContent className={cn("max-h-[90vh] overflow-y-auto", large ? "sm:max-w-2xl" : "sm:max-w-lg")}>
-        <DialogHeader>
+        <DialogHeader className="space-y-1.5">
           <DialogTitle>{titre}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>

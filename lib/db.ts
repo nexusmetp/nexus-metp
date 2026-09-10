@@ -5,10 +5,11 @@ import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
 /**
- * v5 : collaboration (tickets, messagerie, annonces) et paramétrage système.
- * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
+ * v6 : cabinet du ministre dans l'arborescence. v5 : collaboration (tickets,
+ * messagerie, annonces) et paramétrage. v4 : dossier personnel pour tous les
+ * rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -26,7 +27,7 @@ const getDB = () => {
     dbp = openDB(DB_NAME, DB_VERSION, {
       upgrade(db, ancienne) {
         // v1 → v2 : le schéma change de fond en comble, on repart des stores.
-        if (ancienne < 5) {
+        if (ancienne < 6) {
           Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
         }
         STORES.forEach((s) => {

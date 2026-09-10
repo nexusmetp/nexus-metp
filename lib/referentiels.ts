@@ -38,6 +38,14 @@ export const PROVENANCE_LABELS: Record<Provenance, string> = {
 /** Ce qui manque encore pour figer le référentiel. Affiché dans l'espace DGARH. */
 export const LACUNES = [
   {
+    sujet: "Composition du cabinet du ministre",
+    manque: "Texte de nomination et d'organisation du cabinet du METP",
+    consequence:
+      "Le cabinet est représenté d'après le schéma constant des ministères congolais. "
+      + "Son personnel est géré par la DGARH comme celui des directions, mais le détail "
+      + "de ses unités reste à confirmer.",
+  },
+  {
     sujet: "Détail des services et bureaux de la DGARH",
     manque: "Texte intégral de l'arrêté n° 25567",
     ou: "Journal officiel 2022-44",
@@ -104,6 +112,32 @@ const sommet: E[] = [
     "INSPECTION_GENERALE", "ENT-METP", "TEXTE", TEXTES.ARR_25569, "Brazzaville"),
   e("ENT-DGARH", "DGARH", "Direction générale de l'administration et des ressources humaines",
     "DIRECTION_GENERALE", "ENT-METP", "TEXTE", TEXTES.ARR_25567, "Brazzaville"),
+];
+
+/* — Cabinet du ministre —
+   Le cabinet n'apparaît dans aucun des arrêtés d'organisation consultés : ce
+   sont eux qui fixent les directions, pas l'entourage du ministre, nommé par
+   décret. Sa composition suit ici le schéma constant des ministères
+   congolais — directeur de cabinet, chef de cabinet, conseillers sectoriels,
+   protocole, communication — et reste à confirmer sur le texte de nomination.
+   Son personnel est géré par la DGARH comme celui de toute autre entité. */
+const REF_CABINET = "Schéma constant des cabinets ministériels congolais — texte du METP non consulté";
+
+const cabinet: E[] = [
+  e("ENT-CAB", "CAB", "Cabinet du ministre", "CABINET", "ENT-METP", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-DIR", "DIRCAB", "Direction de cabinet", "DIRECTION", "ENT-CAB", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CHEF", "CHEFCAB", "Chef de cabinet", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-SP", "SPM", "Secrétariat particulier du ministre", "SECRETARIAT", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS", "CONS", "Collège des conseillers", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-PED", "CONS-PED", "Conseiller à la pédagogie et aux programmes",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-ADM", "CONS-ADM", "Conseiller aux affaires administratives et juridiques",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-CONS-FIN", "CONS-FIN", "Conseiller aux finances et à la coopération",
+    "BUREAU", "ENT-CAB-CONS", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-COM", "COMCAB", "Service de la communication et de la presse",
+    "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
+  e("ENT-CAB-PROTO", "PROTO", "Service du protocole", "SERVICE", "ENT-CAB-DIR", "A_VERIFIER", REF_CABINET, "Brazzaville"),
 ];
 
 /* — Secrétariat de direction : 2 bureaux — */
@@ -223,7 +257,8 @@ const etablissements: E[] = DEPARTEMENTS.flatMap((d, i) => {
 
 /** La semence : l'organigramme tel que les textes et le cahier le décrivent. */
 export const ENTITES_SEMENCE: Entite[] = [
-  ...sommet, ...secretariat, ...dpcef, ...dobas, ...dafm, ...deconcentration, ...etablissements,
+  ...sommet, ...cabinet, ...secretariat, ...dpcef, ...dobas, ...dafm,
+  ...deconcentration, ...etablissements,
 ] as Entite[];
 
 /**
@@ -281,12 +316,23 @@ export function cheminDe(id: string): Entite[] {
 }
 
 export const DGARH_ID = "ENT-DGARH";
+export const METP_ID = "ENT-METP";
+export const CABINET_ID = "ENT-CAB";
+
+/**
+ * Périmètre de gestion des ressources humaines de la DGARH : le ministère
+ * entier, cabinet compris. La direction générale gère le personnel de toutes
+ * les entités, pas seulement celui de sa propre arborescence — c'est sa
+ * raison d'être. §02
+ */
+export const PERIMETRE_RH_ID = METP_ID;
 export const entitesDGARH = () => descendantsDe(DGARH_ID);
 export const bureaux = () => ENTITES.filter((x) => x.niveau === "BUREAU" && x.actif !== false);
 export const SERVICES = ENTITES.filter((x) => x.niveau === "SERVICE");
 
 export const NIVEAU_LABELS: Record<Entite["niveau"], string> = {
   MINISTERE: "Ministère",
+  CABINET: "Cabinet",
   INSPECTION_GENERALE: "Inspection générale",
   DIRECTION_GENERALE: "Direction générale",
   SECRETARIAT: "Secrétariat",

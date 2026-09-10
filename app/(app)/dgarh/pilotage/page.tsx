@@ -6,20 +6,23 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  AlertTriangle, ArrowRight, Building2, ClipboardList, Gauge, LifeBuoy, Timer, Users,
+  AlertTriangle, ArrowRight, Building2, ClipboardList, Gauge, LifeBuoy, Pencil,
+  Plus, ShieldCheck, Timer, UserPlus, Users,
 } from "lucide-react";
 import {
   useActes, useAgentsProjetes, useBesoins, useEntites, useTickets, useUtilisateurs,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, NIVEAU_LABELS, STATUTS_EN_COURS, cheminDe, descendantsDe, entiteById,
+  DROITS, ENTITES, MODULE_LABELS, NIVEAU_LABELS, ROLE_LABELS, STATUTS_EN_COURS,
+  cheminDe, descendantsDe, entiteById, type ModuleKey,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
 import {
   Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { useGestionEntite } from "@/components/nexus/gestion-entite";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,11 +68,13 @@ export default function PilotagePage() {
   const { data: entitesDb = [] } = useEntites();
 
   const [selection, setSelection] = useState<LigneDirection | null>(null);
+  const gestion = useGestionEntite(() => setSelection(null));
   const [filtres, setFiltres] = useState<Record<string, string>>({ niveau: "all", sante: "all" });
 
   const directions = useMemo<LigneDirection[]>(() => {
     const responsableDe = new Map<string, string>();
     comptes.forEach((c) => { if (!responsableDe.has(c.entiteId)) responsableDe.set(c.entiteId, c.nomComplet); });
+
 
     return ENTITES
       .filter((e) => NIVEAUX_PILOTES.has(e.niveau) && e.actif !== false)
@@ -196,7 +201,10 @@ export default function PilotagePage() {
         description="Ce qui se passe dans chaque direction remonte ici. Une pastille rouge signale une direction sous tension : un dossier y dort, ou des réclamations s'y accumulent."
       >
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dgarh/organisation">Organisation</Link>
+          <Link href="/dgarh/organisation">Toute l'arborescence</Link>
+        </Button>
+        <Button size="sm" onClick={() => gestion.ouvrirCreation("ENT-METP")}>
+          <Plus className="mr-1.5 h-4 w-4" /> Créer une direction
         </Button>
       </PageHeader>
 
@@ -257,6 +265,20 @@ export default function PilotagePage() {
         )}
         actions={selection && (
           <>
+            <Button variant="outline" size="sm" onClick={() => {
+              const e = entiteById(selection.id);
+              if (e) { setSelection(null); gestion.ouvrirEdition(e); }
+            }}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
+            </Button>
+            {!selection.responsable && (
+              <Button variant="outline" size="sm" onClick={() => {
+                const e = entiteById(selection.id);
+                if (e) { setSelection(null); gestion.ouvrirNomination(e); }
+              }}>
+                <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Nommer
+              </Button>
+            )}
             <Button variant="outline" size="sm" asChild>
               <Link href={`/dgarh/agents?entite=${selection.id}`}>Voir les agents</Link>
             </Button>
@@ -272,6 +294,45 @@ export default function PilotagePage() {
               <LigneInfo k="Responsable" v={selection.responsable ?? <span className="italic text-muted-foreground">aucun compte rattaché</span>} />
               <LigneInfo k="Entités du périmètre" v={fmtNum(selection.entites)} />
               <LigneInfo k="Effectif" v={fmtNum(selection.effectif)} />
+            </Section>
+
+            <Section titre="Habilitations de la direction">
+              {(() => {
+                const chef = comptes.find((c) => c.entiteId === selection.id);
+                if (!chef) {
+                  return (
+                    <p className="rounded-lg border border-dashed p-3 text-xs leading-relaxed text-muted-foreground">
+                      Sans responsable nommé, aucun droit ne s'exerce sur cette direction : personne n'y
+                      instruit de dossier ni n'y inscrit de personnel.
+                    </p>
+                  );
+                }
+                const ouverts = (Object.keys(MODULE_LABELS) as ModuleKey[])
+                  .filter((m) => DROITS[chef.role]?.[m]);
+                return (
+                  <>
+                    <LigneInfo k="Compte" v={<span className="text-xs">{chef.email}</span>} />
+                    <LigneInfo k="Rôle" v={ROLE_LABELS[chef.role]} />
+                    <LigneInfo k="État" v={chef.actif ? "actif" : "suspendu"} />
+                    <div className="pt-3">
+                      <div className="mb-2 text-[11px] text-muted-foreground">
+                        Modules ouverts par ce rôle — le périmètre, lui, vient du rattachement.
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ouverts.map((m) => (
+                          <Badge
+                            key={m}
+                            variant={DROITS[chef.role]?.[m] === "W" ? "default" : "secondary"}
+                            className="text-[10px]"
+                          >
+                            {MODULE_LABELS[m]}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </Section>
 
             <Section titre="Instruction">
@@ -329,6 +390,8 @@ export default function PilotagePage() {
           </>
         )}
       </PanneauDetail>
+
+      {gestion.dialogues}
     </>
   );
 }

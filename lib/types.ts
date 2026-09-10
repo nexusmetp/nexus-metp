@@ -21,6 +21,7 @@ export type Provenance = "TEXTE" | "A_VERIFIER" | "RECOMMANDATION";
 
 export type NiveauEntite =
   | "MINISTERE"
+  | "CABINET"
   | "INSPECTION_GENERALE"
   | "DIRECTION_GENERALE"
   | "SECRETARIAT"

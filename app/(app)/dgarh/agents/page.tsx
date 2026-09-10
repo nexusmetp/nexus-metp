@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowRight, GraduationCap, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { useAgentsProjetes, useEntites, useInscrireAgent } from "@/lib/queries";
@@ -47,7 +48,12 @@ export default function AgentsPage() {
 
   const [selection, setSelection] = useState<AgentProjete | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videAgent | null>(null);
-  const [filtres, setFiltres] = useState<Record<string, string>>({ entite: "all", categorie: "all", position: "all" });
+  const parametres = useSearchParams();
+  const [filtres, setFiltres] = useState<Record<string, string>>({
+    entite: parametres?.get("entite") ?? "all",
+    categorie: parametres?.get("categorie") ?? "all",
+    position: "all",
+  });
 
   const redacteur = peut(user.role, "agents", "W");
 

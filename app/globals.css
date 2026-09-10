@@ -221,7 +221,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Fond photographique de la page de connexion                         */
+/* Fond photographique — écran d'ouverture et page de connexion         */
 /*                                                                     */
 /* Plusieurs fichiers sont déclarés : le navigateur peint le premier    */
 /* calque, et si son fichier est absent il laisse voir le suivant. On   */
@@ -229,12 +229,13 @@
 /* de fond reste le dernier recours — jamais de page blanche.           */
 /* ------------------------------------------------------------------ */
 
-.fond-connexion {
+.fond-ministere {
   background-color: #0f172a;
   background-image:
     url("/bureau-ministre.webp"),
     url("/bureau-ministre.jpg"),
     url("/bureau-ministre.png"),
+    url("/bkImage.png"),
     url("/login-bg.jpg");
   background-size: cover;
   background-position: center center;
@@ -247,4 +248,14 @@
 .voile-connexion {
   background:
     linear-gradient(to bottom, rgba(2, 6, 23, 0.34) 0%, rgba(2, 6, 23, 0.52) 55%, rgba(2, 6, 23, 0.66) 100%);
+}
+
+/* Écran d'ouverture : le texte est posé À MÊME la photo, sans carte pour le
+   porter. Il faut donc un voile plus dense qu'à la connexion, et une clairière
+   au centre — assez sombre pour que le blanc tienne, assez transparente pour
+   qu'on reconnaisse le bureau. */
+.voile-ouverture {
+  background:
+    radial-gradient(ellipse 70% 62% at 50% 46%, rgba(2, 6, 23, 0.80) 0%, rgba(2, 6, 23, 0.62) 55%, rgba(2, 6, 23, 0.55) 100%),
+    linear-gradient(to bottom, rgba(2, 6, 23, 0.45) 0%, rgba(2, 6, 23, 0.25) 40%, rgba(2, 6, 23, 0.70) 100%);
 }

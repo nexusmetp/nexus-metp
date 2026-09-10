@@ -39,12 +39,26 @@ sélectionne, et ne pixellise à aucune taille.
 La photo du bureau du ministre. Cherchée dans cet ordre, et **la première
 présente gagne** :
 
-1. `bureau-ministre.webp`
-2. `bureau-ministre.jpg`
+1. `bureau-ministre.webp`  ← **servi** : 95 Ko
+2. `bureau-ministre.jpg`   ← repli si le navigateur ignore le WebP : 158 Ko
 3. `bureau-ministre.png`
-4. `login-bg.jpg`  ← fond de repli actuel, abstrait
+4. `bkImage.png`           ← **l'original déposé**, 1,8 Mo : conservé comme master
+5. `login-bg.jpg`          ← ancien fond abstrait, dernier recours
 
-Déposez la photo sous l'un des trois premiers noms, tel quel. Un voile
+Les deux premiers sont **fabriqués depuis l'original**. Pour les régénérer
+après avoir remplacé `bkImage.png` :
+
+```bash
+node -e "const s=require('sharp');
+  s('public/bkImage.png').resize({width:1920,withoutEnlargement:true})
+   .jpeg({quality:80,mozjpeg:true,progressive:true}).toFile('public/bureau-ministre.jpg');
+  s('public/bkImage.png').resize({width:1920,withoutEnlargement:true})
+   .webp({quality:76}).toFile('public/bureau-ministre.webp');"
+```
+
+La photo sert **à deux écrans** : l'ouverture et la connexion, avec deux voiles
+différents — à l'ouverture le texte est posé à même la photo, il faut donc un
+voile plus dense et une clairière au centre. Un voile
 assombrissant est posé par-dessus (`.voile-connexion` dans `app/globals.css`) :
 sans lui, ni le bandeau ni la carte ne se détacheraient d'une photo
 d'intérieur, qui est claire et détaillée. Si vous voulez le régler, c'est la

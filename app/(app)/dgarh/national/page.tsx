@@ -3,112 +3,42 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Building2, GraduationCap, Info, MapPin, Network, School, Users,
-} from "lucide-react";
-import { useAgentsProjetes, useBesoins, useEntites } from "@/lib/queries";
-import {
-  DEPARTEMENTS, ENTITES, NIVEAU_LABELS, cheminDe, coordonneesDe,
-  departementDe, descendantsDe, entiteById,
-} from "@/lib/referentiels";
+import { Building2, GraduationCap, Info, MapPin, Network, School, Users } from "lucide-react";
+import { useAgentsProjetes, useBesoins } from "@/lib/queries";
+import { NIVEAU_LABELS, cheminDe } from "@/lib/referentiels";
 import { fmtNum, fmtPct } from "@/lib/format";
-import { lignesSituation, useSituations, LIBELLE_CATEGORIE } from "./situation";
-import { PageHeader } from "@/components/nexus/ui-kit";
-import {
-  Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
-} from "@/components/nexus/module";
+import { FAMILLES, dataUri, svgFamille } from "@/lib/carte/symboles";
 import { CarteCongo } from "@/components/nexus/carte";
-import type { CleFond } from "@/lib/carte-fonds";
+import { PageHeader } from "@/components/nexus/ui-kit";
+import { LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule } from "@/components/nexus/module";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-
-type Famille = "DIRECTION_DEPARTEMENTALE" | "ETABLISSEMENT" | "ANTENNE_DEPARTEMENTALE" | "AUTRE";
-
-const FAMILLES: Record<Famille, { libelle: string; couleur: string; anneau: string }> = {
-  DIRECTION_DEPARTEMENTALE: { libelle: "Directions départementales", couleur: "#0077B6", anneau: "rgba(0,119,182,.22)" },
-  ETABLISSEMENT: { libelle: "Établissements", couleur: "#00B4D8", anneau: "rgba(0,180,216,.22)" },
-  ANTENNE_DEPARTEMENTALE: { libelle: "Antennes de contrôle", couleur: "#F4A261", anneau: "rgba(244,162,97,.24)" },
-  AUTRE: { libelle: "Autres implantations", couleur: "#8D99AE", anneau: "rgba(141,153,174,.22)" },
-};
-
-const familleDe = (niveau: string): Famille =>
-  niveau === "DIRECTION_DEPARTEMENTALE" || niveau === "ETABLISSEMENT" || niveau === "ANTENNE_DEPARTEMENTALE"
-    ? (niveau as Famille) : "AUTRE";
-
-interface Point {
-  id: string; sigle: string; nom: string; niveau: string; ville: string;
-  famille: Famille; effectif: number; lat: number; lon: number;
-  departement?: string; besoins: number;
-}
-
-interface LigneDepartement {
-  id: string; nom: string; chefLieu: string; effectif: number;
-  implantations: number; etablissements: number; besoins: number; part: number;
-}
+import { COLONNES_DEPARTEMENT, useDepartements, type LigneDepartement } from "./departements";
+import { FicheImplantation } from "./fiche";
+import { pointCarte, useImplantations } from "./implantations";
+import { useSituations } from "./situation";
 
 export default function VueNationalePage() {
   const { data: agents, pret } = useAgentsProjetes();
   const { data: besoins = [] } = useBesoins();
-  const { data: entitesDb = [] } = useEntites();
-
-  const [famillesVues, setFamillesVues] = useState<Famille[]>(
-    Object.keys(FAMILLES) as Famille[]
-  );
-  const [survol, setSurvol] = useState<Point | null>(null);
-  const [fond, setFond] = useState<CleFond>("plan");
-  const [selection, setSelection] = useState<LigneDepartement | null>(null);
   const situationDe = useSituations();
+  const implantations = useImplantations();
 
-  const effectifDirect = useMemo(() => {
+  const [ouverte, setOuverte] = useState<string | null>(null);
+  const [selection, setSelection] = useState<LigneDepartement | null>(null);
+
+  const points = useMemo(() => implantations.map(pointCarte), [implantations]);
+  const fiche = implantations.find((i) => i.id === ouverte) ?? null;
+
+  const besoinsParDepartement = useMemo(() => {
     const m = new Map<string, number>();
-    agents.forEach((a) => a.entiteId && m.set(a.entiteId, (m.get(a.entiteId) ?? 0) + 1));
+    besoins.forEach((b) => b.departementId && m.set(b.departementId, (m.get(b.departementId) ?? 0) + 1));
     return m;
-  }, [agents]);
+  }, [besoins]);
 
-  const effectifTotal = (id: string) =>
-    descendantsDe(id).reduce((s, e) => s + (effectifDirect.get(e.id) ?? 0), 0);
-
-  /* Tout ce qui a un chef-lieu connu se place sur la carte. */
-  const points = useMemo<Point[]>(() => ENTITES
-    .filter((e) => e.actif !== false)
-    .map((e) => {
-      const c = coordonneesDe(e);
-      if (!c) return null;
-      const effectif = effectifTotal(e.id);
-      if (!effectif) return null;
-      return {
-        id: e.id, sigle: e.sigle, nom: e.nom, niveau: e.niveau, ville: e.ville ?? "",
-        famille: familleDe(e.niveau), effectif, lat: c.lat, lon: c.lon,
-        departement: departementDe(e.id)?.nom,
-        besoins: besoins.filter((b) => b.etablissementId === e.id).length,
-      } as Point;
-    })
-    .filter(Boolean) as Point[], [entitesDb, effectifDirect, besoins]);
-
-  const visibles = points.filter((p) => famillesVues.includes(p.famille));
-  const maxEffectif = Math.max(1, ...visibles.map((p) => p.effectif));
-  const rayon = (n: number) => 5 + Math.sqrt(n / maxEffectif) * 22;
-
-  const departements = useMemo<LigneDepartement[]>(() => {
-    const total = agents.length || 1;
-    return DEPARTEMENTS.map((d, i) => {
-      const dd = `ENT-DD-${String(i + 1).padStart(2, "0")}`;
-      const dansDepartement = points.filter((p) => p.ville === d.chefLieu);
-      const effectif = effectifTotal(dd)
-        + points.filter((p) => p.ville === d.chefLieu && p.famille === "ANTENNE_DEPARTEMENTALE")
-            .reduce((s, p) => s + p.effectif, 0);
-      return {
-        id: dd, nom: d.nom, chefLieu: d.chefLieu, effectif,
-        implantations: dansDepartement.length,
-        etablissements: dansDepartement.filter((p) => p.famille === "ETABLISSEMENT").length,
-        besoins: besoins.filter((b) => b.departementId === dd).length,
-        part: (effectif / total) * 100,
-      };
-    }).sort((a, b) => b.effectif - a.effectif);
-  }, [points, agents.length, besoins, effectifDirect]);
+  const departements = useDepartements(implantations, besoinsParDepartement, agents.length, situationDe);
 
   const stats = useMemo(() => {
     const deploye = departements.reduce((s, d) => s + d.effectif, 0);
@@ -119,44 +49,24 @@ export default function VueNationalePage() {
       central: Math.max(0, agents.length - deploye),
       fort, faible,
       ecart: fort && faible && faible.effectif ? Math.round(fort.effectif / faible.effectif) : 0,
+      etablissements: implantations.filter((i) => i.niveau === "ETABLISSEMENT").length,
     };
-  }, [departements, agents.length]);
+  }, [departements, agents.length, implantations]);
 
-  const basculer = (f: Famille) =>
-    setFamillesVues((v) => (v.includes(f) ? v.filter((x) => x !== f) : [...v, f]));
-
-  const colonnes: Colonne<LigneDepartement>[] = [
-    {
-      cle: "departement", entete: "Département",
-      rendu: (d) => (
-        <div className="min-w-0">
-          <div className="text-sm font-medium">{d.nom}</div>
-          <div className="text-[11px] text-muted-foreground">chef-lieu : {d.chefLieu}</div>
-        </div>
-      ),
-    },
-    { cle: "effectif", entete: "Effectif", aligne: "droite", rendu: (d) => <span className="tabular-nums text-sm font-medium">{fmtNum(d.effectif)}</span> },
-    {
-      cle: "part", entete: "Part nationale", aligne: "droite", visible: "md",
-      rendu: (d) => (
-        <div className="ml-auto w-24">
-          <div className="mb-1 text-right text-[11px] tabular-nums">{fmtPct(d.part)}</div>
-          <Jauge valeur={d.part * 5} />
-        </div>
-      ),
-    },
-    { cle: "etablissements", entete: "Établissements", aligne: "droite", visible: "lg", rendu: (d) => <span className="tabular-nums text-sm">{fmtNum(d.etablissements)}</span> },
-    { cle: "implantations", entete: "Implantations", aligne: "droite", visible: "xl", rendu: (d) => <span className="tabular-nums text-sm">{fmtNum(d.implantations)}</span> },
-    { cle: "besoins", entete: "États de besoins", aligne: "droite", visible: "lg", rendu: (d) => <span className="tabular-nums text-sm">{fmtNum(d.besoins)}</span> },
-  ];
-
-  if (!pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-[420px] w-full" /></div>;
+  if (!pret) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-[420px] w-full" />
+      </div>
+    );
+  }
 
   return (
     <>
       <PageHeader
         titre="Vue nationale"
-        description="Où le personnel du ministère est réellement déployé. Chaque cercle est une implantation, posée à ses coordonnées propres quand elles sont renseignées, sinon près du chef-lieu de son département. Sa taille dit son effectif."
+        description="Où le personnel du ministère est réellement déployé. Chaque marqueur est une implantation, posée à ses coordonnées propres quand elles sont renseignées, sinon près du chef-lieu de son département. Sa taille dit l'effectif, sa couleur dit ce qui appelle une décision."
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/dgarh">Tableau de bord</Link>
@@ -173,121 +83,34 @@ export default function VueNationalePage() {
         { ton: "ambre", titre: "Écart entre extrêmes", valeur: `× ${stats.ecart}`, sousTitre: `${stats.fort?.nom ?? "—"} face à ${stats.faible?.nom ?? "—"}`, icon: Network, href: "/besoins" },
       ]} />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-        <Card className="overflow-hidden">
-          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 pb-3">
-            <div>
-              <CardTitle className="text-base">Déploiement du personnel</CardTitle>
-              <CardDescription>
-                Cliquez un cercle pour l'identifier, changez de fond selon ce que vous cherchez. Les familles peuvent être masquées.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(FAMILLES) as Famille[]).map((f) => {
-                const actif = famillesVues.includes(f);
-                return (
-                  <button
-                    key={f}
-                    onClick={() => basculer(f)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
-                      actif ? "bg-background" : "opacity-45"
-                    )}
-                  >
-                    <span className="h-2 w-2 rounded-full" style={{ background: FAMILLES[f].couleur }} />
-                    {FAMILLES[f].libelle}
-                  </button>
-                );
-              })}
-            </div>
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[1fr_340px]">
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Déploiement du personnel</CardTitle>
+            <CardDescription>
+              Survolez un marqueur pour la situation, cliquez-le pour la fiche. Le fond se change
+              selon ce que vous cherchez : le plan pour situer, l'image aérienne pour reconnaître
+              un site, les contours pour travailler sans réseau.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="relative p-0">
-            <CarteCongo
-              points={visibles.map((p) => {
-                const s = situationDe(p.id);
-                return {
-                  id: p.id, nom: `${p.sigle} — ${p.nom}`,
-                  sousTitre: `${FAMILLES[p.famille].libelle}${p.ville ? " · " + p.ville : ""}`,
-                  lat: p.lat, lon: p.lon, valeur: p.effectif,
-                  categorie: p.famille, couleur: FAMILLES[p.famille].couleur,
-                  detail: lignesSituation(s),
-                  responsable: s.responsable
-                    ? `${s.responsable.fonction} : ${s.responsable.nom}`
-                    : undefined,
-                };
-              })}
-              fond={fond}
-              surChangementFond={setFond}
-              surSelection={(id) => setSurvol(visibles.find((p) => p.id === id) ?? null)}
-              hauteur={560}
-              className="p-4"
-            />
+          <CardContent className="min-w-0 p-0">
+            <CarteCongo points={points} surSelection={setOuverte} className="p-4" />
 
-            {survol && (
-              <div className="mx-4 mb-4 rounded-xl border bg-card p-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full" style={{ background: FAMILLES[survol.famille].couleur }} />
-                  <span className="font-mono text-[11px] font-bold">{survol.sigle}</span>
-                  <Badge variant="outline" className="text-[9px]">{NIVEAU_LABELS[survol.niveau as keyof typeof NIVEAU_LABELS]}</Badge>
-                  <button className="ml-auto text-[11px] text-muted-foreground hover:text-foreground"
-                          onClick={() => setSurvol(null)}>fermer</button>
-                </div>
-                <div className="mt-1 text-xs font-medium leading-snug">{survol.nom}</div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                  <span>{survol.ville}</span>
-                  <span className="font-semibold text-foreground">{fmtNum(survol.effectif)} agents</span>
-                  {survol.besoins > 0 && <span>{survol.besoins} besoin(s)</span>}
-                  <span className="font-mono">{survol.lat.toFixed(4)}, {survol.lon.toFixed(4)}</span>
-                </div>
-
-                {/* La situation projetée : c'est elle qu'on regarde avant de
-                    décider d'un mouvement, pas l'effectif brut. */}
-                {(() => {
-                  const s = situationDe(survol.id);
-                  return (
-                    <>
-                      <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                        {lignesSituation(s).map((l) => (
-                          <div key={l.libelle} className="rounded-lg border bg-muted/30 px-2 py-1.5">
-                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{l.libelle}</div>
-                            <div className="text-sm font-bold tabular-nums" style={{ color: l.ton }}>{l.valeur}</div>
-                          </div>
-                        ))}
-                      </div>
-                      {s.responsable && (
-                        <div className="mt-2 text-[11px] text-muted-foreground">
-                          <span className="font-medium text-foreground">{s.responsable.nom}</span>
-                          {" — "}{s.responsable.fonction}
-                        </div>
-                      )}
-                      {!!s.parCategorie.length && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {s.parCategorie.map((c) => (
-                            <Badge key={c.categorie} variant="outline" className="text-[9px]">
-                              {LIBELLE_CATEGORIE[c.categorie]} : {fmtNum(c.nombre)}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+            {fiche && <FicheImplantation implantation={fiche} surFermeture={() => setOuverte(null)} />}
 
             <div className="flex items-start gap-2 border-t px-4 py-2.5">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 Une structure sans localisation propre est placée près du chef-lieu de son département.
                 Renseignez ses coordonnées depuis le pilotage pour qu'elle se pose au bon endroit.
-                Les contours sont ceux des douze départements antérieurs à 2024 : les trois créés depuis
-                n'ont pas encore de tracé publié.
+                Les contours sont ceux des douze départements antérieurs à 2024 : les trois créés
+                depuis n'ont pas encore de tracé publié.
               </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card className="flex min-w-0 flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Ce que la carte montre</CardTitle>
             <CardDescription>Les déséquilibres se voient avant de se démontrer.</CardDescription>
@@ -306,7 +129,7 @@ export default function VueNationalePage() {
               },
               {
                 icon: School,
-                titre: `${fmtNum(points.filter((p) => p.famille === "ETABLISSEMENT").length)} établissements pourvus`,
+                titre: `${fmtNum(stats.etablissements)} établissements pourvus`,
                 texte: "Chacun remonte ses états de besoins par sa direction départementale.",
               },
               {
@@ -329,6 +152,26 @@ export default function VueNationalePage() {
                 </div>
               </motion.div>
             ))}
+
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Implantations portées
+              </div>
+              <div className="mt-1.5 space-y-1">
+                {Object.entries(FAMILLES).map(([cle, f]) => {
+                  const n = implantations.filter((i) => i.famille === cle).length;
+                  if (!n) return null;
+                  return (
+                    <div key={cle} className="flex items-center gap-2 text-[11px]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={dataUri(svgFamille(cle as keyof typeof FAMILLES))} alt="" width={13} height={13} />
+                      <span className="min-w-0 flex-1 truncate">{f.libelle}</span>
+                      <span className="tabular-nums font-semibold">{fmtNum(n)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -337,7 +180,7 @@ export default function VueNationalePage() {
         titre="Effectifs par département"
         description="Cliquez un département pour voir ce qui y est implanté."
         lignes={departements}
-        colonnes={colonnes}
+        colonnes={COLONNES_DEPARTEMENT}
         recherche={(d, t) => d.nom.toLowerCase().includes(t) || d.chefLieu.toLowerCase().includes(t)}
         placeholderRecherche="Département ou chef-lieu…"
         surSelection={setSelection}
@@ -376,22 +219,30 @@ export default function VueNationalePage() {
 
             <Section titre="Implantations">
               <div className="space-y-1">
-                {points
+                {implantations
                   .filter((p) => p.ville === selection.chefLieu)
-                  .sort((a, b) => b.effectif - a.effectif)
+                  .sort((a, b) => b.situation.effectif - a.situation.effectif)
                   .map((p) => (
-                    <div key={p.id} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: FAMILLES[p.famille].couleur }} />
-                        <div className="min-w-0">
-                          <div className="truncate text-xs font-medium">{p.nom}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {NIVEAU_LABELS[p.niveau as keyof typeof NIVEAU_LABELS]}
-                          </div>
-                        </div>
-                      </div>
-                      <span className="shrink-0 tabular-nums text-xs font-semibold">{fmtNum(p.effectif)}</span>
-                    </div>
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { setOuverte(p.id); setSelection(null); }}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left transition hover:bg-accent"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={dataUri(svgFamille(p.famille))} alt="" width={14} height={14} className="shrink-0" />
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-medium">{p.nom}</span>
+                          <span className="block text-[10px] text-muted-foreground">
+                            {NIVEAU_LABELS[p.niveau]}
+                          </span>
+                        </span>
+                      </span>
+                      <span className="shrink-0 tabular-nums text-xs font-semibold">
+                        {fmtNum(p.situation.effectif)}
+                      </span>
+                    </button>
                   ))}
               </div>
             </Section>

@@ -3,11 +3,10 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  Activity, Database, KeyRound, Pencil, Plus, RefreshCw, ShieldCheck, Users,
+  Activity, Database, KeyRound, Pencil, Plus, ShieldCheck, Users,
 } from "lucide-react";
 import {
-  useAnnonces, useConversations, useEnregistrerCompte, useJournal, useMajParametres,
-  useMessages, useParametres, useResetData, useTickets, useUtilisateurs,
+  useEnregistrerCompte, useJournal, useTickets, useUtilisateurs,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
@@ -20,17 +19,15 @@ import {
   ChampSelect, ChampTexte, DialogueFormulaire, LigneInfo, PanneauDetail,
   RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatriceDroits } from "./matrice-droits";
 import { ReglageAssistant } from "./assistant";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Parametrage } from "./parametrage";
+import { SanteInstallation } from "./sante";
 import type { Role, Utilisateur } from "@/lib/types";
 
 const MODULES = Object.keys(MODULE_LABELS) as ModuleKey[];
@@ -46,20 +43,12 @@ export default function AdministrationPage() {
   const { data: comptes = [], isLoading } = useUtilisateurs();
   const { data: journal = [] } = useJournal();
   const { data: tickets = [] } = useTickets();
-  const { data: messages = [] } = useMessages();
-  const { data: conversations = [] } = useConversations();
-  const { data: annonces = [] } = useAnnonces();
-  const { data: parametres } = useParametres();
   const enregistrerCompte = useEnregistrerCompte();
-  const majParametres = useMajParametres();
-  const reset = useResetData();
 
   const [selection, setSelection] = useState<Utilisateur | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videCompte | null>(null);
   const [edition, setEdition] = useState<Utilisateur | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ role: "all", etat: "all" });
-  const [confirme, setConfirme] = useState(false);
-  const [reglages, setReglages] = useState<Record<string, any> | null>(null);
 
   const actifs = comptes.filter((c) => c.actif).length;
   const sansEntite = comptes.filter((c) => !entiteById(c.entiteId)).length;
@@ -124,13 +113,6 @@ export default function AdministrationPage() {
     });
   };
 
-  const enregistrerReglages = async () => {
-    if (!parametres || !reglages) return;
-    await majParametres.mutateAsync({ parametres: { ...parametres, ...reglages } as any, utilisateur: user });
-    toast.success("Paramétrage enregistré");
-    setReglages(null);
-  };
-
   const colonnes: Colonne<Utilisateur>[] = [
     {
       cle: "compte", entete: "Compte",
@@ -168,8 +150,6 @@ export default function AdministrationPage() {
   ];
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
-
-  const reg = { ...(parametres ?? {}), ...(reglages ?? {}) } as any;
 
   return (
     <>
@@ -223,74 +203,7 @@ export default function AdministrationPage() {
         </TabsContent>
 
         <TabsContent value="parametres" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Paramétrage de l'installation</CardTitle>
-              <CardDescription>Ce qui vaut pour tout le ministère, et que seul l'administrateur règle.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Institution</Label>
-                  <Input
-                    value={reg.nomInstitution ?? ""}
-                    onChange={(e) => setReglages({ ...(reglages ?? {}), nomInstitution: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Exercice</Label>
-                  <Input
-                    type="number" value={reg.exercice ?? 2026}
-                    onChange={(e) => setReglages({ ...(reglages ?? {}), exercice: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Délai cible d'instruction d'un acte (jours)</Label>
-                  <Input
-                    type="number" value={reg.delaiCibleActe ?? 15}
-                    onChange={(e) => setReglages({ ...(reglages ?? {}), delaiCibleActe: Number(e.target.value) })}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Au-delà, un dossier est signalé en retard dans les bannettes et les rapports (§13).
-                  </p>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Délai de réponse — réclamation critique (heures)</Label>
-                  <Input
-                    type="number" value={reg.delaiTicket?.CRITIQUE ?? 4}
-                    onChange={(e) => setReglages({
-                      ...(reglages ?? {}),
-                      delaiTicket: { ...(reg.delaiTicket ?? {}), CRITIQUE: Number(e.target.value) },
-                    })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Modules de collaboration</div>
-                {([
-                  ["messagerieActive", "Messagerie interne"],
-                  ["ticketsActifs", "Réclamations et assistance"],
-                  ["annoncesActives", "Notes de service et circulaires"],
-                ] as const).map(([cle, libelle]) => (
-                  <div key={cle} className="flex items-center justify-between gap-4">
-                    <span className="text-sm">{libelle}</span>
-                    <Switch
-                      checked={reg[cle] !== false}
-                      onCheckedChange={(v: boolean) => setReglages({ ...(reglages ?? {}), [cle]: v })}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  Dernière modification : {parametres ? fmtDate(parametres.maj) : "—"}
-                </p>
-                <Button size="sm" disabled={!reglages} onClick={enregistrerReglages}>Enregistrer</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <Parametrage />
         </TabsContent>
 
         <TabsContent value="assistant">
@@ -298,62 +211,7 @@ export default function AdministrationPage() {
         </TabsContent>
 
         <TabsContent value="sante" className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">État de l'installation</CardTitle>
-                <CardDescription>Ce que contient la base de ce navigateur.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-0">
-                <LigneInfo k="Entités" v={fmtNum(ENTITES.length)} />
-                <LigneInfo k="Comptes" v={`${fmtNum(comptes.length)} — ${fmtNum(actifs)} actifs`} />
-                <LigneInfo k="Écritures d'audit" v={fmtNum(journal.length)} />
-                <LigneInfo k="Réclamations" v={fmtNum(tickets.length)} />
-                <LigneInfo k="Conversations" v={`${fmtNum(conversations.length)} — ${fmtNum(messages.length)} messages`} />
-                <LigneInfo k="Notes et circulaires" v={fmtNum(annonces.length)} />
-              </CardContent>
-            </Card>
-
-            <Card className="border-amber-500/30">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Limite connue — persistance locale</CardTitle>
-                <CardDescription>Ce point conditionne tout usage réel.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  Les données vivent dans le navigateur de ce poste. Deux agents ne partagent donc pas la
-                  même base : le circuit ne se joue à plusieurs rôles qu'en changeant de compte dans le
-                  même navigateur. Une exploitation réelle demande un serveur.
-                </p>
-                <div className="rounded-lg border border-dashed p-3">
-                  <div className="text-xs font-semibold">Reprise du jeu de données</div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                    Efface la base de ce navigateur et la resème. Les créations faites ici — entités,
-                    comptes, agents — sont perdues.
-                  </p>
-                  <div className="mt-3 flex items-center gap-2">
-                    {!confirme ? (
-                      <Button variant="outline" size="sm" onClick={() => setConfirme(true)}>
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Réinitialiser
-                      </Button>
-                    ) : (
-                      <>
-                        <Button
-                          variant="destructive" size="sm" disabled={reset.isPending}
-                          onClick={() => reset.mutate(undefined, {
-                            onSuccess: () => { setConfirme(false); toast.success("Base resemée"); },
-                          })}
-                        >
-                          Confirmer l'effacement
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirme(false)}>Annuler</Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <SanteInstallation />
         </TabsContent>
       </Tabs>
 

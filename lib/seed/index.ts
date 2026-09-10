@@ -10,127 +10,26 @@
  */
 
 import {
-  ENTITES, ETABLISSEMENTS, DEPARTEMENTS, GRADES, CORPS, CIRCUIT_ACTE, TYPES_ACTE,
-  entiteById, enfantsDe, descendantsDe, gradeById, categorieStatutaireDe, REGLES_CATEGORIE,
+  ENTITES, ETABLISSEMENTS, GRADES, CORPS, TYPES_ACTE,
+  descendantsDe, gradeById, REGLES_CATEGORIE,
 } from "@/lib/referentiels";
 import {
-  chance, dateEntre, dateRecente, DIPLOMES, reinitialiserGraine, rnd, DISCIPLINES, COMPETENCES, ETABS, int, iso, LANGUES,
-  NOMS, pad, pick, plusJours, PRENOMS_F, PRENOMS_M, VILLES,
+  COMPETENCES, DIPLOMES, DISCIPLINES, ETABS, LANGUES, NOMS, PRENOMS_F, PRENOMS_M, VILLES,
+  chance, dateEntre, dateRecente, int, pad, pick, plusJours, reinitialiserGraine,
 } from "./aleatoire";
+import {
+  effectifDe, fabriquerActe, gradesPour, reinitialiserCompteurActe, tirerCategorie,
+} from "./regles";
 import { construireCollaboration } from "./collaboration";
 import { construireGestion } from "./gestion";
 import { construireArchives } from "./archives";
 import type {
   Acte, Affectation, Agent, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature,
-  CategoriePersonnel, CategorieTicket, Conge, Conversation, Delegation, EntreeJournal,
-  EtapeActe, InscriptionFormation, Message, MessageTicket, NatureConge, NatureFormation,
-  NatureTexte, Notification, OffreFormation, ParametresSysteme, Position, Poste,
-  PrioriteTicket, SituationCarriere, StatutActe, StatutTicket, TexteReglementaire,
-  CarteProfessionnelle, StatutCarte, Ticket, TypeActe, Utilisateur,
-  Versement, ArticleArchive, CommunicationArchive,
+  CategoriePersonnel, Conge, Conversation, Delegation, EntreeJournal,
+  InscriptionFormation, Message, MessageTicket, Notification, OffreFormation,
+  ParametresSysteme, Position, Poste, SituationCarriere, StatutActe, TexteReglementaire,
+  CarteProfessionnelle, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive,
 } from "@/lib/types";
-
-/* ---------- Répartition des effectifs ---------- */
-
-const effectifDe = (niveau: string) => {
-  switch (niveau) {
-    case "CABINET": return int(2, 4);
-    case "ANTENNE_DEPARTEMENTALE": return int(4, 9);
-    case "BUREAU": return int(4, 11);
-    case "SERVICE": return int(2, 4);
-    case "DIRECTION": return int(2, 4);
-    case "SECRETARIAT": return int(1, 3);
-    case "DIRECTION_GENERALE": return int(3, 6);
-    case "INSPECTION_GENERALE": return int(8, 14);
-    case "INSPECTION_INTERDEPARTEMENTALE": return int(10, 18);
-    case "DIRECTION_DEPARTEMENTALE": return int(14, 26);
-    case "ETABLISSEMENT": return int(22, 48);
-    default: return 0;
-  }
-};
-
-/** Grades plausibles selon le niveau d'entité. */
-const gradesPour = (niveau: string, enseignant: boolean): string[] => {
-  if (enseignant) return ["GR-ENS-PT", "GR-ENS-PTC", "GR-ENS-PTC"];
-  switch (niveau) {
-    case "DIRECTION_GENERALE": return ["GR-DIR-DG", "GR-ADM-1"];
-    case "INSPECTION_GENERALE": return ["GR-INSP-1", "GR-INSP-2"];
-    case "DIRECTION": return ["GR-DIR-DC", "GR-ADM-1"];
-    case "SERVICE": return ["GR-ENC-CS1", "GR-ENC-CS2"];
-    case "BUREAU": return ["GR-GEST-1", "GR-GEST-2", "GR-GEST-3", "GR-TECH-1", "GR-SERV-1"];
-    case "DIRECTION_DEPARTEMENTALE": return ["GR-GEST-1", "GR-TECH-1", "GR-SERV-1", "GR-ENC-CS2"];
-    case "ETABLISSEMENT": return ["GR-ENS-PTC", "GR-ENS-PT", "GR-SERV-1", "GR-GEST-3"];
-    default: return ["GR-GEST-1", "GR-SERV-1"];
-  }
-};
-
-const tirerCategorie = (niveau: string): CategoriePersonnel => {
-  if (niveau !== "DIRECTION_DEPARTEMENTALE" && niveau !== "ETABLISSEMENT") {
-    return chance(0.82) ? "FONCTIONNAIRE" : "CONTRACTUEL";
-  }
-  const r = rnd();
-  if (r < 0.5) return "FONCTIONNAIRE";
-  if (r < 0.66) return "CONTRACTUEL";
-  if (r < 0.79) return "PRESTATAIRE";
-  if (r < 0.88) return "VOLONTAIRE";
-  return "VACATAIRE";
-};
-
-/* ---------- Fabrique d'actes ---------- */
-
-let compteurActe = 0;
-
-function fabriquerActe(
-  type: TypeActe, agentId: string, agentNom: string, entiteInstructriceId: string,
-  dateCreation: string, statut: StatutActe
-): Acte {
-  compteurActe++;
-  const modele = TYPES_ACTE.find((t) => t.type === type)!;
-  const idxCourant =
-    statut === "BROUILLON" ? 0
-    : statut === "SOUMIS" ? 1
-    : statut === "EN_INSTRUCTION" ? 1
-    : statut === "RETOURNE" ? 1
-    : statut === "VALIDE_SERVICE" ? 2
-    : statut === "VALIDE_DIRECTION" ? 3
-    : statut === "REJETE" ? 3
-    : CIRCUIT_ACTE.length;
-
-  const etapes: EtapeActe[] = CIRCUIT_ACTE.map((s, k) => ({
-    id: `ETP-${pad(compteurActe, 5)}-${k}`,
-    ordre: s.ordre,
-    libelle: s.libelle,
-    entiteId: s.entiteId,
-    statut: k < idxCourant ? "TERMINEE" : k === idxCourant ? "EN_COURS" : "A_VENIR",
-    dateEntree: k <= idxCourant ? plusJours(dateCreation, k * 3) : undefined,
-    dateSortie: k < idxCourant ? plusJours(dateCreation, k * 3 + 2) : undefined,
-    utilisateur: k <= idxCourant ? `${pick(PRENOMS_M)} ${pick(NOMS)}` : undefined,
-    commentaire: statut === "RETOURNE" && k === idxCourant ? "Pièce justificative manquante" : undefined,
-  }));
-
-  const signe = ["SIGNE", "NOTIFIE", "ARCHIVE"].includes(statut);
-  return {
-    id: `ACT-${pad(compteurActe, 5)}`,
-    reference: `ARR-${pad(int(100, 9999), 4)}/METP/DGARH-${new Date(dateCreation).getFullYear()}`,
-    type,
-    objet: `${modele.libelle} — ${agentNom}`,
-    agentId,
-    entiteInstructriceId,
-    statut,
-    dateCreation,
-    dateEcheance: plusJours(dateCreation, 15),
-    dateSignature: signe ? plusJours(dateCreation, int(8, 40)) : undefined,
-    initiateur: `${pick(PRENOMS_M)} ${pick(NOMS)}`,
-    etapes,
-    pieces: [
-      { id: `PC-${pad(compteurActe, 5)}-1`, nom: "Demande signée.pdf", categorie: "Demande", date: dateCreation, taille: `${int(80, 900)} Ko` },
-      { id: `PC-${pad(compteurActe, 5)}-2`, nom: "Situation administrative.pdf", categorie: "Justificatif", date: dateCreation, taille: `${int(80, 600)} Ko` },
-    ],
-  };
-}
-
-/* ---------- Construction ---------- */
-
 export interface Dataset {
   entites: typeof ENTITES;
   corps: typeof CORPS;
@@ -166,7 +65,7 @@ export interface Dataset {
 
 export function buildDataset(): Dataset {
   reinitialiserGraine();
-  compteurActe = 0;
+  reinitialiserCompteurActe();
 
   const agents: Agent[] = [];
   const situations: SituationCarriere[] = [];

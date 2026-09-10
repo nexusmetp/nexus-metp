@@ -65,6 +65,59 @@ Le piège, rencontré trois fois : un enfant de flex ou de grille garde
 — et un `overflow-x: auto` posé à l'intérieur ne sert alors à rien. Le remède
 est `min-w-0` sur l'enfant, pas sur le conteneur défilant.
 
+## La carte
+
+`/dgarh/national` porte la carte du déploiement. Le moteur est **MapLibre GL JS**
+(BSD-3) : c'est lui qui lira les tuiles vectorielles du jour où le ministère
+servira ses propres données depuis PostGIS, ce qu'aucune bibliothèque en images
+matricielles ne sait faire.
+
+**Trois signes, trois informations, et jamais deux fois la même** : la *forme*
+dit la nature du site, la *taille* dit l'effectif, la *couleur du halo* dit
+l'état. Un lecteur qui apprend ces trois règles une fois lit la carte entière
+sans légende. Les états (`lib/carte/symboles.ts`) remontent d'abord ce qui
+appelle une décision — postes vacants avant absences, absences avant mouvements
+— parce qu'une carte qui peint tout en vert ne sert à rien. La couleur ne
+remplace aucun chiffre : la fiche les donne tous.
+
+**Huit fonds, et leurs conditions d'usage écrites à côté du bouton**
+(`lib/carte/fonds.ts`). Les serveurs de tuiles cités sont tenus par des
+associations et interdisent tous l'usage massif : un ministère de plusieurs
+milliers d'agents sort de leur cadre en une semaine. La règle est affichée pour
+qu'on ne l'apprenne pas le jour du blocage. L'imagerie satellite n'est **pas**
+OpenStreetMap : ce sont des conditions Esri, à couvrir par une convention.
+
+**Aucune police, aucun lutin, aucun hébergeur tiers.** Un style MapLibre va
+normalement chercher ses glyphes et ses images chez quelqu'un ; ici les symboles
+sont fabriqués en SVG dans la page et aucune couche ne porte de texte. C'est
+pourquoi les amas — les seuls objets qui affichent des chiffres — sont des
+éléments HTML et non des couches. Tout le reste part sur le processeur
+graphique : le pays comptera des milliers d'implantations.
+
+**Trois pièges rencontrés, et leur remède :**
+
+- `setStyle` emporte sources, couches et images. Il faut les reposer sur
+  **`style.load`** — pas sur `styledata`, qui se déclenche aussi pendant le
+  chargement des tuiles, ni derrière `isStyleLoaded()`, qui ne repasse jamais à
+  vrai quand une tuile n'arrive pas. S'en remettre à lui laissait la carte
+  muette derrière des amas figés, ce que rien à l'écran ne trahissait.
+- Le halo ne descend jamais sous le symbole qu'il entoure, sinon une petite
+  implantation cache son propre anneau d'état — la seule chose qui dise où
+  regarder.
+- MapLibre est livré pré-assemblé, un mégaoctet sans le moindre `require` :
+  `next.config.js` le met en `noParse`, et il vit dans son propre morceau,
+  chargé au geste. La page nationale le paie, aucune autre.
+
+**La carte à plat** (`components/nexus/carte/plate.tsx`) sert deux cas réels :
+le poste dont le pilote graphique est bloqué — il en reste dans les services —
+et la maquette autonome, où le moteur est remplacé par un talon
+(`bundle/build.mjs`). Ce n'est pas un message d'erreur déguisé : mêmes
+positions, mêmes tailles, mêmes couleurs, et un clic ouvre la même fiche.
+
+Les contours départementaux sont ceux des **douze** départements antérieurs à
+2024 (`lib/geo-congo.ts`) : les trois créés depuis ne figurent dans aucune
+source ouverte et sont situés par leur chef-lieu.
+
 ## Architecture du domaine
 
 - **Événementiel** : l'état d'un agent est *projeté* depuis ses actes historisés
@@ -195,3 +248,20 @@ Deux reprises attendent ce serveur, dans cet ordre :
 Pour éditer un fichier Word quelconque avec fidélité, la voie est d'embarquer
 une suite auto-hébergée **à côté** de la plateforme (Collabora Online, MPL-2.0),
 jamais dedans.
+
+Le serveur commande aussi la carte, dans cet ordre :
+
+- **les tuiles du ministère** — un rendu servi depuis une machine de la DGARH
+  plutôt que depuis les serveurs bénévoles cités dans `lib/carte/fonds.ts`, dont
+  les conditions d'usage excluent l'échelle visée. Le moteur est déjà celui qui
+  lit les tuiles vectorielles, il n'y a rien à réécrire côté écran ;
+- **PostGIS**, pour que les coordonnées d'une implantation vivent dans la base
+  et non dans un référentiel de code ;
+- **Nominatim auto-hébergé**, pour la recherche d'adresses. La recherche
+  actuelle est locale et porte sur les implantations du ministère — c'est
+  d'ailleurs celle qui répond à la vraie question. L'instance publique de
+  Nominatim interdit l'usage massif : la brancher telle quelle ferait bloquer
+  l'adresse du ministère.
+
+Le calcul d'itinéraires (OSRM, Valhalla) vient après, et seulement si un besoin
+le réclame : une tournée d'inspection se prépare aujourd'hui sans la plateforme.

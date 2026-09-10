@@ -9,6 +9,9 @@ import { useAgentsProjetes } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
 import { RangeeKpi } from "@/components/nexus/module";
+import { PanneauEntite } from "@/components/nexus/panneau-entite";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,10 +34,11 @@ function useEffectifs() {
 }
 
 function Noeud({
-  entite, direct, total, profondeur, ouvertParDefaut,
+  entite, direct, total, profondeur, ouvertParDefaut, surFiche,
 }: {
   entite: Entite; direct: Map<string, number>; total: Map<string, number>;
   profondeur: number; ouvertParDefaut: boolean;
+  surFiche: (e: Entite) => void;
 }) {
   const [ouvert, setOuvert] = useState(ouvertParDefaut);
   const enfants = enfantsDe(entite.id);
@@ -80,6 +84,16 @@ function Noeud({
             <div className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">{entite.reference}</div>
           )}
         </div>
+        {/* Déplier la branche et consulter la fiche sont deux gestes différents :
+            le second ne doit pas replier ce qu'on vient d'ouvrir. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 shrink-0 px-2 text-[11px] opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+          onClick={(e: any) => { e.stopPropagation(); surFiche(entite); }}
+        >
+          <Info className="mr-1 h-3 w-3" /> Fiche
+        </Button>
       </div>
 
       {aDesEnfants && ouvert && (
@@ -92,6 +106,7 @@ function Noeud({
               total={total}
               profondeur={profondeur + 1}
               ouvertParDefaut={profondeur < 1}
+              surFiche={surFiche}
             />
           ))}
         </ul>
@@ -102,6 +117,7 @@ function Noeud({
 
 export default function OrganigrammePage() {
   const { direct, total, pret } = useEffectifs();
+  const [fiche, setFiche] = useState<Entite | null>(null);
 
   const compteProvenance = useMemo(() => {
     const c: Record<Provenance, number> = { TEXTE: 0, A_VERIFIER: 0, RECOMMANDATION: 0 };
@@ -150,12 +166,12 @@ export default function OrganigrammePage() {
             <Network className="h-4 w-4 text-primary" /> {dgarh.nom}
           </CardTitle>
           <CardDescription>
-            Cliquez sur une entité pour déplier sa branche. L'effectif indiqué inclut les entités rattachées.
+            Cliquez une entité pour déplier sa branche, « Fiche » pour l'ouvrir en détail. L'effectif indiqué inclut les entités rattachées.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="space-y-0.5">
-            <Noeud entite={dgarh} direct={direct} total={total} profondeur={0} ouvertParDefaut />
+            <Noeud entite={dgarh} direct={direct} total={total} profondeur={0} ouvertParDefaut surFiche={setFiche} />
           </ul>
         </CardContent>
       </Card>
@@ -170,11 +186,17 @@ export default function OrganigrammePage() {
         <CardContent>
           <ul className="space-y-0.5">
             {hors.map((e) => (
-              <Noeud key={e.id} entite={e} direct={direct} total={total} profondeur={1} ouvertParDefaut={false} />
+              <Noeud key={e.id} entite={e} direct={direct} total={total} profondeur={1} ouvertParDefaut={false} surFiche={setFiche} />
             ))}
           </ul>
         </CardContent>
       </Card>
+
+      <PanneauEntite
+        entite={fiche}
+        surFermeture={() => setFiche(null)}
+        surNavigation={setFiche}
+      />
     </>
   );
 }

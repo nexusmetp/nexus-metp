@@ -28,7 +28,11 @@ export type Resultat = "enregistre" | "refuse" | "impossible";
  * du visualiseur quand la page y est publiée — celui-ci n'autorise pas les
  * téléchargements initiés par la page et affiche sa propre confirmation.
  */
-export async function telecharger(nom: string, csv: string): Promise<Resultat> {
+export async function telecharger(
+  nom: string,
+  csv: string,
+  type = "text/csv;charset=utf-8"
+): Promise<Resultat> {
   const hote = (globalThis as any).claude;
   if (hote?.use) {
     try {
@@ -43,7 +47,7 @@ export async function telecharger(nom: string, csv: string): Promise<Resultat> {
     }
   }
   try {
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([csv], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

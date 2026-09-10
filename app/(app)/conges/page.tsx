@@ -19,6 +19,7 @@ import {
   ChampSelect, ChampTexte, ChampZone, DialogueFormulaire, Jauge, LigneInfo,
   PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { DocumentsLies } from "@/components/nexus/documents-lies";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -320,6 +321,13 @@ export default function CongesPage() {
         )}
         actions={selection && (
           <>
+            {(selection.statut === "ACCORDE" || selection.statut === "PRIS") && (
+              <DocumentsLies
+                source="conge"
+                libelle="Décision de congé"
+                contexte={{ conge: selection, agent: agentSel, signataire: { nom: user.nomComplet } }}
+              />
+            )}
             {instructeur && selection.statut === "DEMANDE" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => statuer(selection, "REFUSE")}>

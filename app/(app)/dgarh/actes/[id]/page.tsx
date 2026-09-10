@@ -15,6 +15,7 @@ import { calculerEffets, effetsVides, transitionsPour } from "@/lib/actes";
 import { STATUT_ACTE_LABELS, cheminDe, entiteById, gradeById, typeActeById } from "@/lib/referentiels";
 import { fmtDate, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
+import { DocumentsLies } from "@/components/nexus/documents-lies";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,10 @@ export default function ActePage() {
         description={`${typeActeById(acte.type)?.libelle} — ${acte.objet}. Créé le ${fmtDate(acte.dateCreation)}, instruit par ${entiteById(acte.entiteInstructriceId)?.sigle}.`}
       >
         <BadgeStatutActe v={acte.statut} />
+        <DocumentsLies
+          source="acte"
+          contexte={{ acte, agent: agent as any, signataire: { nom: user.nomComplet } }}
+        />
         <Button variant="outline" size="sm" asChild>
           <Link href="/dgarh/actes"><ArrowLeft className="mr-2 h-4 w-4" /> Tous les actes</Link>
         </Button>

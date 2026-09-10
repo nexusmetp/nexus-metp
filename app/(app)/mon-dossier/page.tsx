@@ -14,6 +14,7 @@ import {
 } from "@/components/nexus/ui-kit";
 import { RangeeKpi } from "@/components/nexus/module";
 import { Portrait } from "@/components/nexus/portrait";
+import { DocumentsLies } from "@/components/nexus/documents-lies";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,6 +72,11 @@ export default function MonDossierPage() {
           >
             <BadgeCategorie v={projete.categorie} />
             <BadgePosition v={projete.nature} />
+            <DocumentsLies
+              source="agent"
+              libelle="Mes documents"
+              contexte={{ agent: projete, signataire: { nom: user.nomComplet } }}
+            />
           </PageHeader>
 
           <div className="flex flex-wrap items-center gap-4 rounded-xl border bg-card p-4">

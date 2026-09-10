@@ -14,6 +14,8 @@ import {
   BadgeCategorie, BadgePosition, BadgeStatutActe, BadgeStatutaire, PageHeader,
 } from "@/components/nexus/ui-kit";
 import { Portrait } from "@/components/nexus/portrait";
+import { DocumentsLies } from "@/components/nexus/documents-lies";
+import { useAuth } from "@/lib/store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -30,6 +32,7 @@ function Ligne({ k, v }: { k: string; v?: React.ReactNode }) {
 }
 
 export default function DossierAgentPage() {
+  const user = useAuth((s) => s.user)!;
   const params = useParams();
   const id = String(params?.id ?? "");
   const { data: agents = [], isLoading } = useAgents();
@@ -62,6 +65,7 @@ export default function DossierAgentPage() {
       >
         <BadgeCategorie v={a.categorie} />
         <BadgePosition v={a.nature} />
+        <DocumentsLies source="agent" contexte={{ agent: a, signataire: { nom: user.nomComplet } }} />
         <Button size="sm" asChild>
           <Link href="/dgarh/actes/nouveau"><GitBranch className="mr-2 h-3.5 w-3.5" /> Nouvelle mutation</Link>
         </Button>

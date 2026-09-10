@@ -219,3 +219,32 @@
 @media (max-width: 440px) {
   [data-sonner-toaster] { --width: calc(100vw - 2rem) !important; }
 }
+
+/* ------------------------------------------------------------------ */
+/* Fond photographique de la page de connexion                         */
+/*                                                                     */
+/* Plusieurs fichiers sont déclarés : le navigateur peint le premier    */
+/* calque, et si son fichier est absent il laisse voir le suivant. On   */
+/* obtient donc une cascade sans une ligne de JavaScript, et la couleur */
+/* de fond reste le dernier recours — jamais de page blanche.           */
+/* ------------------------------------------------------------------ */
+
+.fond-connexion {
+  background-color: #0f172a;
+  background-image:
+    url("/bureau-ministre.webp"),
+    url("/bureau-ministre.jpg"),
+    url("/bureau-ministre.png"),
+    url("/login-bg.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* Voile de lisibilité. Une photo d'intérieur est claire et détaillée : sans
+   voile, ni le bandeau ni la carte ne se détachent. Il s'assombrit vers le
+   bas, là où se trouve le pied de page. */
+.voile-connexion {
+  background:
+    linear-gradient(to bottom, rgba(2, 6, 23, 0.34) 0%, rgba(2, 6, 23, 0.52) 55%, rgba(2, 6, 23, 0.66) 100%);
+}

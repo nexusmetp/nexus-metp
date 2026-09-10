@@ -8,7 +8,7 @@ import { useTextes } from "@/lib/langues";
 import { ensureSeed } from "@/lib/db";
 import { useAuth } from "@/lib/store";
 import type { Utilisateur } from "@/lib/types";
-import { Armoiries, LogoMETP } from "@/components/nexus/logo";
+import { LogoMETP } from "@/components/nexus/logo";
 import { SelecteurLangue } from "@/components/nexus/selecteur-langue";
 import { FeedbackButton } from "@/components/feedback";
 import { Formulaire } from "./formulaire";
@@ -55,10 +55,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="ecran-connexion flex flex-col bg-slate-50">
+    <div className="ecran-connexion relative flex flex-col">
+      {/* Le bureau du ministre en fond, sous un voile de lisibilité. La photo
+          est posée en position fixe plutôt qu'en background-attachment : sur
+          téléphone, le fond attaché saute pendant le défilement. */}
+      <div aria-hidden className="fond-connexion fixed inset-0 -z-20" />
+      <div aria-hidden className="voile-connexion fixed inset-0 -z-10" />
+
       {/* Bandeau de l'État : le timbre à gauche, la langue à droite, chacun
           au bord de l'écran. */}
-      <header className="shrink-0 border-b border-slate-200 bg-white">
+      <header className="shrink-0 border-b border-white/20 bg-white/95 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-4 px-3 py-2 sm:px-5">
           <LogoMETP taille={38} compact className="min-w-0" />
           <SelecteurLangue />
@@ -70,13 +76,9 @@ export default function LoginPage() {
         </div>
       </header>
 
+      {/* Plus de blason en filigrane : la photo porte déjà les armoiries au
+          mur, un second emblème par-dessus ne ferait que du bruit. */}
       <main className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4 py-4">
-        {/* Le blason en filigrane : il habille le fond sans concurrencer le
-            formulaire. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center opacity-[0.045]">
-          <Armoiries taille={380} />
-        </div>
-
         <div className="colonne-connexion relative z-10 w-full max-w-[430px]">
           {reconnu
             ? <Confirmation utilisateur={reconnu} onContinuer={entrer} />
@@ -84,9 +86,9 @@ export default function LoginPage() {
         </div>
       </main>
 
-      <footer className="pied-connexion shrink-0 border-t border-slate-200 bg-white px-4 py-2.5 text-center">
-        <p className="text-[11px] font-medium text-slate-600">{t.etat.ministere}</p>
-        <p className="mt-0.5 text-[10px] text-slate-400">
+      <footer className="pied-connexion shrink-0 border-t border-white/15 bg-slate-950/45 px-4 py-2.5 text-center backdrop-blur-sm">
+        <p className="text-[11px] font-medium text-white/85">{t.etat.ministere}</p>
+        <p className="mt-0.5 text-[10px] text-white/55">
           {APP_NAME} · DGARH · {t.etat.devise} — {t.connexion.piedDePage}
         </p>
       </footer>

@@ -127,16 +127,16 @@ export function Formulaire({ onValide }: { onValide: (u: Utilisateur) => void })
           <button
             type="button"
             onClick={() => toast.info(t.messages.procedureCompteTitre, { description: t.messages.procedureCompteTexte })}
-            className="flex items-center gap-2.5 text-[15px] text-primary hover:underline"
+            className="flex w-full items-start gap-2.5 text-left text-[15px] text-primary hover:underline"
           >
-            <UserPlus className="h-[18px] w-[18px]" /> {t.connexion.ouvrirCompte}
+            <UserPlus className="mt-[3px] h-[18px] w-[18px] shrink-0" /> {t.connexion.ouvrirCompte}
           </button>
           <button
             type="button"
             onClick={() => toast.info(t.messages.procedureMdpTitre, { description: t.messages.procedureMdpTexte })}
-            className="flex items-center gap-2.5 text-[15px] text-primary hover:underline"
+            className="flex w-full items-start gap-2.5 text-left text-[15px] text-primary hover:underline"
           >
-            <HelpCircle className="h-[18px] w-[18px]" /> {t.connexion.impossible}
+            <HelpCircle className="mt-[3px] h-[18px] w-[18px] shrink-0" /> {t.connexion.impossible}
           </button>
         </div>
         </div>

@@ -34,6 +34,25 @@ S'il n'y en a aucun, `<LogoMETP />` compose le bloc lui-même : le blason reste
 une image, le libellé reste du texte — il se lit au lecteur d'écran, se
 sélectionne, et ne pixellise à aucune taille.
 
+## Fond de la page de connexion
+
+La photo du bureau du ministre. Cherchée dans cet ordre, et **la première
+présente gagne** :
+
+1. `bureau-ministre.webp`
+2. `bureau-ministre.jpg`
+3. `bureau-ministre.png`
+4. `login-bg.jpg`  ← fond de repli actuel, abstrait
+
+Déposez la photo sous l'un des trois premiers noms, tel quel. Un voile
+assombrissant est posé par-dessus (`.voile-connexion` dans `app/globals.css`) :
+sans lui, ni le bandeau ni la carte ne se détacheraient d'une photo
+d'intérieur, qui est claire et détaillée. Si vous voulez le régler, c'est la
+seule règle à toucher.
+
+Format conseillé : **JPEG ou WebP, 1920×1080 environ, sous 400 Ko.** L'image
+est incorporée telle quelle dans l'artefact publié, donc son poids compte.
+
 ## Drapeau
 
 `drapeau-congo.svg` — tracé exact (parti en bande, de sinople, d'or et de

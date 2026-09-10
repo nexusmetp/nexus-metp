@@ -28,10 +28,10 @@ export function ComptesDemo({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="bouton-demo h-10 w-full justify-between rounded-[3px] border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+          className="bouton-demo h-10 w-full justify-between rounded-[3px] border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
         >
           <span className="flex items-center gap-2 text-[13px]">
-            <Lock className="h-3.5 w-3.5 text-slate-400" />
+            <Lock className="h-3.5 w-3.5 text-white/70" />
             {t.connexion.comptesDemo} ({utilisateurs.length})
           </span>
           <ChevronDown className="h-4 w-4" />

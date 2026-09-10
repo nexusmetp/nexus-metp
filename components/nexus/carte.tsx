@@ -26,9 +26,17 @@ export interface PointCarte {
   /** Regroupement de légende : direction, établissement, inspection… */
   categorie: string;
   couleur: string;
+  /** Ce que le marqueur dit quand on le survole, au-delà de l'effectif. */
+  detail?: { libelle: string; valeur: string; ton?: string }[];
+  /** Qui dirige : la première question qu'on pose devant une implantation. */
+  responsable?: string;
 }
 
 const CLE_STYLE = "styles-leaflet";
+
+/** L'infobulle est du HTML : un nom d'établissement ne doit pas s'y injecter. */
+const echapper = (v: unknown) =>
+  String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 function useLeaflet() {
   const [L, setL] = useState<any>(null);
@@ -143,9 +151,26 @@ export function CarteCongo({
         color: p.couleur, weight: 1.5, opacity: 0.9,
         fillColor: p.couleur, fillOpacity: 0.35,
       });
+      // L'effectif seul ne dit rien : cent trente-cinq agents dont vingt en
+      // congé et huit postes vacants n'est pas la même direction que cent
+      // trente-cinq agents tous présents.
+      const lignes = (p.detail ?? [])
+        .map((d) => `<div style="display:flex;gap:8px;justify-content:space-between">
+          <span style="color:#475569">${echapper(d.libelle)}</span>
+          <strong style="color:${d.ton ?? "#0f172a"}">${echapper(d.valeur)}</strong></div>`)
+        .join("");
       m.bindTooltip(
-        `<strong>${p.nom}</strong><br>${p.sousTitre ?? ""}<br>${p.valeur} agent(s)`,
-        { direction: "top" }
+        `<div style="min-width:190px">
+          <strong>${echapper(p.nom)}</strong>
+          <div style="color:#64748b;margin:2px 0 5px">${echapper(p.sousTitre ?? "")}</div>
+          <div style="display:flex;gap:8px;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:4px">
+            <span style="color:#475569">Effectif</span><strong>${p.valeur}</strong></div>
+          ${lignes}
+          ${p.responsable
+            ? `<div style="border-top:1px solid #e2e8f0;margin-top:4px;padding-top:4px;color:#475569">${echapper(p.responsable)}</div>`
+            : ""}
+        </div>`,
+        { direction: "top", opacity: 1 }
       );
       if (surSelection) m.on("click", () => surSelection(p.id));
       groupe.addLayer(m);

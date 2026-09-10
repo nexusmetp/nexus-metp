@@ -12,6 +12,7 @@ import {
   departementDe, descendantsDe, entiteById,
 } from "@/lib/referentiels";
 import { fmtNum, fmtPct } from "@/lib/format";
+import { lignesSituation, useSituations, LIBELLE_CATEGORIE } from "./situation";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import {
   Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
@@ -59,6 +60,7 @@ export default function VueNationalePage() {
   const [survol, setSurvol] = useState<Point | null>(null);
   const [fond, setFond] = useState<CleFond>("plan");
   const [selection, setSelection] = useState<LigneDepartement | null>(null);
+  const situationDe = useSituations();
 
   const effectifDirect = useMemo(() => {
     const m = new Map<string, number>();
@@ -201,12 +203,19 @@ export default function VueNationalePage() {
           </CardHeader>
           <CardContent className="relative p-0">
             <CarteCongo
-              points={visibles.map((p) => ({
-                id: p.id, nom: `${p.sigle} — ${p.nom}`,
-                sousTitre: `${FAMILLES[p.famille].libelle}${p.ville ? " · " + p.ville : ""}`,
-                lat: p.lat, lon: p.lon, valeur: p.effectif,
-                categorie: p.famille, couleur: FAMILLES[p.famille].couleur,
-              }))}
+              points={visibles.map((p) => {
+                const s = situationDe(p.id);
+                return {
+                  id: p.id, nom: `${p.sigle} — ${p.nom}`,
+                  sousTitre: `${FAMILLES[p.famille].libelle}${p.ville ? " · " + p.ville : ""}`,
+                  lat: p.lat, lon: p.lon, valeur: p.effectif,
+                  categorie: p.famille, couleur: FAMILLES[p.famille].couleur,
+                  detail: lignesSituation(s),
+                  responsable: s.responsable
+                    ? `${s.responsable.fonction} : ${s.responsable.nom}`
+                    : undefined,
+                };
+              })}
               fond={fond}
               surChangementFond={setFond}
               surSelection={(id) => setSurvol(visibles.find((p) => p.id === id) ?? null)}
@@ -230,6 +239,39 @@ export default function VueNationalePage() {
                   {survol.besoins > 0 && <span>{survol.besoins} besoin(s)</span>}
                   <span className="font-mono">{survol.lat.toFixed(4)}, {survol.lon.toFixed(4)}</span>
                 </div>
+
+                {/* La situation projetée : c'est elle qu'on regarde avant de
+                    décider d'un mouvement, pas l'effectif brut. */}
+                {(() => {
+                  const s = situationDe(survol.id);
+                  return (
+                    <>
+                      <div className="mt-2.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                        {lignesSituation(s).map((l) => (
+                          <div key={l.libelle} className="rounded-lg border bg-muted/30 px-2 py-1.5">
+                            <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{l.libelle}</div>
+                            <div className="text-sm font-bold tabular-nums" style={{ color: l.ton }}>{l.valeur}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {s.responsable && (
+                        <div className="mt-2 text-[11px] text-muted-foreground">
+                          <span className="font-medium text-foreground">{s.responsable.nom}</span>
+                          {" — "}{s.responsable.fonction}
+                        </div>
+                      )}
+                      {!!s.parCategorie.length && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {s.parCategorie.map((c) => (
+                            <Badge key={c.categorie} variant="outline" className="text-[9px]">
+                              {LIBELLE_CATEGORIE[c.categorie]} : {fmtNum(c.nombre)}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 

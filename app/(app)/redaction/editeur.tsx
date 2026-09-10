@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Check, Download, History, Loader2, Lock, Printer, Save,
+  ArrowLeft, Check, Download, History, Loader2, Lock, Maximize2, Printer, Save,
   Sparkles, ZoomIn, ZoomOut,
 } from "lucide-react";
 import type { Brouillon, DocumentEmis } from "@/lib/types";
@@ -57,7 +57,14 @@ export function Editeur({ brouillon, surFermeture }: {
   const [modifie, setModifie] = useState(false);
   const [enregistreA, setEnregistreA] = useState(brouillon.dateMaj);
   const [mots, setMots] = useState(() => compterMots(brouillon.contenu));
-  const [zoom, setZoom] = useState(1);
+  /* « ajustee » : la feuille tient dans la place qu'on lui laisse. C'est le
+     réglage de départ — un document qu'il faut faire défiler latéralement ne
+     se relit pas. Le zoom manuel reste possible, et « Ajuster » y revient. */
+  const [zoom, setZoom] = useState<number | "ajustee">("ajustee");
+  const [echelle, setEchelle] = useState(1);
+  const [orientation, setOrientation] = useState<"portrait" | "paysage">(
+    brouillon.orientation ?? "portrait"
+  );
   const [empreinte, setEmpreinte] = useState(brouillon.id);
   const [depot, setDepot] = useState(false);
   const [corpsADeposer, setCorpsADeposer] = useState("");
@@ -71,19 +78,6 @@ export function Editeur({ brouillon, surFermeture }: {
   const modeleRepris = modelesMaison.find((m) => m.id === brouillon.modeleMaisonId) ?? null;
 
   const fige = brouillon.statut === "ARRETE";
-
-  /* La feuille est plus large qu'un téléphone : à l'ouverture, on la met à
-     la largeur disponible plutôt que de laisser l'agent chercher la barre
-     de défilement horizontale. */
-  useEffect(() => {
-    const ajuster = () => {
-      const large = window.innerWidth;
-      setZoom(large < 640 ? Math.max(0.42, (large - 48) / 794) : large < 1280 ? 0.78 : 1);
-    };
-    ajuster();
-    window.addEventListener("resize", ajuster);
-    return () => window.removeEventListener("resize", ajuster);
-  }, []);
 
   const sauver = useCallback(async (
     version?: { origine: Brouillon["versions"][number]["origine"]; resume: string },
@@ -129,6 +123,11 @@ export function Editeur({ brouillon, surFermeture }: {
     window.addEventListener("keydown", sur);
     return () => window.removeEventListener("keydown", sur);
   }, [fige, sauver]);
+
+  const changerOrientation = (v: "portrait" | "paysage") => {
+    setOrientation(v);
+    void sauver(undefined, { orientation: v });
+  };
 
   const surAssistance = (resume: string) => {
     setAssiste(true);
@@ -228,7 +227,9 @@ export function Editeur({ brouillon, surFermeture }: {
         {fige && <Badge variant="secondary" className="gap-1 text-[10px]"><Lock className="h-3 w-3" /> arrêté</Badge>}
         {assiste && <Badge variant="outline" className="gap-1 text-[10px]"><Sparkles className="h-3 w-3" /> assisté</Badge>}
 
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        {/* Pas de `shrink-0` ici : le groupe fait plus de 400 px et poussait
+            toute la page hors de l'écran sur un téléphone. Il s'enroule. */}
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des versions">
@@ -261,12 +262,26 @@ export function Editeur({ brouillon, surFermeture }: {
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" className="h-9 w-9" title="Réduire" onClick={() => setZoom((z) => Math.max(0.4, +(z - 0.1).toFixed(2)))}>
+          <Button
+            variant="ghost" size="icon" className="h-9 w-9" title="Réduire"
+            onClick={() => setZoom(Math.max(0.25, +(echelle - 0.1).toFixed(2)))}
+          >
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9" title="Agrandir" onClick={() => setZoom((z) => Math.min(1.6, +(z + 0.1).toFixed(2)))}>
+          <Button
+            variant="ghost" size="icon" className="h-9 w-9" title="Agrandir"
+            onClick={() => setZoom(Math.min(1.6, +(echelle + 0.1).toFixed(2)))}
+          >
             <ZoomIn className="h-4 w-4" />
           </Button>
+          {zoom !== "ajustee" && (
+            <Button
+              variant="ghost" size="sm" className="h-9 text-[11px]" title="Faire tenir la page dans la largeur"
+              onClick={() => setZoom("ajustee")}
+            >
+              <Maximize2 className="mr-1 h-3.5 w-3.5" /> Ajuster
+            </Button>
+          )}
 
           <Button variant="ghost" size="icon" className="h-9 w-9" title="Imprimer" onClick={imprimer}>
             <Printer className="h-4 w-4" />
@@ -331,6 +346,8 @@ export function Editeur({ brouillon, surFermeture }: {
           surChangement={marquerModifie}
           surInsertion={(t) => feuille.current?.insererTexte(t)}
           surStyle={(propriete, valeur) => feuille.current?.appliquerStyle(propriete, valeur)}
+          orientation={orientation}
+          surOrientation={changerOrientation}
           surDepot={() => {
             setCorpsADeposer(feuille.current?.corps() ?? brouillon.contenu);
             setDepot(true);
@@ -346,7 +363,9 @@ export function Editeur({ brouillon, surFermeture }: {
         <span>
           {modifie ? "modifications non enregistrées…" : `enregistré ${fmtDateHeure(enregistreA)}`}
         </span>
-        <span className="ml-auto tabular-nums">{Math.round(zoom * 100)} %</span>
+        <span className="ml-auto tabular-nums">
+          {Math.round(echelle * 100)} %{zoom === "ajustee" && " · ajusté"}
+        </span>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
@@ -357,6 +376,8 @@ export function Editeur({ brouillon, surFermeture }: {
           modifiable={!fige}
           surChangement={marquerModifie}
           zoom={zoom}
+          orientation={orientation}
+          surEchelle={setEchelle}
           className="min-w-0 rounded-lg border"
         />
         <div className="hidden xl:block">{panneau}</div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { assainir } from "@/lib/redaction";
-import { ID_IMPRESSION, useStylesDocument } from "@/components/nexus/styles-document";
+import { ID_IMPRESSION, useOrientationImpression, useStylesDocument } from "@/components/nexus/styles-document";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,18 +38,37 @@ interface Props {
   empreinte: string;
   modifiable: boolean;
   surChangement: () => void;
-  /** Échelle d'affichage. 1 = grandeur nature, 210 mm de large. */
-  zoom?: number;
+  /**
+   * Échelle d'affichage. `"ajustee"` fait tenir la feuille dans la largeur
+   * qu'on lui laisse — c'est le réglage par défaut, parce qu'un document
+   * qu'il faut faire défiler latéralement ne se relit pas.
+   */
+  zoom?: number | "ajustee";
+  orientation?: "portrait" | "paysage";
+  /** Prévient l'éditeur de l'échelle réellement appliquée. */
+  surEchelle?: (v: number) => void;
   className?: string;
 }
 
+/** Largeur de la feuille en pixels CSS : 1 mm = 96/25,4 px. */
+const MM = 96 / 25.4;
+const LARGEUR = { portrait: 210 * MM, paysage: 297 * MM } as const;
+
 export const Feuille = forwardRef<PoigneeFeuille, Props>(function Feuille(
-  { contenu, empreinte, modifiable, surChangement, zoom = 1, className }, ref
+  {
+    contenu, empreinte, modifiable, surChangement,
+    zoom = "ajustee", orientation = "portrait", surEchelle, className,
+  }, ref
 ) {
   useStylesDocument();
+  useOrientationImpression(orientation);
   const hote = useRef<HTMLDivElement | null>(null);
   const cale = useRef<HTMLDivElement | null>(null);
+  const cadre = useRef<HTMLDivElement | null>(null);
   const plage = useRef<Range | null>(null);
+  const [ajustee, setAjustee] = useState(1);
+  const largeur = LARGEUR[orientation];
+  const echelle = zoom === "ajustee" ? ajustee : zoom;
 
   /* Le corps est assaini À L'ENTRÉE autant qu'à la sortie.
      Nettoyer seulement avant d'enregistrer ne protégerait que l'auteur : un
@@ -203,18 +222,48 @@ export const Feuille = forwardRef<PoigneeFeuille, Props>(function Feuille(
     focus: () => hote.current?.focus(),
   }), [surChangement]);
 
+  /* L'orientation se pose sur la feuille elle-même : c'est cette classe qui
+     fixe 297 mm au lieu de 210, à l'écran comme à l'impression. */
+  useEffect(() => {
+    const f = hote.current?.querySelector(".doc-feuille");
+    f?.classList.toggle("doc-paysage", orientation === "paysage");
+  }, [orientation, empreinte, contenu]);
+
+  /* Ajustement à la largeur disponible : mesuré sur le cadre réel, pas sur la
+     fenêtre. Une barre latérale repliée, un panneau ouvert, un téléphone en
+     paysage — c'est la place accordée à la feuille qui décide, et elle change
+     sans que la fenêtre bouge. */
+  useEffect(() => {
+    const boite = cadre.current;
+    if (!boite || typeof ResizeObserver === "undefined") return;
+    const mesurer = () => {
+      // Le rembourrage se mesure, il ne se devine pas : il change au point de
+      // rupture (p-4 puis sm:p-6), et une constante fausse laissait la feuille
+      // dépasser de seize pixels.
+      const st = getComputedStyle(boite);
+      const dispo = boite.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight);
+      const v = Math.max(0.25, Math.min(1.6, dispo / largeur));
+      setAjustee(v);
+      if (zoom === "ajustee") surEchelle?.(v);
+    };
+    const obs = new ResizeObserver(mesurer);
+    obs.observe(boite);
+    mesurer();
+    return () => obs.disconnect();
+  }, [largeur, zoom, surEchelle]);
+
   /* La cale doit suivre la feuille : celle-ci grandit quand on écrit, et sa
      hauteur transformée n'est plus celle que le flux voit. */
   useEffect(() => {
     const feuille = hote.current;
     const support = cale.current;
     if (!feuille || !support || typeof ResizeObserver === "undefined") return;
-    const suivre = () => { support.style.height = `${feuille.offsetHeight * zoom}px`; };
+    const suivre = () => { support.style.height = `${feuille.offsetHeight * echelle}px`; };
     const observateur = new ResizeObserver(suivre);
     observateur.observe(feuille);
     suivre();
     return () => observateur.disconnect();
-  }, [zoom, empreinte]);
+  }, [echelle, empreinte, orientation]);
 
   /* Un collage venu d'un autre traitement de texte apporte ses propres
      styles, ses polices et parfois des balises entières : on ne garde que
@@ -232,11 +281,11 @@ export const Feuille = forwardRef<PoigneeFeuille, Props>(function Feuille(
   };
 
   return (
-    <div className={cn("overflow-auto bg-muted/40 p-4 sm:p-6", className)}>
+    <div ref={cadre} className={cn("overflow-y-auto overflow-x-hidden bg-muted/40 p-4 sm:p-6", className)}>
       {/* La feuille est réduite par une transformation, qui ne prend pas de
           place dans le flux : une cale reprend ses dimensions réelles, sinon
           la zone défilerait sur une hauteur fausse. */}
-      <div ref={cale} className="mx-auto" style={{ width: `calc(210mm * ${zoom})` }}>
+      <div ref={cale} className="mx-auto" style={{ width: largeur * echelle }}>
         <div
           id={ID_IMPRESSION}
           ref={poser}
@@ -249,7 +298,7 @@ export const Feuille = forwardRef<PoigneeFeuille, Props>(function Feuille(
           lang="fr"
           onInput={surChangement}
           onPaste={coller}
-          style={{ width: "210mm", transform: `scale(${zoom})`, transformOrigin: "top left" }}
+          style={{ width: largeur, transform: `scale(${echelle})`, transformOrigin: "top left" }}
           className={cn(
             "shadow-lg outline-none transition",
             modifiable && "ring-1 ring-primary/20 focus:ring-2 focus:ring-primary/50"

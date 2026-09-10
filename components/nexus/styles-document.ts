@@ -31,3 +31,23 @@ export function useStylesDocument() {
     document.head.appendChild(el);
   }, []);
 }
+
+/**
+ * Sens du papier à l'impression.
+ *
+ * `@page` ne peut pas dépendre d'une classe : la règle est donc posée et
+ * retirée avec l'orientation choisie. Sans elle, une feuille en paysage
+ * s'imprimerait sur un A4 portrait et se ferait couper à droite.
+ */
+export function useOrientationImpression(orientation: "portrait" | "paysage") {
+  useEffect(() => {
+    const cle = "orientation-impression";
+    document.getElementById(cle)?.remove();
+    if (orientation !== "paysage") return;
+    const el = document.createElement("style");
+    el.id = cle;
+    el.textContent = "@media print { @page { size: A4 landscape; margin: 0; } }";
+    document.head.appendChild(el);
+    return () => { document.getElementById(cle)?.remove(); };
+  }, [orientation]);
+}

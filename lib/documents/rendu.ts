@@ -29,6 +29,9 @@ export const STYLES_DOCUMENT = `
   font-size: 11.5pt; line-height: 1.5; text-align: justify;
 }
 .doc-feuille * { box-sizing: border-box; }
+/* Paysage : un état des effectifs sur vingt colonnes ne tient pas en portrait.
+   Les marges restent celles de l'imprimé administratif. */
+.doc-feuille.doc-paysage { width: 297mm; min-height: 210mm; }
 .doc-tete { display: flex; justify-content: space-between; gap: 12mm; align-items: flex-start; }
 .doc-timbre { font-size: 9.5pt; line-height: 1.35; text-align: left; max-width: 95mm; }
 .doc-timbre .doc-pays { font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
@@ -78,6 +81,7 @@ export const STYLES_DOCUMENT = `
 }
 @media print {
   @page { size: A4; margin: 0; }
+  .doc-feuille.doc-paysage { width: auto; min-height: auto; }
   .doc-feuille.doc-modifiable [data-modifiable] { outline: none !important; background: none !important; }
   .doc-feuille { width: auto; min-height: auto; padding: 16mm 18mm; box-shadow: none !important; }
   .doc-avertissement { border-color: #bbb; }

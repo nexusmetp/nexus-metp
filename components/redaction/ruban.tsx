@@ -5,7 +5,7 @@ import {
   AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Braces, CaseSensitive,
   Eraser, Heading2, Heading3, Highlighter, Indent, Italic, Library, List, ListOrdered,
   Minus, Outdent, Pilcrow, Redo2, Strikethrough, Subscript, Superscript, Table,
-  Underline, Undo2,
+  RectangleHorizontal, RectangleVertical, Underline, Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,8 @@ export interface RubanProps {
   surInsertion: (texte: string) => void;
   /** Pose une propriété de style sur le passage sélectionné. */
   surStyle: (propriete: string, valeur: string) => void;
+  orientation: "portrait" | "paysage";
+  surOrientation: (v: "portrait" | "paysage") => void;
   /** Déposer le texte courant comme modèle de la bibliothèque. */
   surDepot: () => void;
   libelleDepot: string;
@@ -109,7 +111,8 @@ const LIBELLE_ONGLET: Record<Onglet, string> = {
 };
 
 export function Ruban({
-  surFocus, surChangement, surInsertion, surStyle, surDepot, libelleDepot, desactive, className,
+  surFocus, surChangement, surInsertion, surStyle, orientation, surOrientation,
+  surDepot, libelleDepot, desactive, className,
 }: RubanProps) {
   const [onglet, setOnglet] = useState<Onglet>("accueil");
 
@@ -211,6 +214,28 @@ export function Ruban({
 
         {onglet === "mise-en-page" && (
           <>
+            {/* Le sens de la page. Un arrêté se lit en portrait ; un état des
+                effectifs sur vingt colonnes, jamais. */}
+            <div className="flex items-center">
+              {([
+                ["portrait", "Portrait", RectangleVertical],
+                ["paysage", "Paysage", RectangleHorizontal],
+              ] as const).map(([v, titre, Icone]) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={orientation === v ? "secondary" : "ghost"}
+                  size="sm"
+                  disabled={desactive}
+                  title={`Page en ${titre.toLowerCase()}`}
+                  className="h-8 gap-1.5 text-[11px]"
+                  onClick={() => surOrientation(v)}
+                >
+                  <Icone className="h-3.5 w-3.5" /> {titre}
+                </Button>
+              ))}
+            </div>
+            <span aria-hidden className="mx-1 h-5 w-px bg-border" />
             <Select onValueChange={(v: string) => surStyle("font-size", v)}>
               <SelectTrigger className="h-8 w-[7.5rem] text-xs" aria-label="Corps du texte">
                 <SelectValue placeholder="Taille" />
@@ -228,7 +253,7 @@ export function Ruban({
               { cle: "h3b", titre: "Sous-titre", icone: Heading3, commande: "formatBlock", valeur: "<h3>" },
             ]])}
             <span className="ml-2 text-[10px] text-muted-foreground">
-              Feuille A4 · marges de l'imprimé administratif
+              A4 {orientation === "paysage" ? "297 × 210" : "210 × 297"} mm · marges de l'imprimé administratif
             </span>
           </>
         )}

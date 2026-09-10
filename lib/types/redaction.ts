@@ -31,6 +31,8 @@ export interface Brouillon {
   modeleMaisonId?: string;
   /** Corps HTML assaini de la feuille A4. */
   contenu: string;
+  /** Sens de la page. Un état des effectifs se lit en paysage, pas un arrêté. */
+  orientation?: "portrait" | "paysage";
   statut: StatutBrouillon;
   auteurId: string;
   auteur: string;

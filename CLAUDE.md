@@ -42,9 +42,9 @@ Les dérogations sont déclarées **avec leur motif** dans
 Le blason, le drapeau et le bloc-marque vivent dans `/public`, et **nulle part
 ailleurs**. Voir `public/LISEZMOI.md` pour les noms de fichiers acceptés : le
 code cherche une **cascade** de noms et sert le premier présent, si bien qu'un
-fichier officiel se dépose *tel quel*, sans être renommé ni converti. Le tracé
-vectoriel fourni est le dernier de chaque cascade — c'est un dépannage, il
-s'efface dès que l'original est là.
+fichier officiel se dépose *tel quel*, sans être renommé ni converti. Le fichier fourni pour les armoiries est le **tracé officiel** des armoiries
+de l'État, remis à l'échelle et optimisé ; il est le dernier de la cascade,
+donc un fichier maître déposé par la DGARH prime automatiquement.
 
 Les armoiries d'un ministère ne doivent dépendre d'aucun domaine que la DGARH
 ne contrôle pas, et la plateforme doit s'afficher entièrement hors ligne : rien

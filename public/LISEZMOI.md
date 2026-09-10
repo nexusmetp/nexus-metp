@@ -10,7 +10,14 @@ Cherchées dans cet ordre :
 
 1. `amoirie.png`
 2. `armoiries-congo.png`
-3. `armoiries-congo.svg`  ← tracé vectoriel de dépannage, fourni
+3. `armoiries-congo.svg`  ← **fourni** : le tracé vectoriel officiel des
+   armoiries de l'État (couronne de palmes, écu d'or au lion de gueules
+   tenant une torche, bande ondée de sinople, deux éléphants pour supports,
+   listel « UNITE TRAVAIL PROGRES »), inscrit dans le rond du ministère.
+
+Ce fichier n'est plus un dépannage : c'est le vrai emblème. Il n'y a donc
+rien à déposer, sauf si la DGARH possède son propre fichier maître — auquel
+cas il prime, et il suffit de le poser sous l'un des deux premiers noms.
 
 Elles servent partout : écran d'ouverture, page de connexion, barre latérale,
 filigrane, en-têtes des documents imprimés.

@@ -4,7 +4,7 @@ import { projeterTous } from "@/lib/carriere";
 import type { Historique } from "@/lib/carriere";
 import { all, one, remove, resetDB, save } from "@/lib/db";
 import type { StoreName } from "@/lib/db";
-import type { Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature, CarteProfessionnelle, Conge, Conversation, Corps, Delegation, DocumentEmis, Entite, EntreeJournal, Grade, InscriptionFormation, Message, MessageTicket, Notification, OffreFormation, Position, Poste, SituationCarriere, TexteReglementaire, Ticket, Utilisateur } from "@/lib/types";
+import type { Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature, CarteProfessionnelle, Conge, Conversation, Corps, Delegation, DocumentEmis, Entite, EntreeJournal, Grade, InscriptionFormation, Message, MessageTicket, Notification, OffreFormation, Position, Poste, SituationCarriere, TexteReglementaire, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive } from "@/lib/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -38,6 +38,9 @@ export const useOffresFormation = () => liste<OffreFormation>("offresFormation")
 export const useInscriptions = () => liste<InscriptionFormation>("inscriptions");
 export const useCartes = () => liste<CarteProfessionnelle>("cartes");
 export const useDocumentsEmis = () => liste<DocumentEmis>("documents");
+export const useVersements = () => liste<Versement>("versements");
+export const useArticlesArchives = () => liste<ArticleArchive>("articlesArchives");
+export const useCommunications = () => liste<CommunicationArchive>("communications");
 
 export const useAgent = (id: string) =>
   useQuery<Agent | undefined>({ queryKey: ["agents", id], queryFn: () => one<Agent>("agents", id), enabled: !!id });

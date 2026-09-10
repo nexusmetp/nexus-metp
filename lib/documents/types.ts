@@ -22,10 +22,20 @@ export type CleModele =
   | "ETAT_EFFECTIFS"
   | "NOTE_SERVICE"
   | "ORDRE_MISSION"
-  | "DECISION_CONGE";
+  | "DECISION_CONGE"
+  | "DECISION_NOMINATION"
+  | "PROCES_VERBAL_INSTALLATION"
+  | "ETAT_SIGNALETIQUE"
+  | "FICHE_NOTATION"
+  | "CERTIFICAT_CESSATION_PAIEMENT"
+  | "ARRETE_RETRAITE"
+  | "AVIS_VACANCE"
+  | "DEMANDE_CONGE"
+  | "BORDEREAU_VERSEMENT"
+  | "BORDEREAU_ELIMINATION";
 
 /** D'où part le document : ce qu'il faut fournir pour le composer. */
-export type SourceModele = "acte" | "agent" | "entite" | "conge" | "libre";
+export type SourceModele = "acte" | "agent" | "entite" | "conge" | "poste" | "archives" | "libre";
 
 export interface Article {
   /** « Article premier » puis « Article 2 » : la numérotation est réglée au rendu. */
@@ -81,7 +91,7 @@ export interface DescripteurModele {
   usage: string;
   source: SourceModele;
   /** Famille d'affichage dans la bibliothèque. */
-  famille: "Actes" | "Attestations" | "États" | "Correspondance";
+  famille: "Actes" | "Attestations" | "États" | "Correspondance" | "Archives";
   /** Module dont le droit d'écriture conditionne l'établissement. */
   module: ModuleKey;
 }

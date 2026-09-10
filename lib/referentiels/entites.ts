@@ -336,6 +336,11 @@ export function cheminDe(id: string): Entite[] {
  * empêche de se superposer exactement sans les déplacer d'une ville à l'autre.
  */
 export function coordonneesDe(entite: Entite): { lat: number; lon: number } | undefined {
+  // Une localisation saisie prime sur toute reconstitution : c'est la seule
+  // qui dise où la structure se trouve vraiment.
+  if (typeof entite.lat === "number" && typeof entite.lon === "number") {
+    return { lat: entite.lat, lon: entite.lon };
+  }
   const d = entite.ville ? DEPARTEMENTS.find((x) => x.chefLieu === entite.ville) : undefined;
   if (!d) return undefined;
   let h = 0;

@@ -7,8 +7,9 @@ import { useEnregistrerCompte, useEnregistrerEntite } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { ENTITES, NIVEAU_LABELS, ROLE_LABELS, entiteById } from "@/lib/referentiels";
 import {
-  ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
+  Champ, ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
 } from "@/components/nexus/module";
+import { SelecteurPoint } from "@/components/nexus/selecteur-point";
 import type { Entite, NiveauEntite, Role, Utilisateur } from "@/lib/types";
 
 /**
@@ -43,12 +44,19 @@ export const ROLE_ATTENDU: Partial<Record<NiveauEntite, Role>> = {
 
 const videEntite = {
   sigle: "", nom: "", code: "", niveau: "DIRECTION" as NiveauEntite,
-  parentId: "ENT-METP", ville: "", reference: "",
+  parentId: "ENT-METP", ville: "", reference: "", lat: "", lon: "",
 };
 
 const videResponsable = {
   nomComplet: "", email: "", fonction: "", telephone: "", role: "DIRECTEUR_CENTRAL" as Role,
 };
+
+/** Bornes du territoire congolais : refuser une coordonnée hors emprise vaut mieux
+ *  que planter un marqueur au milieu de l'Atlantique. */
+export function coordonneeValide(v: string): boolean {
+  const n = Number(v);
+  return v.trim() !== "" && Number.isFinite(n) && Math.abs(n) <= 180;
+}
 
 export function useGestionEntite(surChangement?: (e: Entite) => void) {
   const user = useAuth((s) => s.user)!;
@@ -69,6 +77,7 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     setFormulaire({
       sigle: e.sigle, nom: e.nom, code: e.code, niveau: e.niveau,
       parentId: e.parentId ?? "ENT-METP", ville: e.ville ?? "", reference: e.reference ?? "",
+      lat: e.lat != null ? String(e.lat) : "", lon: e.lon != null ? String(e.lon) : "",
     });
   };
 
@@ -104,6 +113,10 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
       creePar: edition?.creePar ?? user.id,
       dateCreation: edition?.dateCreation ?? new Date().toISOString(),
       responsableId: edition?.responsableId ?? null,
+      // Une entité localisée se place elle-même sur la vue nationale : c'est
+      // ce qui fait la différence entre une carte et une liste d'adresses.
+      lat: coordonneeValide(formulaire.lat) ? Number(formulaire.lat) : undefined,
+      lon: coordonneeValide(formulaire.lon) ? Number(formulaire.lon) : undefined,
     };
     await enregistrerEntite.mutateAsync({ entite, utilisateur: user, creation });
     toast.success(creation ? `${entite.sigle} créée` : `${entite.sigle} mise à jour`, {
@@ -198,6 +211,33 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
             </div>
             <ChampTexte label="Ville" valeur={formulaire.ville}
               surChangement={(v) => setFormulaire({ ...formulaire, ville: v })} placeholder="Brazzaville" />
+
+            <Champ
+              label="Localisation"
+              aide="Cliquez sur la carte pour poser la structure, ou saisissez les coordonnées. Sans localisation, elle est placée près du chef-lieu de son département — approximation utile, mais approximation."
+            >
+              <div className="space-y-2">
+                <SelecteurPoint
+                  lat={coordonneeValide(formulaire.lat) ? Number(formulaire.lat) : undefined}
+                  lon={coordonneeValide(formulaire.lon) ? Number(formulaire.lon) : undefined}
+                  surChoix={(lat, lon) =>
+                    setFormulaire({ ...formulaire, lat: lat.toFixed(5), lon: lon.toFixed(5) })}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ChampTexte label="Latitude" valeur={formulaire.lat}
+                    surChangement={(v) => setFormulaire({ ...formulaire, lat: v })}
+                    placeholder="-4.26730" />
+                  <ChampTexte label="Longitude" valeur={formulaire.lon}
+                    surChangement={(v) => setFormulaire({ ...formulaire, lon: v })}
+                    placeholder="15.28320" />
+                </div>
+                {(formulaire.lat || formulaire.lon) && !(coordonneeValide(formulaire.lat) && coordonneeValide(formulaire.lon)) && (
+                  <p className="text-[11px] text-amber-600">
+                    Coordonnées incomplètes ou hors du territoire congolais : elles ne seront pas enregistrées.
+                  </p>
+                )}
+              </div>
+            </Champ>
             <ChampZone label="Texte fondateur" lignes={2} valeur={formulaire.reference}
               surChangement={(v) => setFormulaire({ ...formulaire, reference: v })}
               placeholder="Arrêté n° … du … portant organisation de …"

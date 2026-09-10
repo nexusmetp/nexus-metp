@@ -22,4 +22,6 @@ export interface DocumentEmis {
   canal: "IMPRESSION" | "TELECHARGEMENT" | "TRANSFERT" | "COPIE";
   emisPar: string;
   dateEmission: string;
+  /** Vrai si le rédacteur a repris le texte du modèle avant de le sortir. */
+  repris?: boolean;
 }

@@ -16,10 +16,19 @@ import {
   composerDecisionConge, composerEtatEffectifs, composerFicheAgent, composerNoteService,
   composerOrdreMission,
 } from "./composer-etats";
+import {
+  composerArreteRetraite, composerCessationPaiement, composerDecisionNomination,
+  composerEtatSignaletique, composerFicheNotation, composerProcesVerbalInstallation,
+} from "./composer-carriere";
+import {
+  composerAvisVacance, composerBordereauElimination, composerBordereauVersement,
+  composerDemandeConge,
+} from "./composer-gestion";
 
 export * from "./types";
 export * from "./contexte";
 export { rendreDocument, rendreFichier, rendreTexte, STYLES_DOCUMENT } from "./rendu";
+export { exporter, LIBELLE_FORMAT, nomFichier, type Format, type Sortie } from "./formats";
 export { dateLongue, AVERTISSEMENT } from "./commun";
 
 export const MODELES: DescripteurModele[] = [
@@ -93,6 +102,66 @@ export const MODELES: DescripteurModele[] = [
     usage: "Instruction interne d'application immédiate. N'a pas la portée d'un acte : "
       + "elle organise, elle ne décide pas de la situation d'un agent.",
   },
+  {
+    cle: "DECISION_NOMINATION", libelle: "Décision de nomination", famille: "Actes",
+    source: "agent", module: "agents",
+    usage: "Confie une fonction de responsabilité. Elle ne prend effet qu'à l'installation, "
+      + "constatée par procès-verbal — nommer et installer sont deux gestes distincts.",
+  },
+  {
+    cle: "PROCES_VERBAL_INSTALLATION", libelle: "Procès-verbal d'installation",
+    famille: "Actes", source: "agent", module: "agents",
+    usage: "Constate la prise de fonction effective d'un responsable. C'est la pièce qui "
+      + "fait courir les indemnités de fonction et engage la responsabilité du poste.",
+  },
+  {
+    cle: "ETAT_SIGNALETIQUE", libelle: "État signalétique des services", famille: "États",
+    source: "agent", module: "agents",
+    usage: "Récapitule toute la carrière, chaque ligne rattachée à son acte. Pièce maîtresse "
+      + "du dossier de pension : sans elle, les services accomplis ne sont pas liquidables.",
+  },
+  {
+    cle: "FICHE_NOTATION", libelle: "Fiche de notation", famille: "États",
+    source: "agent", module: "carrieres",
+    usage: "Évaluation annuelle par le supérieur hiérarchique. Elle conditionne l'avancement "
+      + "et n'est opposable qu'une fois notifiée à l'agent.",
+  },
+  {
+    cle: "CERTIFICAT_CESSATION_PAIEMENT", libelle: "Certificat de cessation de paiement",
+    famille: "Attestations", source: "agent", module: "agents",
+    usage: "Constate l'arrêt de la solde. Exigé pour transférer un dossier de solde "
+      + "ou ouvrir un droit à pension.",
+  },
+  {
+    cle: "ARRETE_RETRAITE", libelle: "Arrêté d'admission à la retraite", famille: "Actes",
+    source: "agent", module: "retraite",
+    usage: "Met fin à la carrière et ouvre le droit à pension. À préparer bien avant la "
+      + "limite d'âge : un agent maintenu sans acte est en situation irrégulière.",
+  },
+  {
+    cle: "AVIS_VACANCE", libelle: "Avis de vacance de poste", famille: "Correspondance",
+    source: "poste", module: "postes",
+    usage: "Publie un emploi à pourvoir. Un emploi non budgétisé peut être publié, "
+      + "mais l'avis ne vaut alors pas engagement de recrutement.",
+  },
+  {
+    cle: "DEMANDE_CONGE", libelle: "Demande de congé", famille: "Correspondance",
+    source: "conge", module: "conges",
+    usage: "Formulée par l'agent lui-même. Une demande ne vaut pas autorisation : "
+      + "le départ n'est régulier qu'après décision.",
+  },
+  {
+    cle: "BORDEREAU_VERSEMENT", libelle: "Bordereau de versement", famille: "Archives",
+    source: "archives", module: "archives",
+    usage: "Accompagne obligatoirement tout versement d'archives. Il décrit article par "
+      + "article ce qui est remis : c'est la preuve de la prise en charge.",
+  },
+  {
+    cle: "BORDEREAU_ELIMINATION", libelle: "Bordereau d'élimination", famille: "Archives",
+    source: "archives", module: "archives",
+    usage: "Propose la destruction des articles dont la durée d'utilité est échue. "
+      + "Aucune élimination d'archives publiques ne peut se faire sans ce visa.",
+  },
 ];
 
 export const modeleParCle = (cle: CleModele) => MODELES.find((m) => m.cle === cle);
@@ -113,16 +182,19 @@ const FABRIQUES: Record<CleModele, (c: ContexteDocument) => DocumentAdministrati
   NOTE_SERVICE: composerNoteService,
   ORDRE_MISSION: composerOrdreMission,
   DECISION_CONGE: composerDecisionConge,
+  DECISION_NOMINATION: composerDecisionNomination,
+  PROCES_VERBAL_INSTALLATION: composerProcesVerbalInstallation,
+  ETAT_SIGNALETIQUE: composerEtatSignaletique,
+  FICHE_NOTATION: composerFicheNotation,
+  CERTIFICAT_CESSATION_PAIEMENT: composerCessationPaiement,
+  ARRETE_RETRAITE: composerArreteRetraite,
+  AVIS_VACANCE: composerAvisVacance,
+  DEMANDE_CONGE: composerDemandeConge,
+  BORDEREAU_VERSEMENT: composerBordereauVersement,
+  BORDEREAU_ELIMINATION: composerBordereauElimination,
 };
 
 export function composer(cle: CleModele, contexte: ContexteDocument): DocumentAdministratif {
   return FABRIQUES[cle](contexte);
 }
 
-/** Nom du fichier proposé au téléchargement. */
-export function nomFichier(d: DocumentAdministratif): string {
-  const base = `${d.reference} ${d.objet}`
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
-  return `${base || "document"}.html`;
-}

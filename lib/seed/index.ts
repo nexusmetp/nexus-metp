@@ -19,6 +19,7 @@ import {
 } from "./aleatoire";
 import { construireCollaboration } from "./collaboration";
 import { construireGestion } from "./gestion";
+import { construireArchives } from "./archives";
 import type {
   Acte, Affectation, Agent, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature,
   CategoriePersonnel, CategorieTicket, Conge, Conversation, Delegation, EntreeJournal,
@@ -26,6 +27,7 @@ import type {
   NatureTexte, Notification, OffreFormation, ParametresSysteme, Position, Poste,
   PrioriteTicket, SituationCarriere, StatutActe, StatutTicket, TexteReglementaire,
   CarteProfessionnelle, StatutCarte, Ticket, TypeActe, Utilisateur,
+  Versement, ArticleArchive, CommunicationArchive,
 } from "@/lib/types";
 
 /* ---------- Répartition des effectifs ---------- */
@@ -157,6 +159,9 @@ export interface Dataset {
   offresFormation: OffreFormation[];
   inscriptions: InscriptionFormation[];
   cartes: CarteProfessionnelle[];
+  versements: Versement[];
+  articlesArchives: ArticleArchive[];
+  communications: CommunicationArchive[];
 }
 
 export function buildDataset(): Dataset {
@@ -452,6 +457,9 @@ export function buildDataset(): Dataset {
     offresFormation, inscriptions, cartes,
   } = construireGestion({ agents, actes, utilisateurs, besoins, affectations });
 
+  const { versements, articles: articlesArchives, communications } =
+    construireArchives({ actes, agents, utilisateurs, entites: ENTITES });
+
 
   return {
     entites: ENTITES, corps: CORPS, grades: GRADES,
@@ -460,5 +468,6 @@ export function buildDataset(): Dataset {
     tickets, messagesTicket, conversations, messages, annonces, parametres,
     conges, delegations, textes, campagnes, candidatures, offresFormation, inscriptions,
     cartes,
+    versements, articlesArchives, communications,
   };
 }

@@ -4,11 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Building2, Network, Users, FileCheck2, GitBranch, CalendarDays, GraduationCap, Inbox,
-  Gavel, ClipboardList, Library, FolderOpen, BarChart3, ScrollText, Settings,
-  UserCircle, ChevronLeft, Gauge, Landmark, LayoutDashboard, LifeBuoy, Map, Megaphone,
-  MessageSquare, MoreHorizontal, PenLine, Award, BookMarked, Briefcase, ChevronDown,
-  CircleHelp, Contact, CreditCard, UserMinus,
+  Archive, Award, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, ScrollText, Settings, UserCircle, UserMinus, Users,
 } from "lucide-react";
 import { APP_NAME, LOGO_URL, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { useAuth, useUi } from "@/lib/store";
@@ -79,7 +75,8 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     items: [
       { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
       { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
-      { href: "/documents", label: "Archives et GED", icon: FolderOpen, mod: "documents", pret: true },
+      { href: "/documents", label: "Documents et GED", icon: FolderOpen, mod: "documents", pret: true },
+      { href: "/archives", label: "Archives", icon: Archive, mod: "archives", pret: true },
     ],
   },
   {

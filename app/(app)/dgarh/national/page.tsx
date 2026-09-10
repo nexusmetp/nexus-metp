@@ -16,22 +16,13 @@ import { PageHeader } from "@/components/nexus/ui-kit";
 import {
   Jauge, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { CarteCongo } from "@/components/nexus/carte";
+import type { CleFond } from "@/lib/carte-fonds";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-/* Emprise du territoire congolais, arrondie au demi-degré. */
-const CADRE = { lonMin: 10.8, lonMax: 18.9, latMin: -5.3, latMax: 3.9 };
-const LARGEUR = 760;
-const HAUTEUR = Math.round(LARGEUR * ((CADRE.latMax - CADRE.latMin) / (CADRE.lonMax - CADRE.lonMin)));
-
-/** Projection équirectangulaire : suffisante à l'échelle d'un pays. */
-const projeter = (lat: number, lon: number) => ({
-  x: ((lon - CADRE.lonMin) / (CADRE.lonMax - CADRE.lonMin)) * LARGEUR,
-  y: ((CADRE.latMax - lat) / (CADRE.latMax - CADRE.latMin)) * HAUTEUR,
-});
 
 type Famille = "DIRECTION_DEPARTEMENTALE" | "ETABLISSEMENT" | "ANTENNE_DEPARTEMENTALE" | "AUTRE";
 
@@ -66,6 +57,7 @@ export default function VueNationalePage() {
     Object.keys(FAMILLES) as Famille[]
   );
   const [survol, setSurvol] = useState<Point | null>(null);
+  const [fond, setFond] = useState<CleFond>("plan");
   const [selection, setSelection] = useState<LigneDepartement | null>(null);
 
   const effectifDirect = useMemo(() => {
@@ -162,7 +154,7 @@ export default function VueNationalePage() {
     <>
       <PageHeader
         titre="Vue nationale"
-        description="Où le personnel du ministère est réellement déployé. Chaque cercle est une implantation, placée aux coordonnées de son chef-lieu ; sa taille dit son effectif."
+        description="Où le personnel du ministère est réellement déployé. Chaque cercle est une implantation, posée à ses coordonnées propres quand elles sont renseignées, sinon près du chef-lieu de son département. Sa taille dit son effectif."
       >
         <Button variant="outline" size="sm" asChild>
           <Link href="/dgarh">Tableau de bord</Link>
@@ -185,7 +177,7 @@ export default function VueNationalePage() {
             <div>
               <CardTitle className="text-base">Déploiement du personnel</CardTitle>
               <CardDescription>
-                Survolez un cercle pour l'identifier. Les familles peuvent être masquées.
+                Cliquez un cercle pour l'identifier, changez de fond selon ce que vous cherchez. Les familles peuvent être masquées.
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -208,91 +200,35 @@ export default function VueNationalePage() {
             </div>
           </CardHeader>
           <CardContent className="relative p-0">
-            <svg
-              viewBox={`0 0 ${LARGEUR} ${HAUTEUR}`}
-              className="h-auto w-full bg-muted/25"
-              role="img"
-              aria-label="Déploiement du personnel du ministère sur le territoire congolais"
-            >
-              {/* Graticule : des degrés, pas une frontière tracée de mémoire. */}
-              {Array.from({ length: 9 }, (_, i) => CADRE.lonMin + i).map((lon) => {
-                const { x } = projeter(0, lon);
-                return (
-                  <g key={`lon-${lon}`}>
-                    <line x1={x} y1={0} x2={x} y2={HAUTEUR} stroke="hsl(var(--border))" strokeDasharray="2 5" />
-                    <text x={x + 3} y={HAUTEUR - 6} fontSize={9} fill="hsl(var(--muted-foreground))">{lon.toFixed(0)}° E</text>
-                  </g>
-                );
-              })}
-              {Array.from({ length: 10 }, (_, i) => Math.ceil(CADRE.latMin) + i).map((lat) => {
-                const { y } = projeter(lat, 0);
-                if (y < 0 || y > HAUTEUR) return null;
-                return (
-                  <g key={`lat-${lat}`}>
-                    <line x1={0} y1={y} x2={LARGEUR} y2={y} stroke="hsl(var(--border))" strokeDasharray="2 5" />
-                    <text x={4} y={y - 4} fontSize={9} fill="hsl(var(--muted-foreground))">
-                      {lat === 0 ? "équateur" : `${Math.abs(lat)}° ${lat > 0 ? "N" : "S"}`}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Les chefs-lieux, repères de lecture. */}
-              {DEPARTEMENTS.map((d) => {
-                const { x, y } = projeter(d.lat, d.lon);
-                return (
-                  <text key={d.nom} x={x} y={y - 26} fontSize={9.5} textAnchor="middle"
-                        fill="hsl(var(--muted-foreground))" className="pointer-events-none">
-                    {d.chefLieu}
-                  </text>
-                );
-              })}
-
-              {/* Les implantations, de la plus grande à la plus petite pour que
-                  les petites restent cliquables au-dessus. */}
-              {[...visibles].sort((a, b) => b.effectif - a.effectif).map((p, i) => {
-                const { x, y } = projeter(p.lat, p.lon);
-                const r = rayon(p.effectif);
-                const f = FAMILLES[p.famille];
-                return (
-                  <motion.g
-                    key={p.id}
-                    initial={{ opacity: 0, scale: 0.4 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.35, delay: Math.min(i, 30) * 0.012, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ transformOrigin: `${x}px ${y}px`, cursor: "pointer" }}
-                    onMouseEnter={() => setSurvol(p)}
-                    onMouseLeave={() => setSurvol(null)}
-                  >
-                    <circle cx={x} cy={y} r={r + 4} fill={f.anneau} />
-                    <circle
-                      cx={x} cy={y} r={r} fill={f.couleur}
-                      fillOpacity={survol && survol.id !== p.id ? 0.35 : 0.85}
-                      stroke="white" strokeWidth={1.2}
-                    />
-                    {r > 13 && (
-                      <text x={x} y={y + 3.5} fontSize={10} fontWeight={700} textAnchor="middle"
-                            fill="white" className="pointer-events-none">
-                        {p.effectif}
-                      </text>
-                    )}
-                  </motion.g>
-                );
-              })}
-            </svg>
+            <CarteCongo
+              points={visibles.map((p) => ({
+                id: p.id, nom: `${p.sigle} — ${p.nom}`,
+                sousTitre: `${FAMILLES[p.famille].libelle}${p.ville ? " · " + p.ville : ""}`,
+                lat: p.lat, lon: p.lon, valeur: p.effectif,
+                categorie: p.famille, couleur: FAMILLES[p.famille].couleur,
+              }))}
+              fond={fond}
+              surChangementFond={setFond}
+              surSelection={(id) => setSurvol(visibles.find((p) => p.id === id) ?? null)}
+              hauteur={560}
+              className="p-4"
+            />
 
             {survol && (
-              <div className="pointer-events-none absolute left-4 top-4 max-w-xs rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur">
+              <div className="mx-4 mb-4 rounded-xl border bg-card p-3">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full" style={{ background: FAMILLES[survol.famille].couleur }} />
                   <span className="font-mono text-[11px] font-bold">{survol.sigle}</span>
                   <Badge variant="outline" className="text-[9px]">{NIVEAU_LABELS[survol.niveau as keyof typeof NIVEAU_LABELS]}</Badge>
+                  <button className="ml-auto text-[11px] text-muted-foreground hover:text-foreground"
+                          onClick={() => setSurvol(null)}>fermer</button>
                 </div>
                 <div className="mt-1 text-xs font-medium leading-snug">{survol.nom}</div>
-                <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
                   <span>{survol.ville}</span>
                   <span className="font-semibold text-foreground">{fmtNum(survol.effectif)} agents</span>
                   {survol.besoins > 0 && <span>{survol.besoins} besoin(s)</span>}
+                  <span className="font-mono">{survol.lat.toFixed(4)}, {survol.lon.toFixed(4)}</span>
                 </div>
               </div>
             )}
@@ -300,9 +236,10 @@ export default function VueNationalePage() {
             <div className="flex items-start gap-2 border-t px-4 py-2.5">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Positions relevées au chef-lieu du département, à quelques kilomètres près : la carte situe
-                les implantations, elle ne délimite pas les départements. Un fond cartographique
-                OpenStreetMap suppose un serveur de tuiles, que le cadre de publication n'autorise pas.
+                Une structure sans localisation propre est placée près du chef-lieu de son département.
+                Renseignez ses coordonnées depuis le pilotage pour qu'elle se pose au bon endroit.
+                Les contours sont ceux des douze départements antérieurs à 2024 : les trois créés depuis
+                n'ont pas encore de tracé publié.
               </p>
             </div>
           </CardContent>

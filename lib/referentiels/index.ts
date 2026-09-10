@@ -13,3 +13,4 @@ export * from "./entites";
 export * from "./statut";
 export * from "./actes";
 export * from "./droits";
+export * from "./archives";

@@ -66,8 +66,19 @@ export const STYLES_DOCUMENT = `
   margin-top: 9mm; padding: 2.5mm 3mm; border: 1px dashed #999;
   font-size: 8.5pt; font-style: italic; color: #444; text-align: left;
 }
+.doc-feuille.doc-modifiable [data-modifiable] {
+  outline: 1px dashed rgba(0,140,180,.45); outline-offset: 2px;
+  border-radius: 2px; min-width: 2em; min-height: 1em; display: inline-block;
+}
+.doc-feuille.doc-modifiable p[data-modifiable],
+.doc-feuille.doc-modifiable div[data-modifiable],
+.doc-feuille.doc-modifiable li[data-modifiable] { display: block; }
+.doc-feuille.doc-modifiable [data-modifiable]:focus {
+  outline: 2px solid rgba(0,140,180,.9); background: rgba(0,180,216,.06);
+}
 @media print {
   @page { size: A4; margin: 0; }
+  .doc-feuille.doc-modifiable [data-modifiable] { outline: none !important; background: none !important; }
   .doc-feuille { width: auto; min-height: auto; padding: 16mm 18mm; box-shadow: none !important; }
   .doc-avertissement { border-color: #bbb; }
 }
@@ -84,22 +95,22 @@ export function rendreDocument(d: DocumentAdministratif): string {
     .join("");
 
   const visas = d.visas.length
-    ? `<ul class="doc-visas">${d.visas.map((v) => `<li>${esc(v)} ;</li>`).join("")}</ul>`
+    ? `<ul class="doc-visas">${d.visas.map((v) => `<li data-modifiable="visa">${esc(v)} ;</li>`).join("")}</ul>`
     : "";
 
   const articles = d.articles.length
     ? d.articles
         .map(
           (a, i) =>
-            `<p class="doc-article"><span class="doc-num">${numeroArticle(i)} :</span> ${esc(a.texte)}` +
-            (a.alinea ? `<span class="doc-alinea">${esc(a.alinea)}</span>` : "") +
+            `<p class="doc-article"><span class="doc-num">${numeroArticle(i)} :</span> <span data-modifiable="article">${esc(a.texte)}</span>` +
+            (a.alinea ? `<span class="doc-alinea" data-modifiable="alinea">${esc(a.alinea)}</span>` : "") +
             `</p>`
         )
         .join("")
     : "";
 
   const paragraphes = (d.paragraphes ?? [])
-    .map((p) => `<p class="doc-paragraphe">${esc(p)}</p>`)
+    .map((p) => `<p class="doc-paragraphe" data-modifiable="paragraphe">${esc(p)}</p>`)
     .join("");
 
   const nombre = (v: unknown) => typeof v === "number" || /^[\d\s.,%-]+$/.test(String(v ?? ""));
@@ -124,30 +135,30 @@ export function rendreDocument(d: DocumentAdministratif): string {
 
   const ampliations = d.ampliations?.length
     ? `<div class="doc-ampliations"><div class="doc-ampl-titre">Ampliations :</div><ul>${d.ampliations
-        .map((a) => `<li>${esc(a)}</li>`)
+        .map((a) => `<li data-modifiable="ampliation">${esc(a)}</li>`)
         .join("")}</ul></div>`
     : "";
 
   return `<article class="doc-feuille">
   <div class="doc-tete">
     <div class="doc-timbre">${timbre}<div class="doc-filet"></div></div>
-    <div class="doc-lieu">${esc(d.signature.lieu)}, le ${esc(d.signature.date)}</div>
+    <div class="doc-lieu" data-modifiable="lieu">${esc(d.signature.lieu)}, le ${esc(d.signature.date)}</div>
   </div>
   <div class="doc-intitule">
-    <div class="doc-titre">${esc(d.intitule)}</div>
-    <div class="doc-reference">${esc(d.reference)}</div>
+    <div class="doc-titre" data-modifiable="intitule">${esc(d.intitule)}</div>
+    <div class="doc-reference" data-modifiable="reference">${esc(d.reference)}</div>
   </div>
-  <div class="doc-objet">${esc(d.objet)}</div>
-  ${d.autorite ? `<div class="doc-autorite">${esc(d.autorite)},</div>` : ""}
+  <div class="doc-objet" data-modifiable="objet">${esc(d.objet)}</div>
+  ${d.autorite ? `<div class="doc-autorite" data-modifiable="autorite">${esc(d.autorite)},</div>` : ""}
   ${visas}
   ${d.formule ? `<div class="doc-formule">${esc(d.formule)}</div>` : ""}
   ${paragraphes}
   ${articles}
   ${tableau}
   <div class="doc-signature"><div class="doc-bloc">
-    <div class="doc-qualite">${esc(d.signature.qualite)}</div>
+    <div class="doc-qualite" data-modifiable="qualite">${esc(d.signature.qualite)}</div>
     <div class="doc-espace"></div>
-    <div class="doc-nom">${esc(d.signature.nom ?? "")}</div>
+    <div class="doc-nom" data-modifiable="nom">${esc(d.signature.nom ?? "")}</div>
   </div></div>
   ${ampliations}
   ${d.avertissement ? `<div class="doc-avertissement">${esc(d.avertissement)}</div>` : ""}

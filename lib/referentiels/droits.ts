@@ -9,7 +9,7 @@ export type ModuleKey =
   | "carrieres" | "conges" | "formations" | "contentieux" | "besoins"
   | "referentiels" | "documents" | "textes" | "rapports" | "journal" | "administration"
   | "postes" | "recrutement" | "delegations" | "annuaire" | "retraite" | "aide" | "cartes"
-  | "messagerie" | "tickets" | "annonces" | "mon-dossier";
+  | "messagerie" | "tickets" | "annonces" | "mon-dossier" | "archives";
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   dgarh: "Tableau de bord",
@@ -25,7 +25,8 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   contentieux: "Contentieux",
   besoins: "États de besoins",
   referentiels: "Référentiels",
-  documents: "Archives et GED",
+  documents: "Documents et GED",
+  archives: "Archives",
   textes: "Fonds réglementaire",
   postes: "Tableau des emplois",
   recrutement: "Recrutement et concours",
@@ -68,7 +69,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     dgarh: "W", organigramme: "W", organisation: "W", pilotage: "W", agents: "W",
     national: "R",
     actes: "W", carrieres: "R", conges: "R", formations: "R", contentieux: "R",
-    besoins: "R", referentiels: "R", documents: "R", rapports: "W", journal: "R",
+    besoins: "R", referentiels: "R", documents: "R", archives: "R", rapports: "W", journal: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
     postes: "W", recrutement: "W", delegations: "W", textes: "W",
     annuaire: "R", retraite: "W", aide: "R",
@@ -78,7 +79,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
     national: "R",
     carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
-    referentiels: "R", documents: "R", rapports: "R",
+    referentiels: "R", documents: "R", archives: "R", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
     postes: "W", recrutement: "W", delegations: "R", textes: "R",
     annuaire: "R", retraite: "R", aide: "R",
@@ -86,7 +87,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   },
   CHEF_SERVICE: {
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
-    formations: "R", contentieux: "R", besoins: "R", documents: "R", rapports: "R",
+    formations: "R", contentieux: "R", besoins: "R", documents: "R", archives: "W", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", recrutement: "R", delegations: "R", textes: "R",
     annuaire: "R", retraite: "R", aide: "R",
@@ -94,19 +95,19 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
   },
   CHEF_BUREAU: {
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
-    formations: "R", contentieux: "R", besoins: "R", documents: "W",
+    formations: "R", contentieux: "R", besoins: "R", documents: "W", archives: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", recrutement: "W", textes: "R", annuaire: "R", retraite: "R", aide: "R",
     cartes: "W",
   },
   AGENT_INSTRUCTEUR: {
-    organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W",
+    organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W", archives: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", textes: "R", annuaire: "R", aide: "R",
     cartes: "R",
   },
   DIRECTEUR_DEPARTEMENTAL: {
-    organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R",
+    organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R", archives: "R",
     national: "R",
     rapports: "R", messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", recrutement: "R", textes: "R", annuaire: "R", retraite: "R", aide: "R",
@@ -176,6 +177,7 @@ export function moduleDeRoute(pathname: string): ModuleKey | null {
     ["/contentieux", "contentieux"],
     ["/besoins", "besoins"],
     ["/referentiels", "referentiels"],
+    ["/archives", "archives"],
     ["/documents", "documents"],
     ["/textes", "textes"],
     ["/postes", "postes"],

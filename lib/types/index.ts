@@ -21,3 +21,4 @@ export type * from "./collaboration";
 export type * from "./rh";
 export type * from "./parcours";
 export type * from "./document";
+export type * from "./archives";

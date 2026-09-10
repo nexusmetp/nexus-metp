@@ -51,6 +51,9 @@ export interface Entite {
   creePar?: string;
   dateCreation?: string;
   responsableId?: string | null;
+  /** Localisation propre, saisie à la création. Prime sur celle du chef-lieu. */
+  lat?: number;
+  lon?: number;
 }
 
 /* ------------------------------------------------------------------ */

@@ -10,7 +10,7 @@
         --card-foreground: 222.2 84% 4.9%;
         --popover: 0 0% 100%;
         --popover-foreground: 222.2 84% 4.9%;
-        --primary: 191 100% 42%;
+        --primary: 197 100% 33%;
         --primary-foreground: 0 0% 100%;
         --secondary: 210 40% 96.1%;
         --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,7 +22,7 @@
         --destructive-foreground: 210 40% 98%;
         --border: 214.3 31.8% 91.4%;
         --input: 214.3 31.8% 91.4%;
-        --ring: 191 100% 42%;
+        --ring: 197 100% 33%;
         --chart-1: 191 100% 42%;
         --chart-2: 201 100% 36%;
         --chart-3: 187 78% 59%;
@@ -110,3 +110,158 @@
   100% { transform: scale(2.1); opacity: 0; }
 }
 .animate-nexus-ring { animation: nexus-ring 2.2s ease-out infinite; }
+
+/* ------------------------------------------------------------------ */
+/* Écran de connexion : il doit tenir dans la fenêtre                  */
+/*                                                                     */
+/* Les paliers portent sur la HAUTEUR de la fenêtre, pas sur sa        */
+/* largeur : sur un portable de service en 1366×768, ou sur un         */
+/* téléphone en paysage, c'est la hauteur qui manque. Chaque palier    */
+/* reprend de la place là où elle coûte le moins — les marges d'abord, */
+/* les tailles de texte ensuite, le pied de page en dernier.           */
+/* ------------------------------------------------------------------ */
+
+.ecran-connexion {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.carte-connexion { padding: 2.25rem 2.5rem; }
+.espace-connexion > * + * { margin-top: 1.25rem; }
+
+@media (max-height: 860px) {
+  .carte-connexion { padding: 1.5rem 2rem; }
+  .espace-connexion > * + * { margin-top: 1rem; }
+  .titre-connexion { font-size: 1.4rem; }
+}
+
+@media (max-height: 740px) {
+  .carte-connexion { padding: 1.1rem 1.5rem; }
+  .espace-connexion > * + * { margin-top: 0.7rem; }
+  .titre-connexion { font-size: 1.25rem; }
+  .champ-connexion { height: 2.5rem; }
+  .avis-securite { margin-top: 0.9rem; padding: 0.6rem; }
+  .liens-connexion { margin-top: 0.9rem; padding-top: 0.9rem; }
+  .liens-connexion > * + * { margin-top: 0.5rem; }
+  .conditions-usage { font-size: 12px; }
+}
+
+@media (max-height: 660px) {
+  .pied-connexion { display: none; }
+  .ecran-connexion main { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .carte-connexion { padding: 0.8rem 1.1rem; }
+  .carte-connexion form { margin-top: 0.75rem; }
+  .espace-connexion > * + * { margin-top: 0.55rem; }
+  .titre-connexion { font-size: 1.1rem; }
+  .champ-connexion { height: 2.25rem; }
+  .avis-securite { margin-top: 0.85rem; padding: 0.5rem; }
+  .avis-securite p { font-size: 11px; }
+  .liens-connexion { margin-top: 0.85rem; padding-top: 0.85rem; font-size: 13px; }
+  .liens-connexion > * + * { margin-top: 0.4rem; }
+  .bouton-demo { height: 2.25rem; }
+}
+
+/* Fenêtre basse et large — téléphone en paysage, fenêtre réduite : la carte
+   passe sur deux colonnes. La saisie à gauche, ce qu'il faut avoir lu à
+   droite. Empiler ces deux blocs sur 390 px de haut ne tiendrait pas. */
+@media (max-height: 560px) and (min-width: 620px) {
+  .colonne-connexion { max-width: 44rem; }
+  .corps-connexion {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .colonne-avis .avis-securite,
+  .colonne-avis .liens-connexion { margin-top: 0; }
+  .colonne-avis .liens-connexion { border-top: 0; padding-top: 0.75rem; }
+  .titre-connexion { font-size: 1.15rem; }
+
+  /* Sur 390 px de haut, chaque marge compte : on reprend la place partout
+     à la fois plutôt que d'en sacrifier une seule d'un coup. */
+  .ecran-connexion main { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .carte-connexion { padding: 0.6rem 0.9rem; }
+  .carte-connexion form { margin-top: 0.6rem; }
+  .espace-connexion > * + * { margin-top: 0.45rem; }
+  .champ-connexion { height: 2.25rem; }
+  .avis-securite { padding: 0.45rem; }
+  .avis-securite p { font-size: 11px; }
+  .bouton-demo { height: 2rem; }
+}
+
+/* Fenêtre très basse ET étroite : deux colonnes n'y tiendraient pas non plus.
+   On rend alors la main au défilement interne de la colonne, plutôt que
+   d'écraser le texte jusqu'à l'illisible. */
+@media (max-height: 520px) and (max-width: 619px) {
+  .ecran-connexion main { align-items: flex-start; overflow-y: auto; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Ce qui déborde d'un téléphone                                       */
+/*                                                                     */
+/* Une page d'application ne doit jamais partir de travers : le         */
+/* défilement horizontal appartient au tableau ou au ruban qui déborde, */
+/* pas à la page entière.                                              */
+/* ------------------------------------------------------------------ */
+
+/* Rubans d'onglets : quatre onglets ne tiennent pas sur 390 px. Ils
+   défilent dans leur propre boîte, sans barre visible. */
+[role="tablist"] {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[role="tablist"]::-webkit-scrollbar { display: none; }
+
+/* Bandeau de notification : sa largeur par défaut (390 px) plus sa marge
+   dépasse l'écran d'un téléphone. */
+@media (max-width: 440px) {
+  [data-sonner-toaster] { --width: calc(100vw - 2rem) !important; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Fond photographique — écran d'ouverture et page de connexion         */
+/*                                                                     */
+/* Plusieurs fichiers sont déclarés : le navigateur peint le premier    */
+/* calque, et si son fichier est absent il laisse voir le suivant. On   */
+/* obtient donc une cascade sans une ligne de JavaScript, et la couleur */
+/* de fond reste le dernier recours — jamais de page blanche.           */
+/* ------------------------------------------------------------------ */
+
+/* L'image est posée par le composant, depuis `FOND_MINISTERE` — résolu à la
+   construction contre /public. Elle ne peut pas vivre ici : `background-image`
+   avec plusieurs `url()` n'est pas une cascade, CSS les empile, et le
+   navigateur téléchargeait les cinq fonds présents pour n'en afficher qu'un. */
+.fond-ministere {
+  background-color: #0f172a;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* Voile de lisibilité. Une photo d'intérieur est claire et détaillée : sans
+   voile, ni le bandeau ni la carte ne se détachent. Il s'assombrit vers le
+   bas, là où se trouve le pied de page. */
+.voile-connexion {
+  background:
+    /* Bande sombre en pied : c'est là que se tiennent le sélecteur de comptes
+       et la mention légale, en blanc, sur la partie la plus claire de la
+       photographie — la table et les papiers. Sans cette bande, ils
+       disparaissaient purement et simplement. */
+    linear-gradient(to bottom,
+      rgba(2, 6, 23, 0.46) 0%,
+      rgba(2, 6, 23, 0.56) 45%,
+      rgba(2, 6, 23, 0.74) 78%,
+      rgba(2, 6, 23, 0.86) 100%);
+}
+
+/* Écran d'ouverture : le texte est posé À MÊME la photo, sans carte pour le
+   porter. Il faut donc un voile plus dense qu'à la connexion, et une clairière
+   au centre — assez sombre pour que le blanc tienne, assez transparente pour
+   qu'on reconnaisse le bureau. */
+.voile-ouverture {
+  background:
+    radial-gradient(ellipse 70% 62% at 50% 46%, rgba(2, 6, 23, 0.80) 0%, rgba(2, 6, 23, 0.62) 55%, rgba(2, 6, 23, 0.55) 100%),
+    linear-gradient(to bottom, rgba(2, 6, 23, 0.45) 0%, rgba(2, 6, 23, 0.25) 40%, rgba(2, 6, 23, 0.70) 100%);
+}

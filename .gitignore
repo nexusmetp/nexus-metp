@@ -87,3 +87,6 @@ credentials.json
 *.key
 .credentials
 node_modules/@next/swc-linux-arm64-gnu/next-swc.linux-arm64-gnu.node
+
+# Travailleur MapLibre, recopié depuis node_modules avant dev et build
+/public/maplibre/

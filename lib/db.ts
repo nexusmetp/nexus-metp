@@ -4,9 +4,42 @@ import { openDB, type IDBPDatabase } from "idb";
 import { buildDataset, type Dataset } from "@/lib/seed";
 
 const DB_NAME = "nexus-metp";
-const DB_VERSION = 1;
-const STORES = ["agents", "postes", "actes", "conges", "utilisateurs", "entites", "grades", "journal", "notifications", "meta"] as const;
-type StoreName = (typeof STORES)[number];
+/**
+ * v14 : modèles écrits par la maison, rangés à côté des modèles livrés.
+ * v13 : brouillons de rédaction et échanges avec l'assistant.
+ * v12 : fonds d'archives — versements, articles cotés, communications.
+ * v11 : horodatages du semis ramenés avant le jour de référence.
+ * v10 : registre des documents établis.
+ * v9 : cartes professionnelles et photographies.
+ * v8 : emplois, délégations, fonds documentaire, recrutement et formation.
+ * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
+ * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
+ */
+const DB_VERSION = 14;
+
+const STORES = [
+  "entites", "corps", "grades", "postes", "agents",
+  "situations", "affectations", "positions",
+  "actes", "besoins", "utilisateurs", "journal", "notifications",
+  "tickets", "messagesTicket", "conversations", "messages", "annonces", "parametres",
+  "conges", "delegations", "textes", "campagnes", "candidatures",
+  "offresFormation", "inscriptions", "cartes", "documents",
+  "versements", "articlesArchives", "communications",
+  "brouillons", "modelesMaison", "conversationsIA", "echangesIA", "meta",
+] as const;
+export type StoreName = (typeof STORES)[number];
+
+/**
+ * Ce que le semis n'a pas le droit d'effacer.
+ *
+ * Le reste de la base est un jeu de données fictif qu'on peut refaire à
+ * volonté ; un brouillon, lui, a été écrit par quelqu'un. Le réinitialiser
+ * avec le décor reviendrait à jeter son travail pour rafraîchir l'exemple.
+ */
+const STORES_UTILISATEUR: StoreName[] = [
+  "brouillons", "modelesMaison", "conversationsIA", "echangesIA",
+];
+const STORES_SEMES = STORES.filter((s) => !STORES_UTILISATEUR.includes(s));
 
 let dbp: Promise<IDBPDatabase> | null = null;
 
@@ -14,7 +47,13 @@ const getDB = () => {
   if (typeof window === "undefined") return null as any;
   if (!dbp) {
     dbp = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, ancienne) {
+        // v1 → v2 : le schéma change de fond en comble, on repart des stores.
+        // À partir de v12, les montées de version ajoutent des tiroirs sans
+        // vider ceux qui existent — les brouillons survivent à la mise à jour.
+        if (ancienne < 12) {
+          Array.from(db.objectStoreNames).forEach((s) => db.deleteObjectStore(s));
+        }
         STORES.forEach((s) => {
           if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: "id" });
         });
@@ -24,28 +63,63 @@ const getDB = () => {
   return dbp;
 };
 
-/** Semène la base navigateur (IndexedDB) au premier lancement. */
+/** Sème la base navigateur au premier lancement. */
 export async function ensureSeed(force = false): Promise<void> {
   const db = await getDB();
   if (!db) return;
   const meta = await db.get("meta", "seed");
-  if (meta && !force) return;
+  if (meta?.version === DB_VERSION && !force) return;
 
-  const data: Dataset = buildDataset();
-  const tx = db.transaction(STORES as unknown as string[], "readwrite");
-  if (force) await Promise.all(STORES.map((s) => tx.objectStore(s).clear()));
+  let data: Dataset;
+  try {
+    data = buildDataset();
+  } catch (e) {
+    // Sans ce relais, un semis qui échoue laisse une base vide et muette :
+    // l'application s'ouvre sur des listes vides sans dire pourquoi.
+    console.error("[semis] construction du jeu de données impossible", e);
+    throw e;
+  }
+  const tx = db.transaction(STORES_SEMES as unknown as string[], "readwrite");
+  await Promise.all(STORES_SEMES.map((s) => tx.objectStore(s).clear()));
+
   const put = (s: StoreName, rows: any[]) => rows.map((r) => tx.objectStore(s).put(r));
   await Promise.all([
-    ...put("entites", data.entites),
-    ...put("grades", data.grades),
+    ...put("entites", data.entites as any[]),
+    ...put("corps", data.corps as any[]),
+    ...put("grades", data.grades as any[]),
     ...put("postes", data.postes),
     ...put("agents", data.agents),
+    ...put("situations", data.situations),
+    ...put("affectations", data.affectations),
+    ...put("positions", data.positions),
     ...put("actes", data.actes),
-    ...put("conges", data.conges),
+    ...put("besoins", data.besoins),
     ...put("utilisateurs", data.utilisateurs),
     ...put("journal", data.journal),
     ...put("notifications", data.notifications),
-    tx.objectStore("meta").put({ id: "seed", version: DB_VERSION, date: new Date().toISOString(), source: "donnees-fictives" }),
+    ...put("tickets", data.tickets),
+    ...put("messagesTicket", data.messagesTicket),
+    ...put("conversations", data.conversations),
+    ...put("messages", data.messages),
+    ...put("annonces", data.annonces),
+    ...put("conges", data.conges),
+    ...put("delegations", data.delegations),
+    ...put("textes", data.textes),
+    ...put("campagnes", data.campagnes),
+    ...put("candidatures", data.candidatures),
+    ...put("offresFormation", data.offresFormation),
+    ...put("inscriptions", data.inscriptions),
+    ...put("cartes", data.cartes),
+    ...put("versements", data.versements),
+    ...put("articlesArchives", data.articlesArchives),
+    ...put("communications", data.communications),
+    tx.objectStore("parametres").put(data.parametres),
+    tx.objectStore("meta").put({
+      id: "seed",
+      version: DB_VERSION,
+      date: new Date().toISOString(),
+      source: "donnees-fictives",
+    }),
   ]);
   await tx.done;
 }

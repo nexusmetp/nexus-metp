@@ -57,8 +57,13 @@ export const ToileCarte = forwardRef<PoigneeCarte, ProprietesToile>(function Toi
   const derniers = useRef<PointCarte[]>(points);
   const [pret, setPret] = useState(false);
 
-  index.current = new Map(points.map((p) => [p.id, p]));
-  derniers.current = points;
+  /* Les gestionnaires du moteur lisent les points par référence, hors du
+     rendu : on les dépose après commit, jamais pendant, sinon un rendu
+     abandonné laisserait la carte pointer sur des données qui n'existent pas. */
+  useEffect(() => {
+    index.current = new Map(points.map((p) => [p.id, p]));
+    derniers.current = points;
+  }, [points]);
 
   useImperativeHandle(ref, () => ({
     cadrerPays: () => carte.current?.fitBounds(EMPRISE, { padding: 34, duration: 700 }),

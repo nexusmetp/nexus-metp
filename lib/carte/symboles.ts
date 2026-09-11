@@ -71,7 +71,7 @@ export const ETATS: Record<Etat, { libelle: string; couleur: string; pastille: s
   },
   VACANCE: {
     libelle: "Postes vacants", couleur: "#dc2626", pastille: "🔴",
-    regle: "Au moins un poste vacant pour vingt agents.",
+    regle: "Au moins un poste vacant pour dix agents.",
   },
   MOUVEMENT: {
     libelle: "Mouvements récents", couleur: "#0284c7", pastille: "🔵",
@@ -80,6 +80,9 @@ export const ETATS: Record<Etat, { libelle: string; couleur: string; pastille: s
 };
 
 export const ORDRE_ETATS: Etat[] = ["ACTIVITE", "MOUVEMENT", "CONGE", "VACANCE"];
+
+/** Un agent sur dix : le seuil au-delà duquel un service se remarque. */
+const SEUIL = 0.1;
 
 /**
  * L'état dominant, du plus urgent au plus rassurant.
@@ -91,10 +94,13 @@ export const ORDRE_ETATS: Etat[] = ["ACTIVITE", "MOUVEMENT", "CONGE", "VACANCE"]
 export function etatDominant(s: {
   effectif: number; conge: number; horsService: number; vacants: number; mouvements: number;
 }): Etat {
+  // Un dixième de l'effectif, pour les trois signaux : une règle unique se
+  // retient et s'explique en une phrase. Un seuil plus bas peignait les deux
+  // tiers de la carte en rouge — une alerte permanente n'alerte plus.
   const base = Math.max(1, s.effectif);
-  if (s.vacants / base >= 0.05) return "VACANCE";
-  if ((s.conge + s.horsService) / base >= 0.1) return "CONGE";
-  if (s.mouvements / base >= 0.1) return "MOUVEMENT";
+  if (s.vacants / base >= SEUIL) return "VACANCE";
+  if ((s.conge + s.horsService) / base >= SEUIL) return "CONGE";
+  if (s.mouvements / base >= SEUIL) return "MOUVEMENT";
   return "ACTIVITE";
 }
 

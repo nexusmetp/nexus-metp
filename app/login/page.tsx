@@ -13,6 +13,7 @@ import { SelecteurLangue } from "@/components/nexus/selecteur-langue";
 import { FeedbackButton } from "@/components/feedback";
 import { Formulaire } from "./formulaire";
 import { Confirmation } from "./confirmation";
+import { FOND_MINISTERE } from "@/lib/referentiels";
 
 /* ------------------------------------------------------------------ */
 /* Écran de connexion                                                  */
@@ -59,7 +60,11 @@ export default function LoginPage() {
       {/* Le bureau du ministre en fond, sous un voile de lisibilité. La photo
           est posée en position fixe plutôt qu'en background-attachment : sur
           téléphone, le fond attaché saute pendant le défilement. */}
-      <div aria-hidden className="fond-ministere fixed inset-0 -z-20" />
+      <div
+        aria-hidden
+        className="fond-ministere fixed inset-0 -z-20"
+        style={FOND_MINISTERE ? { backgroundImage: `url(${FOND_MINISTERE})` } : undefined}
+      />
       <div aria-hidden className="voile-connexion fixed inset-0 -z-10" />
 
       {/* Bandeau de l'État : le timbre à gauche, la langue à droite, chacun

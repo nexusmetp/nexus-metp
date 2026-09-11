@@ -55,6 +55,32 @@ Le timbre se porte partout : écran d'ouverture, connexion, barre latérale, et
 barre du haut sur téléphone — là où la barre latérale est repliée. Le filet
 tricolore court sans interruption en haut de l'application.
 
+## La marque, résolue avant la construction
+
+`public/LISEZMOI.md` promet qu'on dépose un fichier officiel dans `/public` et
+que **la première présente gagne**. La promesse tient toujours, mais elle se
+tient désormais à la **construction** et non à l'exécution
+(`scripts/resoudre-marque.mjs` → `lib/referentiels/marque.ts`, engendré et
+versionné). Déposez un fichier, reconstruisez : il prend sa place.
+
+Le faire à l'exécution coûtait cher, et personne ne le voyait :
+
+- les armoiries et le bloc-marque étaient cherchés par une cascade de `<img>`
+  qui essayait chaque nom et **attendait l'erreur** — six requêtes perdues par
+  ouverture de page, et un journal serveur constellé de 404 qui donnaient à
+  croire à une panne ;
+- le fond était pire. `background-image` avec plusieurs `url()` n'est **pas**
+  une cascade : CSS les empile. Le navigateur téléchargeait les cinq fonds
+  présents — 2,4 Mo — pour n'en afficher qu'un de 122 Ko. Sur l'écran
+  d'ouverture, c'est-à-dire au pire endroit, et sur les connexions où cela
+  compte le plus.
+
+La page de connexion sert aujourd'hui **267 Ko d'images et aucun 404**.
+
+Deux préalables tournent donc avant `dev` et `build` (`predev`, `prebuild`) :
+la résolution de la marque, et la recopie du travailleur de MapLibre. Ils sont
+idempotents — relancés sans changement, ils n'écrivent rien.
+
 ## Responsive : aucune page ne part de travers
 
 Le défilement horizontal appartient au tableau ou au ruban qui déborde, jamais
@@ -104,9 +130,16 @@ graphique : le pays comptera des milliers d'implantations.
 - Le halo ne descend jamais sous le symbole qu'il entoure, sinon une petite
   implantation cache son propre anneau d'état — la seule chose qui dise où
   regarder.
-- MapLibre est livré pré-assemblé, un mégaoctet sans le moindre `require` :
-  `next.config.js` le met en `noParse`, et il vit dans son propre morceau,
-  chargé au geste. La page nationale le paie, aucune autre.
+- MapLibre charge son **travailleur** par une adresse calculée depuis
+  `import.meta.url`. Une fois le paquet assemblé, cette adresse pointe sur le
+  morceau produit, où le fichier n'existe pas, et la carte échoue à l'ouverture
+  sans rien dire. `scripts/vendorer-carte.mjs` recopie le travailleur dans
+  `public/maplibre/` avant chaque `dev` et chaque `build`, et `moteur.ts`
+  l'annonce par `setWorkerUrl`. Même origine, donc pas de `blob:` : rien qui
+  heurte une politique de sécurité de contenu stricte. Les fichiers recopiés ne
+  sont pas versionnés — le verrou de dépendances fait foi.
+- Le moteur pèse un mégaoctet et vit dans son propre morceau, chargé au geste.
+  La page nationale le paie, aucune autre.
 
 **La carte à plat** (`components/nexus/carte/plate.tsx`) sert deux cas réels :
 le poste dont le pilote graphique est bloqué — il en reste dans les services —
@@ -149,11 +182,16 @@ source ouverte et sont situés par leur chef-lieu.
   erreurs pour une seule cause. Les reprendre d'amont a rendu les types sans
   rien changer au rendu.
 
-  Cinq de ces composants ne sont importés nulle part — `calendar`, `chart`,
-  `form`, `menubar`, `sidebar`. Ils viennent de la commande d'installation, pas
-  d'un besoin. `sidebar.tsx` est à lui seul la seule dérogation à la règle des
-  500 lignes ; l'application se sert de `components/nexus/app-sidebar.tsx`. Les
-  supprimer se défend, les garder aussi : ce sont des pièces disponibles. Mais
+  **Beaucoup ne servent à rien.** `calendar`, `chart`, `form`, `menubar` et
+  `sidebar` ont été supprimés — avec eux la dernière dérogation à la règle des
+  500 lignes, et quatre dépendances devenues sans objet
+  (`react-day-picker`, `react-hook-form`, `@hookform/resolvers`,
+  `@radix-ui/react-menubar`). Dix-sept autres ne sont toujours importés nulle
+  part : `alert`, `alert-dialog`, `aspect-ratio`, `breadcrumb`, `carousel`,
+  `collapsible`, `context-menu`, `drawer`, `hover-card`, `input-otp`,
+  `navigation-menu`, `pagination`, `radio-group`, `resizable`, `slider`,
+  `toaster`, `toggle-group`. Ils viennent de la commande d'installation, pas
+  d'un besoin. Les garder se défend — ce sont des pièces disponibles — mais
   personne ne devrait croire qu'ils sont en service.
 
   **La règle qui suit de là : on ne modifie pas un fichier de `components/ui/`.**

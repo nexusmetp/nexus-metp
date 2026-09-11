@@ -32,12 +32,7 @@ const IGNORES = new Set(["node_modules", ".next", ".git", "dist", "build", "out"
  * Dérogations explicites, avec leur motif. Une dérogation sans motif écrit
  * n'en est pas une : on la relit à chaque fois qu'on lit ce fichier.
  */
-const DEROGATIONS = new Map([
-  [
-    "components/ui/sidebar.tsx",
-    "source shadcn/ui reprise au caractère près — la découper interdirait de la régénérer",
-  ],
-]);
+const DEROGATIONS = new Map([]);
 
 const fichiers = [];
 

@@ -31,23 +31,18 @@ export const MINISTERE_NOM = "Ministère de l'Enseignement Technique et Professi
  * Le tracé vectoriel de dépannage est volontairement le DERNIER : il ne sert
  * que tant que l'original n'est pas là, et s'efface dès qu'il l'est.
  */
-export const ARMOIRIES_SOURCES = [
-  "/amoirie.png",
-  "/armoiries-congo.png",
-  "/armoiries-congo.svg",
-] as const;
-
 /**
- * Le bloc-marque complet du ministère (blason + filet + libellé). S'il est
- * absent, le bloc est composé par <LogoMETP /> à partir du blason et du texte.
+ * Les fichiers de marque, résolus à la construction contre /public par
+ * `scripts/resoudre-marque.mjs`. Déposez un fichier officiel dans /public et
+ * reconstruisez : il prend sa place, sans toucher au code. Les résoudre
+ * d'avance évite d'essayer à l'exécution des noms qui n'existent pas —
+ * c'étaient six requêtes perdues par ouverture de page, et un journal
+ * serveur qui donnait à croire à une panne.
  */
-export const LOGO_SOURCES = [
-  "/metplogo.webp",
-  "/metplogo.png",
-  "/logo-metp.svg",
-] as const;
-
-export const DRAPEAU_URL = "/drapeau-congo.svg";
+export {
+  ARMOIRIES_SOURCES, LOGO_SOURCES, DRAPEAU_URL, FOND_MINISTERE,
+} from "./marque";
+import { ARMOIRIES_SOURCES } from "./marque";
 
 /** @deprecated Utilisez ARMOIRIES_SOURCES, ou le composant <Armoiries />. */
 export const ARMOIRIES_URL = ARMOIRIES_SOURCES[ARMOIRIES_SOURCES.length - 1];

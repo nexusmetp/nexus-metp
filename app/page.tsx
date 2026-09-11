@@ -10,6 +10,7 @@ import { ensureSeed } from "@/lib/db";
 import { useAuth } from "@/lib/store";
 import { Armoiries } from "@/components/nexus/logo";
 import { Progress } from "@/components/ui/progress";
+import { FOND_MINISTERE } from "@/lib/referentiels";
 
 /* ------------------------------------------------------------------ */
 /* Écran d'ouverture                                                   */
@@ -59,7 +60,11 @@ export default function SplashPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-12 text-center">
-      <div aria-hidden className="fond-ministere fixed inset-0 -z-20" />
+      <div
+        aria-hidden
+        className="fond-ministere fixed inset-0 -z-20"
+        style={FOND_MINISTERE ? { backgroundImage: `url(${FOND_MINISTERE})` } : undefined}
+      />
       <div aria-hidden className="voile-ouverture fixed inset-0 -z-10" />
 
       <motion.div

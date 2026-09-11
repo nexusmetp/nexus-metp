@@ -11,14 +11,6 @@ const nextConfig = {
   // Renamed from experimental.serverComponentsExternalPackages in Next 15
   serverExternalPackages: ['mongodb'],
   webpack(config, { dev }) {
-    // MapLibre est livré pré-assemblé : un seul fichier d'un mégaoctet, sans
-    // le moindre `require`. Le faire analyser par webpack coûte plus de
-    // mémoire que le budget de développement n'en accorde — et ne sert à
-    // rien, puisqu'il n'y a aucune dépendance à y résoudre.
-    config.module.noParse = [
-      ...(Array.isArray(config.module.noParse) ? config.module.noParse : []),
-      /maplibre-gl[\\/]dist[\\/]maplibre-gl(-csp)?\.js$/,
-    ];
     if (dev) {
       // Reduce CPU/memory from file watching
       config.watchOptions = {

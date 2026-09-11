@@ -229,15 +229,12 @@
 /* de fond reste le dernier recours — jamais de page blanche.           */
 /* ------------------------------------------------------------------ */
 
+/* L'image est posée par le composant, depuis `FOND_MINISTERE` — résolu à la
+   construction contre /public. Elle ne peut pas vivre ici : `background-image`
+   avec plusieurs `url()` n'est pas une cascade, CSS les empile, et le
+   navigateur téléchargeait les cinq fonds présents pour n'en afficher qu'un. */
 .fond-ministere {
   background-color: #0f172a;
-  background-image:
-    url("/bureau-ministre.webp"),
-    url("/bureau-ministre.jpg"),
-    url("/bureau-ministre.png"),
-    url("/bkImagePropre.webp"),
-    url("/bkImage.png"),
-    url("/login-bg.jpg");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;

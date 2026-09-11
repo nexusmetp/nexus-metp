@@ -35,10 +35,26 @@ export function webglDisponible(): boolean {
   }
 }
 
+/**
+ * Le travailleur, servi depuis /public.
+ *
+ * MapLibre calcule l'adresse de son travailleur depuis `import.meta.url`.
+ * Après assemblage, cette adresse pointe sur le morceau produit par le
+ * constructeur, où le fichier n'existe pas — et la carte reste noire sans rien
+ * dire. `scripts/vendorer-carte.mjs` dépose le travailleur dans /public avant
+ * chaque dev et chaque build ; on le lui annonce ici. Même origine : pas de
+ * `blob:`, donc rien qui heurte une politique de sécurité de contenu stricte.
+ */
+const TRAVAILLEUR = "/maplibre/maplibre-gl-worker.mjs";
+
 let promesse: Promise<MoteurCarte> | null = null;
 
 export function charger(): Promise<MoteurCarte> {
-  promesse ??= import("maplibre-gl").then((m) => ((m as any).default ?? m) as MoteurCarte);
+  promesse ??= import("maplibre-gl").then((m) => {
+    const moteur = ((m as any).default ?? m) as MoteurCarte;
+    moteur.setWorkerUrl(TRAVAILLEUR);
+    return moteur;
+  });
   return promesse;
 }
 

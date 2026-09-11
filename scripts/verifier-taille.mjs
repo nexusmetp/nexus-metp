@@ -34,8 +34,8 @@ const IGNORES = new Set(["node_modules", ".next", ".git", "dist", "build", "out"
  */
 const DEROGATIONS = new Map([
   [
-    "components/ui/sidebar.jsx",
-    "composant shadcn/ui repris tel quel — le découper interdirait de le régénérer",
+    "components/ui/sidebar.tsx",
+    "source shadcn/ui reprise au caractère près — la découper interdirait de la régénérer",
   ],
 ]);
 

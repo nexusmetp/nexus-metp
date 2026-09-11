@@ -136,13 +136,39 @@ source ouverte et sont situés par leur chef-lieu.
 ## Conventions de code
 
 - Le code est écrit en **français** : identifiants, commentaires, libellés.
-- **TypeScript** partout dans le code applicatif. Les composants `components/ui/*`
-  viennent de shadcn/ui en `.jsx` et ne sont pas typés — leurs erreurs `tsc`
-  (`IntrinsicAttributes`, `has no properties in common`) sont préexistantes et
-  ne sont pas des régressions.
+- **TypeScript partout, sans exception.** `npx tsc --noEmit` et `npm run build`
+  passent tous les deux sans une erreur. Toute erreur de types est donc une
+  régression, à corriger et non à contourner.
+
+  Les 48 composants `components/ui/*` viennent de shadcn/ui et sont repris
+  **au caractère près** de la source amont (style *new-york*), rechemin des
+  imports mis à part. Ils étaient arrivés en `.jsx` types effacés, ce qui
+  faisait échouer `next build` à la vérification des types : les props d'un
+  `forwardRef` non typé se réduisent à `RefAttributes`, et chaque appelant
+  qui passait `children` ou `className` était en faute — neuf cent cinquante-neuf
+  erreurs pour une seule cause. Les reprendre d'amont a rendu les types sans
+  rien changer au rendu.
+
+  Cinq de ces composants ne sont importés nulle part — `calendar`, `chart`,
+  `form`, `menubar`, `sidebar`. Ils viennent de la commande d'installation, pas
+  d'un besoin. `sidebar.tsx` est à lui seul la seule dérogation à la règle des
+  500 lignes ; l'application se sert de `components/nexus/app-sidebar.tsx`. Les
+  supprimer se défend, les garder aussi : ce sont des pièces disponibles. Mais
+  personne ne devrait croire qu'ils sont en service.
+
+  **La règle qui suit de là : on ne modifie pas un fichier de `components/ui/`.**
+  Ce qu'il faut adapter se fait par les classes passées de l'extérieur, ou dans
+  un composant de `components/nexus/`. Neuf fichiers portent malgré tout une
+  correction locale, reportée telle quelle lors de la reprise et notée ici pour
+  qu'elle survive à la prochaine régénération :
+  `hover-card`, `popover`, `tooltip` et `navigation-menu` ajoutent une
+  `origin-[--radix-…-transform-origin]`, `select` remplace
+  `placeholder:` par `data-[placeholder]:`, `context-menu` et `dropdown-menu`
+  bornent leur hauteur à l'espace disponible, `form` affiche un message vide
+  plutôt que « undefined », et `chart` garde ses `?? []`.
 - Les commentaires disent **pourquoi**, pas quoi.
 - Un écran se bâtit avec `PageHeader`, `RangeeKpi`, `BarreFiltres`, `TableauModule`
-  (`components/nexus/module.tsx`) : mêmes gestes d'une page à l'autre.
+  (`components/nexus/module/`) : mêmes gestes d'une page à l'autre.
 - Les tuiles de KPI portent un **ton** (`components/nexus/tons.ts`) — la couleur
   dit la nature du chiffre, pas la décoration.
 

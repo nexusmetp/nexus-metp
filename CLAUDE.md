@@ -1,8 +1,15 @@
 # NEXUS-METP — conventions du dépôt
 
 Plateforme de gestion du personnel de la DGARH du Ministère de l'Enseignement
-Technique et Professionnel (République du Congo). Next.js 15 (App Router),
-React 18, TypeScript, Tailwind, shadcn/ui.
+Technique et Professionnel (République du Congo). **Next.js 16** (App Router,
+**Turbopack** par défaut), React 18, TypeScript, Tailwind, shadcn/ui.
+
+Next 16 rompt avec les versions précédentes : conventions, API et arborescence
+ont bougé. La documentation de la version installée est dans
+`node_modules/next/dist/docs/` — s'y reporter plutôt qu'à ce dont on croit se
+souvenir. `next dev` ajoutait de lui-même un avertissement à ce sujet à la fin
+de ce fichier ; `agentRules: false` l'en empêche, et la phrase est ici, en
+français, dans le document qui appartient au dépôt.
 
 ## Règle de taille : 500 lignes
 
@@ -54,6 +61,32 @@ fichiers en data URI (`bundle/build.mjs`).
 Le timbre se porte partout : écran d'ouverture, connexion, barre latérale, et
 barre du haut sur téléphone — là où la barre latérale est repliée. Le filet
 tricolore court sans interruption en haut de l'application.
+
+## Next 16 : trois réglages qui ne se devinent pas
+
+Le passage à Next 16 a fermé les deux dernières alertes de sécurité
+(`npm audit` : **aucune**). Il impose aussi **Turbopack** comme assembleur par
+défaut, et trois réglages dans `next.config.js` sans lesquels rien ne marche
+comme avant :
+
+- **`allowedDevOrigins`**. Next 16 refuse de servir ses ressources de
+  développement à une origine autre que la sienne. Le serveur écoute sur
+  `0.0.0.0` pour être joignable depuis un autre poste ; sans cette liste, la
+  page de connexion **arrive et reste figée** — React ne s'y attache jamais,
+  aucun bouton ne répond, et rien dans la console ne le dit. Seul le journal
+  du serveur le signale, en passant. C'est le piège le plus coûteux de la
+  montée de version.
+- **`agentRules: false`**. Sinon `next dev` ajoute à chaque lancement un bloc
+  en anglais à la fin de `CLAUDE.md` et d'`AGENTS.md`. Ce fichier appartient au
+  dépôt, pas à l'outillage.
+- **plus de configuration `webpack`**. Elle ne servait qu'à remplacer la
+  surveillance des fichiers par une scrutation ; le surveillant natif de
+  Turbopack la rend inutile, et Next refuse désormais une configuration
+  webpack sans configuration Turbopack en regard. `npm run dev:webpack` garde
+  l'ancien assembleur sous la main.
+
+`tsconfig.json` est réécrit par Next au premier lancement : `jsx` passe à
+`react-jsx`, obligatoire en 16. Ne pas le remettre à `preserve`.
 
 ## La marque, résolue avant la construction
 

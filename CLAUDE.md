@@ -114,6 +114,39 @@ Deux préalables tournent donc avant `dev` et `build` (`predev`, `prebuild`) :
 la résolution de la marque, et la recopie du travailleur de MapLibre. Ils sont
 idempotents — relancés sans changement, ils n'écrivent rien.
 
+## Rien ne vient d'un tiers, la police comprise
+
+La promesse d'afficher la plateforme hors ligne et sans hébergeur tiers était
+démentie par deux balises dans l'en-tête : l'Inter arrivait de
+`fonts.googleapis.com`. Une feuille de style distante **bloque le rendu** — la
+page attendait Google avant de peindre un caractère — un poste sans accès
+sortant n'avait jamais la police annoncée, et chaque ouverture disait l'adresse
+du ministère à un tiers.
+
+Le sous-ensemble **latin** de l'Inter variable vit désormais dans
+`app/polices/` : **47 Ko**, une seule ressource pour toute la plage de graisses
+là où l'appel distant en tirait cinq. Le latin couvre le français en entier ;
+un glyphe hors de ce jeu retombe sur la pile système, comme avant. Licence SIL
+Open Font, texte intégral à côté du fichier — elle autorise cette
+redistribution. La variable `--police-interface` est posée sur `<body>` et non
+sur `<html>`, où next-themes écrit déjà la classe du thème.
+
+## Installable, et rien de plus pour l'instant
+
+`app/manifest.ts` décrit la plateforme au navigateur — nom, icônes, cadre — de
+sorte qu'un agent puisse l'inscrire à son bureau ou à son écran d'accueil. Les
+icônes sont les armoiries rendues en matriciel, dans `/public` avec le reste de
+la marque (voir `public/LISEZMOI.md` : cinq fichiers, 137 Ko, et leur commande
+de régénération — elles ne suivent pas la cascade toutes seules).
+
+**Aucun travailleur de service n'est posé**, et l'installation n'en réclame
+pas. La plateforme installée se comporte exactement comme dans un onglet : il
+lui faut le réseau pour se recharger. Le vrai hors-ligne est un chantier à
+part, à instruire avec ses propres pièges — le cache périmé devant une base
+migrée (`DB_VERSION`), les deux routes `[id]` rendues à la demande, et les
+tuiles de la carte, que les conditions d'usage des serveurs cités interdisent
+de recopier.
+
 ## Responsive : aucune page ne part de travers
 
 Le défilement horizontal appartient au tableau ou au ruban qui déborde, jamais

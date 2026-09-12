@@ -31,10 +31,12 @@ const SORTIE = path.join(RACINE, "lib", "referentiels", "marque.ts");
 const CASCADES = {
   ARMOIRIES_SOURCES: ["/amoirie.png", "/armoiries-congo.png", "/armoiries-congo.svg"],
   LOGO_SOURCES: ["/metplogo.webp", "/metplogo.png", "/logo-metp.svg"],
-  FONDS_MINISTERE: [
-    "/bureau-ministre.webp", "/bureau-ministre.jpg", "/bureau-ministre.png",
-    "/bkImagePropre.webp", "/bkImage.png", "/login-bg.jpg",
-  ],
+  // Le bâtiment du ministère, et lui seul. Il a remplacé la photographie du
+  // bureau du ministre : c'est la maison qu'on reconnaît, et la façade porte
+  // son nom. Les cinq anciens fonds ont été retirés de /public avec leurs
+  // noms — 2,4 Mo qui ne servaient plus, et une cascade qui mentait sur ce
+  // qu'elle proposait.
+  FONDS_MINISTERE: ["/batiment-metp.webp", "/batiment-metp.jpg", "/batiment-metp.png"],
   DRAPEAUX: ["/drapeau-congo.svg"],
 };
 

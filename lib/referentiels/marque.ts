@@ -16,4 +16,4 @@ export const LOGO_SOURCES = [] as const;
 export const DRAPEAU_URL = "/drapeau-congo.svg";
 
 /** Le fond de l'écran d'ouverture et de la connexion : un seul, le premier trouvé. */
-export const FOND_MINISTERE = "/bureau-ministre.webp";
+export const FOND_MINISTERE = "/batiment-metp.webp";

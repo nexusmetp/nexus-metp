@@ -75,38 +75,45 @@ S'il n'y en a aucun, `<LogoMETP />` compose le bloc lui-même : le blason reste
 une image, le libellé reste du texte — il se lit au lecteur d'écran, se
 sélectionne, et ne pixellise à aucune taille.
 
-## Fond de la page de connexion
+## Fond de l'ouverture et de la connexion
 
-La photo du bureau du ministre. Cherchée dans cet ordre, et **la première
-présente gagne** :
+La photographie du **bâtiment du ministère**, façade et enseigne. Cherchée dans
+cet ordre, et **la première présente gagne** :
 
-1. `bureau-ministre.webp`  ← **servi** : 95 Ko
-2. `bureau-ministre.jpg`   ← repli si le navigateur ignore le WebP : 158 Ko
-3. `bureau-ministre.png`
-4. `bkImage.png`           ← **l'original déposé**, 1,8 Mo : conservé comme master
-5. `login-bg.jpg`          ← ancien fond abstrait, dernier recours
+1. `batiment-metp.webp`  ← **servi** : 194 Ko
+2. `batiment-metp.jpg`   ← repli si le navigateur ignore le WebP : 251 Ko
+3. `batiment-metp.png`   ← **le master déposé**, 2,5 Mo, 1983×793
 
-Les deux premiers sont **fabriqués depuis l'original**. Pour les régénérer
-après avoir remplacé `bkImage.png` :
+Les deux premiers sont **fabriqués depuis le master**. Pour les régénérer après
+avoir remplacé `batiment-metp.png` :
 
 ```bash
 node -e "const s=require('sharp');
-  s('public/bkImage.png').resize({width:1920,withoutEnlargement:true})
-   .jpeg({quality:80,mozjpeg:true,progressive:true}).toFile('public/bureau-ministre.jpg');
-  s('public/bkImage.png').resize({width:1920,withoutEnlargement:true})
-   .webp({quality:76}).toFile('public/bureau-ministre.webp');"
+  s('public/batiment-metp.png').resize({width:1920,withoutEnlargement:true})
+   .jpeg({quality:80,mozjpeg:true,progressive:true}).toFile('public/batiment-metp.jpg');
+  s('public/batiment-metp.png').resize({width:1920,withoutEnlargement:true})
+   .webp({quality:76}).toFile('public/batiment-metp.webp');"
 ```
 
-La photo sert **à deux écrans** : l'ouverture et la connexion, avec deux voiles
-différents — à l'ouverture le texte est posé à même la photo, il faut donc un
-voile plus dense et une clairière au centre. Un voile
-assombrissant est posé par-dessus (`.voile-connexion` dans `app/globals.css`) :
-sans lui, ni le bandeau ni la carte ne se détacheraient d'une photo
-d'intérieur, qui est claire et détaillée. Si vous voulez le régler, c'est la
-seule règle à toucher.
+`sharp` n'est pas une dépendance du projet : on l'installe le temps de la
+conversion, hors du dépôt. L'encodeur WebP d'ImageMagick, lui, **ignore la
+qualité demandée** — il rend le même fichier quoi qu'on lui passe.
 
-Format conseillé : **JPEG ou WebP, 1920×1080 environ, sous 400 Ko.** L'image
-est incorporée telle quelle dans l'artefact publié, donc son poids compte.
+La photo sert **à deux écrans** : l'ouverture et la connexion, avec deux voiles
+différents (`.voile-ouverture` et `.voile-connexion` dans `app/globals.css`).
+À l'ouverture le texte est posé à même la photo : il faut un voile plus dense
+et une clairière au centre. Si vous voulez régler l'assombrissement, ce sont
+les deux seules règles à toucher.
+
+**Le cadrage compte.** Celle-ci fait 2,5:1 — bien plus large que haute. Posée
+en `cover`, elle est rognée sur les côtés : sur un écran de bureau on perd les
+pelouses, sur un téléphone en portrait on ne garde que la partie centrale. Ce
+n'est supportable que parce que la composition est **symétrique**, l'entrée et
+l'enseigne tombant au centre exact. Une photo dont le sujet serait décentré
+demanderait, elle, un recadrage.
+
+Format conseillé : **JPEG ou WebP, 1920 px de large environ, sous 400 Ko**, et
+un sujet centré.
 
 ## Drapeau
 

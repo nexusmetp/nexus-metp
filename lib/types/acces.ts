@@ -6,6 +6,14 @@ import type { CategorieStatutaire } from "./organisation";
 /* ------------------------------------------------------------------ */
 
 export type Role =
+  /* Le sommet, ajouté après coup : la plateforme était née sans lui, et un
+     tableau de bord du ministre n'a pas de titulaire sans ces quatre rôles.
+     Ils lisent beaucoup et n'écrivent presque rien — c'est leur nature :
+     décider et contrôler ne sont pas instruire. */
+  | "MINISTRE"
+  | "CABINET"
+  | "SECRETAIRE_GENERAL"
+  | "INSPECTEUR"
   | "ADMIN_SYSTEME"
   | "DIRECTEUR_GENERAL"
   | "DIRECTEUR_CENTRAL"
@@ -45,7 +53,9 @@ export interface EntreeJournal {
   utilisateurId: string;
   utilisateur: string;
   adresseIp: string;
-  action: "CREATION" | "MODIFICATION" | "CONSULTATION" | "VALIDATION" | "SIGNATURE" | "REJET";
+  action:
+    | "CREATION" | "MODIFICATION" | "SUPPRESSION"
+    | "CONSULTATION" | "VALIDATION" | "SIGNATURE" | "REJET";
   cibleType: string;
   cibleId: string;
   champ?: string;

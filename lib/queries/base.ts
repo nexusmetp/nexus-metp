@@ -8,7 +8,8 @@ import type { Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
-const liste = <T,>(store: StoreName) =>
+/** Lecture d'un tiroir entier. Partagée par les modules de requêtes. */
+export const liste = <T,>(store: StoreName) =>
   useQuery<T[]>({ queryKey: [store], queryFn: () => all<T>(store), staleTime: 60_000 });
 
 export const useEntites = () => liste<Entite>("entites");

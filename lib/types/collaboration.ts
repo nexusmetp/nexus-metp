@@ -121,6 +121,24 @@ export interface ParametresSysteme {
   exercice: number;
   /** Délai cible d'instruction d'un acte, en jours. §13 */
   delaiCibleActe: number;
+  /**
+   * Valeur du point indiciaire, et ce qui la fonde.
+   *
+   * Absente = jamais renseignée : les montants statutaires s'affichent alors
+   * « À vérifier » et aucun total général n'est présenté. Voir
+   * `lib/referentiels/remuneration.ts`, qui explique pourquoi l'outil ne la
+   * pose pas de lui-même.
+   */
+  valeurPoint?: number | null;
+  valeurPointDateEffet?: string;
+  valeurPointReference?: string;
+  /**
+   * Heure d'ouverture des services, HH:MM. Absente = non renseignée, et le
+   * retard reste un constat humain plutôt qu'un calcul.
+   */
+  heureOuverture?: string;
+  /** Jours d'absence continue au-delà desquels un dossier remonte. */
+  seuilAbsenceProlongee?: number;
   /** Délai cible de réponse à un ticket, par priorité, en heures. */
   delaiTicket: Record<PrioriteTicket, number>;
   /** Droits surchargés par l'administrateur, par rôle et par module. */

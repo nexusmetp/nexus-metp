@@ -23,12 +23,14 @@ import {
 import { construireCollaboration } from "./collaboration";
 import { construireGestion } from "./gestion";
 import { construireArchives } from "./archives";
+import { construirePresence } from "./presence";
 import type {
   Acte, Affectation, Agent, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature,
   CategoriePersonnel, Conge, Conversation, Delegation, EntreeJournal,
   InscriptionFormation, Message, MessageTicket, Notification, OffreFormation,
   ParametresSysteme, Position, Poste, SituationCarriere, StatutActe, TexteReglementaire,
   CarteProfessionnelle, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive,
+  Pointage, SortieTerritoire, RemunerationContractuelle,
 } from "@/lib/types";
 export interface Dataset {
   entites: typeof ENTITES;
@@ -61,6 +63,9 @@ export interface Dataset {
   versements: Versement[];
   articlesArchives: ArticleArchive[];
   communications: CommunicationArchive[];
+  pointages: Pointage[];
+  sorties: SortieTerritoire[];
+  remunerations: RemunerationContractuelle[];
 }
 
 export function buildDataset(): Dataset {
@@ -254,6 +259,14 @@ export function buildDataset(): Dataset {
 
   /* ---------- Comptes — un par rôle, rattachés à une vraie entité ---------- */
   const utilisateurs: Utilisateur[] = [
+    /* Le sommet de l'État. Ces quatre comptes manquaient : la plateforme
+       nommait le ministre partout dans ses écrans sans lui donner de porte
+       d'entrée. Ils lisent et ne signent rien ici — la signature reste au
+       directeur général, dans le circuit de l'acte. */
+    { id: "USR-000", email: "ministre@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Le Ministre", role: "MINISTRE", entiteId: "ENT-METP", fonction: "Ministre de l'enseignement technique et professionnel", actif: true },
+    { id: "USR-0C1", email: "cabinet@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Chancelvie OBAMBI", role: "CABINET", entiteId: "ENT-CAB", fonction: "Directrice de cabinet", actif: true },
+    { id: "USR-0SG", email: "sg@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Marcel ITOUA", role: "SECRETAIRE_GENERAL", entiteId: "ENT-METP", fonction: "Secrétaire général du ministère", actif: true },
+    { id: "USR-0IG", email: "inspection@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Edwige NKODIA", role: "INSPECTEUR", entiteId: "ENT-IG", fonction: "Inspectrice — Inspection générale", actif: true },
     { id: "USR-001", email: "admin@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Jade MELACK", role: "ADMIN_SYSTEME", entiteId: "ENT-DGARH", fonction: "Administrateur du système", actif: true },
     { id: "USR-002", email: "dgarh@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Alphonse NGATSE", role: "DIRECTEUR_GENERAL", entiteId: "ENT-DGARH", fonction: "Directeur général de l'administration et des ressources humaines", actif: true },
     { id: "USR-003", email: "dpcef@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Berthe MOUKALA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DPCEF", fonction: "Directrice du personnel, de la condition enseignante et de la formation", actif: true },
@@ -359,6 +372,11 @@ export function buildDataset(): Dataset {
   const { versements, articles: articlesArchives, communications } =
     construireArchives({ actes, agents, utilisateurs, entites: ENTITES });
 
+  /* La présence vient en dernier : elle s'accorde aux congés et aux sorties,
+     donc elle a besoin que la gestion ait déjà produit les siens. */
+  const { pointages, sorties, remunerations } =
+    construirePresence({ agents, affectations, conges, utilisateurs });
+
 
   return {
     entites: ENTITES, corps: CORPS, grades: GRADES,
@@ -368,5 +386,6 @@ export function buildDataset(): Dataset {
     conges, delegations, textes, campagnes, candidatures, offresFormation, inscriptions,
     cartes,
     versements, articlesArchives, communications,
+    pointages, sorties, remunerations,
   };
 }

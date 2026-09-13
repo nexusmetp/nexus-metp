@@ -9,7 +9,8 @@ export type ModuleKey =
   | "carrieres" | "conges" | "formations" | "contentieux" | "besoins"
   | "referentiels" | "documents" | "redaction" | "textes" | "rapports" | "journal" | "administration"
   | "postes" | "recrutement" | "delegations" | "annuaire" | "retraite" | "aide" | "cartes"
-  | "messagerie" | "tickets" | "annonces" | "mon-dossier" | "archives";
+  | "messagerie" | "tickets" | "annonces" | "mon-dossier" | "archives"
+  | "ministre" | "presences" | "sorties" | "remuneration";
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   dgarh: "Tableau de bord",
@@ -43,9 +44,17 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   tickets: "Réclamations",
   annonces: "Notes et circulaires",
   "mon-dossier": "Mon dossier",
+  ministre: "Espace du ministre",
+  presences: "Présences et pointages",
+  sorties: "Sorties du territoire",
+  remuneration: "Rémunération et masse salariale",
 };
 
 export const ROLE_LABELS: Record<Role, string> = {
+  MINISTRE: "Ministre",
+  CABINET: "Cabinet du ministre",
+  SECRETAIRE_GENERAL: "Secrétaire général",
+  INSPECTEUR: "Inspecteur",
   ADMIN_SYSTEME: "Administrateur système",
   DIRECTEUR_GENERAL: "Directeur général",
   DIRECTEUR_CENTRAL: "Directeur central",
@@ -59,6 +68,54 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 /** R = lecture, W = écriture (inclut la lecture), absent = aucun accès. */
 export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
+  /* Le ministre lit tout ce qui sert à décider et n'écrit rien : ni acte, ni
+     dossier, ni pointage. Un ministre qui saisirait lui-même une donnée
+     confondrait la décision et l'instruction — et engagerait sa signature
+     sans le circuit qui la prépare.
+
+     Le module `ministre` n'est donné qu'à lui, et à personne d'autre. C'est
+     son espace : l'ouvrir au cabinet ou au directeur général en ferait un
+     tableau de bord de plus, et l'écran perdrait ce qui le rend utile — être
+     le seul endroit où les quatre questions sont posées telles que le
+     ministre les pose. Les autres rôles ont /dgarh et /dgarh/pilotage, qui
+     répondent à leurs questions à eux. */
+  MINISTRE: {
+    ministre: "R", dgarh: "R", pilotage: "R", national: "R", organigramme: "R",
+    agents: "R", actes: "R", postes: "R", retraite: "R", presences: "R",
+    sorties: "R", remuneration: "R", contentieux: "R", besoins: "R",
+    rapports: "R", journal: "R", textes: "R", annuaire: "R",
+    annonces: "W", messagerie: "W", "mon-dossier": "W", aide: "R", cartes: "R",
+  },
+  /* Le cabinet prépare et relance : il voit la même chose, et peut porter une
+     note ou une circulaire. */
+  CABINET: {
+    dgarh: "R", pilotage: "R", national: "R", organigramme: "R",
+    agents: "R", actes: "R", postes: "R", retraite: "R", presences: "R",
+    sorties: "R", remuneration: "R", contentieux: "R", besoins: "R",
+    rapports: "R", textes: "R", annuaire: "R", documents: "R", redaction: "W",
+    annonces: "W", messagerie: "W", tickets: "W", "mon-dossier": "W", aide: "R", cartes: "R",
+  },
+  /* Le secrétaire général tient la chaîne administrative : il instruit et
+     valide, sans le pouvoir de signature du directeur général. */
+  SECRETAIRE_GENERAL: {
+    dgarh: "R", pilotage: "R", national: "R", organigramme: "R",
+    organisation: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
+    presences: "W", sorties: "W", remuneration: "R", postes: "W", besoins: "R",
+    contentieux: "R", retraite: "R", formations: "R", recrutement: "R",
+    delegations: "W", documents: "R", redaction: "W", archives: "R",
+    rapports: "W", journal: "R", textes: "W", annuaire: "R",
+    annonces: "W", messagerie: "W", tickets: "W", "mon-dossier": "W", aide: "R", cartes: "R",
+  },
+  /* L'inspecteur contrôle : il lit partout dans son périmètre et consigne ses
+     constats. Il n'instruit aucun dossier de carrière — contrôler ce qu'on a
+     soi-même instruit n'est pas un contrôle. */
+  INSPECTEUR: {
+    national: "R", organigramme: "R", agents: "R", actes: "R", postes: "R",
+    presences: "R", sorties: "R", conges: "R", besoins: "R", contentieux: "R",
+    retraite: "R", rapports: "R", journal: "R", textes: "R", annuaire: "R",
+    documents: "R", redaction: "W", archives: "R",
+    messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W", aide: "R", cartes: "R",
+  },
   ADMIN_SYSTEME: {
     organigramme: "R", referentiels: "W", administration: "W", journal: "W",
     national: "R",
@@ -67,6 +124,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "R",
   },
   DIRECTEUR_GENERAL: {
+    presences: "W", sorties: "W", remuneration: "W",
     dgarh: "W", organigramme: "W", organisation: "W", pilotage: "W", agents: "W",
     national: "R",
     actes: "W", carrieres: "R", conges: "R", formations: "R", contentieux: "R",
@@ -77,6 +135,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "W",
   },
   DIRECTEUR_CENTRAL: {
+    presences: "W", sorties: "W", remuneration: "R",
     dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
     national: "R",
     carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
@@ -87,6 +146,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "W",
   },
   CHEF_SERVICE: {
+    presences: "W", sorties: "R",
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "R", redaction: "W", archives: "W", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
@@ -95,6 +155,7 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "W",
   },
   CHEF_BUREAU: {
+    presences: "W", sorties: "R",
     dgarh: "R", organigramme: "R", agents: "W", actes: "W", carrieres: "R", conges: "R",
     formations: "R", contentieux: "R", besoins: "R", documents: "W", redaction: "W", archives: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
@@ -102,12 +163,14 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "W",
   },
   AGENT_INSTRUCTEUR: {
+    presences: "R", sorties: "R",
     organigramme: "R", agents: "R", actes: "W", carrieres: "R", conges: "R", documents: "W", redaction: "W", archives: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", textes: "R", annuaire: "R", aide: "R",
     cartes: "R",
   },
   DIRECTEUR_DEPARTEMENTAL: {
+    presences: "W", sorties: "R",
     organigramme: "R", agents: "W", actes: "R", conges: "R", besoins: "W", documents: "R", redaction: "W", archives: "R",
     national: "R",
     rapports: "R", messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
@@ -115,12 +178,14 @@ export const DROITS: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     cartes: "R",
   },
   CHEF_ETABLISSEMENT: {
+    presences: "W",
     organigramme: "R", agents: "W", besoins: "W", documents: "R", redaction: "W",
     messagerie: "W", tickets: "W", annonces: "R", "mon-dossier": "W",
     postes: "R", textes: "R", annuaire: "R", aide: "R",
     cartes: "R",
   },
   AGENT: {
+    presences: "R", sorties: "R",
     "mon-dossier": "W", conges: "R", formations: "R", documents: "R", organigramme: "R",
     messagerie: "W", tickets: "W", annonces: "R",
     annuaire: "R", textes: "R", aide: "R",
@@ -154,7 +219,8 @@ export const peutValider = (utilisateurId: string, instruitPar?: string) =>
 
 /** Où atterrit un utilisateur après connexion, selon ce que son rôle ouvre. */
 export const pageAccueil = (role: Role) =>
-  peut(role, "dgarh") ? "/dgarh"
+  peut(role, "ministre") ? "/ministre"
+  : peut(role, "dgarh") ? "/dgarh"
   : peut(role, "administration") ? "/administration"
   : peut(role, "agents") ? "/dgarh/agents"
   : peut(role, "mon-dossier") ? "/mon-dossier"
@@ -171,6 +237,10 @@ export function moduleDeRoute(pathname: string): ModuleKey | null {
     ["/dgarh/bannette", "actes"],
     ["/dgarh/actes", "actes"],
     ["/dgarh", "dgarh"],
+    ["/ministre", "ministre"],
+    ["/presences", "presences"],
+    ["/sorties", "sorties"],
+    ["/remuneration", "remuneration"],
     ["/mon-dossier", "mon-dossier"],
     ["/carrieres", "carrieres"],
     ["/conges", "conges"],

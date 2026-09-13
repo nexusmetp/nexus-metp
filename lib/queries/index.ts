@@ -14,5 +14,6 @@ export * from "./actes";
 export * from "./organisation";
 export * from "./collaboration";
 export * from "./gestion";
+export * from "./presence";
 export * from "./archives";
 export * from "./redaction";

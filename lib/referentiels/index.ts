@@ -13,4 +13,6 @@ export * from "./entites";
 export * from "./statut";
 export * from "./actes";
 export * from "./droits";
+export * from "./presence";
+export * from "./remuneration";
 export * from "./archives";

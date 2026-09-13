@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  Archive, Award, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FileSignature, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, ScrollText, Settings, UserCircle, UserMinus, Users,
+  Archive, Award, Banknote, BarChart3, BookMarked, Briefcase, Building2, CalendarDays, ChevronDown, ChevronLeft, CircleHelp, ClipboardList, Contact, CreditCard, FileCheck2, FileSignature, FolderOpen, Gauge, Gavel, GitBranch, GraduationCap, Inbox, Landmark, LayoutDashboard, Library, LifeBuoy, Map, Megaphone, MessageSquare, MoreHorizontal, Network, PenLine, Globe2, ScrollText, Settings, ShieldCheck, UserCheck, UserCircle, UserMinus, Users,
 } from "lucide-react";
 import { APP_NAME, ROLE_LABELS, peut, type ModuleKey } from "@/lib/referentiels";
 import { Armoiries } from "@/components/nexus/logo";
@@ -29,6 +29,7 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Pilotage",
     items: [
+      { href: "/ministre", label: "Espace du ministre", icon: ShieldCheck, mod: "ministre", pret: true },
       { href: "/dgarh", label: "Tableau de bord", icon: LayoutDashboard, mod: "dgarh", pret: true },
       { href: "/dgarh/pilotage", label: "Pilotage des directions", icon: Gauge, mod: "pilotage", pret: true },
       { href: "/dgarh/national", label: "Vue nationale", icon: Map, mod: "national", pret: true },
@@ -47,6 +48,8 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
     titre: "Personnel",
     items: [
       { href: "/dgarh/agents", label: "Agents", icon: Users, mod: "agents", pret: true },
+      { href: "/presences", label: "Présences et pointages", icon: UserCheck, mod: "presences", pret: true },
+      { href: "/sorties", label: "Sorties du territoire", icon: Globe2, mod: "sorties", pret: true },
       { href: "/annuaire", label: "Annuaire", icon: Contact, mod: "annuaire", pret: true },
       { href: "/cartes", label: "Cartes professionnelles", icon: CreditCard, mod: "cartes", pret: true },
     ],
@@ -68,6 +71,7 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
       { href: "/postes", label: "Tableau des emplois", icon: Briefcase, mod: "postes", pret: true },
       { href: "/besoins", label: "États de besoins", icon: ClipboardList, mod: "besoins", pret: true },
       { href: "/recrutement", label: "Recrutement et concours", icon: Award, mod: "recrutement", pret: true },
+      { href: "/remuneration", label: "Rémunération", icon: Banknote, mod: "remuneration", pret: true },
       { href: "/retraite", label: "Départs à la retraite", icon: UserMinus, mod: "retraite", pret: true },
     ],
   },

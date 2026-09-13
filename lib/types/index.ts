@@ -19,6 +19,7 @@ export type * from "./acte";
 export type * from "./acces";
 export type * from "./collaboration";
 export type * from "./rh";
+export type * from "./presence";
 export type * from "./parcours";
 export type * from "./document";
 export type * from "./archives";

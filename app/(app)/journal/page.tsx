@@ -19,11 +19,12 @@ import {
 import type { EntreeJournal } from "@/lib/types";
 
 const ACTIONS: EntreeJournal["action"][] =
-  ["CREATION", "MODIFICATION", "CONSULTATION", "VALIDATION", "SIGNATURE", "REJET"];
+  ["CREATION", "MODIFICATION", "SUPPRESSION", "CONSULTATION", "VALIDATION", "SIGNATURE", "REJET"];
 
 const COULEUR: Record<EntreeJournal["action"], string> = {
   CREATION: "bg-sky-500/12 text-sky-600 border-sky-500/25",
   MODIFICATION: "bg-slate-500/12 text-slate-500 border-slate-500/25",
+  SUPPRESSION: "bg-rose-500/12 text-rose-600 border-rose-500/25",
   CONSULTATION: "bg-violet-500/12 text-violet-600 border-violet-500/25",
   VALIDATION: "bg-indigo-500/12 text-indigo-600 border-indigo-500/25",
   SIGNATURE: "bg-emerald-500/12 text-emerald-600 border-emerald-500/25",

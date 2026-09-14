@@ -24,6 +24,10 @@ import { construireCollaboration } from "./collaboration";
 import { construireGestion } from "./gestion";
 import { construireArchives } from "./archives";
 import { construirePresence } from "./presence";
+import { construireAccueil } from "./accueil";
+import { construireHabilitations } from "./habilitations";
+import { construireMouvements } from "./mouvements";
+import { construireProfils } from "./profils";
 import type {
   Acte, Affectation, Agent, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature,
   CategoriePersonnel, Conge, Conversation, Delegation, EntreeJournal,
@@ -31,6 +35,7 @@ import type {
   ParametresSysteme, Position, Poste, SituationCarriere, StatutActe, TexteReglementaire,
   CarteProfessionnelle, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive,
   Pointage, SortieTerritoire, RemunerationContractuelle,
+  PointAccueil, PriseDeService, RegistreJour, Habilitation, ProfilAcces,
 } from "@/lib/types";
 export interface Dataset {
   entites: typeof ENTITES;
@@ -66,6 +71,11 @@ export interface Dataset {
   pointages: Pointage[];
   sorties: SortieTerritoire[];
   remunerations: RemunerationContractuelle[];
+  pointsAccueil: PointAccueil[];
+  prisesService: PriseDeService[];
+  registres: RegistreJour[];
+  habilitations: Habilitation[];
+  profils: ProfilAcces[];
 }
 
 export function buildDataset(): Dataset {
@@ -361,6 +371,12 @@ export function buildDataset(): Dataset {
     }
   });
 
+  /* Les mutations viennent juste après les postes vacants, et avant tout le
+     reste : elles ferment des affectations et en ouvrent d'autres, donc tout
+     ce qui lit les affectations doit les voir. */
+  const { actes: actesMouvement } = construireMouvements({ agents, affectations, postes, entites: ENTITES });
+  actes.push(...actesMouvement);
+
   const { tickets, messagesTicket, conversations, messages, annonces } =
     construireCollaboration({ agents, actes, utilisateurs });
 
@@ -377,6 +393,23 @@ export function buildDataset(): Dataset {
   const { pointages, sorties, remunerations } =
     construirePresence({ agents, affectations, conges, utilisateurs });
 
+  /* Le lieu, l'arrivée et le cahier : ils ont besoin des affectations pour
+     savoir qui sert où, et des agents pour désigner qui tient le registre. */
+  const { pointsAccueil, prisesService, registres } =
+    construireAccueil({ agents, affectations, entites: ENTITES, utilisateurs });
+
+  /* Les habilitations viennent en dernier : elles ont besoin des points
+     d'accueil pour savoir quels secrétaires un chef a eu à désigner. Les
+     comptes qu'elles créent rejoignent la liste des utilisateurs. */
+  const { habilitations, comptesAgents } =
+    construireHabilitations({ utilisateurs, pointsAccueil, agents, affectations });
+  /* Les secrétaires ne sont pas ajoutés séparément : ce sont des comptes
+     d'agent dont l'habilitation a été élevée par leur chef. Une personne,
+     un compte, un historique. */
+  utilisateurs.push(...comptesAgents);
+
+  const { profils } = construireProfils({ utilisateurs });
+
 
   return {
     entites: ENTITES, corps: CORPS, grades: GRADES,
@@ -387,5 +420,6 @@ export function buildDataset(): Dataset {
     cartes,
     versements, articlesArchives, communications,
     pointages, sorties, remunerations,
+    pointsAccueil, prisesService, registres, habilitations, profils,
   };
 }

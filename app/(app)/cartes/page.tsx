@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   APP_NAME, ENTITES, MINISTERE_NOM, REGLES_CATEGORIE, cheminDe,
-  descendantsDe, entiteById, gradeById, peut,
+  bornerPerimetre, descendantsDe, perimetreVisible, entiteById, gradeById, peut,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, PageHeader } from "@/components/nexus/ui-kit";
@@ -59,9 +59,22 @@ export default function CartesPage() {
   const agentDe = useMemo(() => new Map(agents.map((a) => [a.id, a])), [agents]);
   const carteDe = useMemo(() => new Map(cartes.map((c) => [c.agentId, c])), [cartes]);
 
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le
+     filtre d'entité réduit à l'intérieur de cette borne ; il ne l'élargit
+     jamais, et « toutes les entités » veut dire « toutes celles que je
+     vois ». Une règle de confidentialité laissée au menu déroulant se
+     contourne en changeant le menu déroulant. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
-    [filtres.entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))
+    ),
+    [perimetreDroit, filtres.entite, entitesDb]
   );
 
   const lignes = useMemo(() => cartes
@@ -69,20 +82,33 @@ export default function CartesPage() {
     .filter((c) => !perimetre || perimetre.has(c.entiteId))
     .sort((a, b) => b.dateEmission.localeCompare(a.dateEmission)), [cartes, filtres, perimetre]);
 
+  /* Les agents de mon périmètre : les tuiles comptent sur eux, comme la
+     liste. Une couverture de cartes calculée sur le ministère entier, affichée
+     au-dessus d'une liste bornée à un service, ne décrit ni l'un ni l'autre. */
+  const agentsVus = useMemo(
+    () => agents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))),
+    [agents, perimetreDroit]
+  );
+
+  const cartesVues = useMemo(
+    () => cartes.filter((c) => !perimetreDroit || perimetreDroit.has(c.entiteId)),
+    [cartes, perimetreDroit]
+  );
+
   const stats = useMemo(() => {
-    const sans = agents.filter((a) => !carteDe.has(a.id)).length;
+    const sans = agentsVus.filter((a) => !carteDe.has(a.id)).length;
     return {
-      valides: cartes.filter((c) => c.statut === "REMISE" || c.statut === "EDITEE").length,
+      valides: cartesVues.filter((c) => c.statut === "REMISE" || c.statut === "EDITEE").length,
       sans,
-      expirees: cartes.filter((c) => c.statut === "EXPIREE").length,
-      perdues: cartes.filter((c) => c.statut === "PERDUE").length,
-      couverture: agents.length ? ((agents.length - sans) / agents.length) * 100 : 0,
+      expirees: cartesVues.filter((c) => c.statut === "EXPIREE").length,
+      perdues: cartesVues.filter((c) => c.statut === "PERDUE").length,
+      couverture: agentsVus.length ? ((agentsVus.length - sans) / agentsVus.length) * 100 : 0,
     };
-  }, [cartes, agents, carteDe]);
+  }, [cartesVues, agentsVus, carteDe]);
 
   const sansCarte = useMemo(
-    () => agents.filter((a) => !carteDe.has(a.id)).slice(0, 400),
-    [agents, carteDe]
+    () => agentsVus.filter((a) => !carteDe.has(a.id)).slice(0, 400),
+    [agentsVus, carteDe]
   );
 
   const valide = !!formulaire && !!formulaire.agentId;

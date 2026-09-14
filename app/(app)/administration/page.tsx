@@ -1,12 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { motDePasseProvisoire } from "@/lib/acces/motdepasse";
+import { DialogueAccesOuvert, type AccesOuvert } from "@/components/nexus/acces-ouvert";
 import { toast } from "sonner";
 import {
   Activity, Database, KeyRound, Pencil, Plus, ShieldCheck, Users,
 } from "lucide-react";
 import {
-  useEnregistrerCompte, useJournal, useTickets, useUtilisateurs,
+  useEnregistrerCompte, useEntites, useHabilitations, useJournal, useProfils,
+  useTickets, useUtilisateurs,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
@@ -28,13 +32,14 @@ import { MatriceDroits } from "./matrice-droits";
 import { ReglageAssistant } from "./assistant";
 import { Parametrage } from "./parametrage";
 import { SanteInstallation } from "./sante";
-import type { Role, Utilisateur } from "@/lib/types";
+import { TableauDeBord } from "./tableau";
+import type { CodeProfil, Utilisateur } from "@/lib/types";
 
 const MODULES = Object.keys(MODULE_LABELS) as ModuleKey[];
-const ROLES = Object.keys(ROLE_LABELS) as Role[];
+const ROLES = Object.keys(ROLE_LABELS) as CodeProfil[];
 
 const videCompte = {
-  nomComplet: "", email: "", role: "AGENT_INSTRUCTEUR" as Role,
+  nomComplet: "", email: "", role: "AGENT_INSTRUCTEUR" as CodeProfil,
   entiteId: "ENT-DGARH", fonction: "", telephone: "", actif: true,
 };
 
@@ -43,12 +48,16 @@ export default function AdministrationPage() {
   const { data: comptes = [], isLoading } = useUtilisateurs();
   const { data: journal = [] } = useJournal();
   const { data: tickets = [] } = useTickets();
+  const { data: entites = [] } = useEntites();
+  const { data: habilitations = [] } = useHabilitations();
+  const { data: profils = [] } = useProfils();
   const enregistrerCompte = useEnregistrerCompte();
 
   const [selection, setSelection] = useState<Utilisateur | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videCompte | null>(null);
   const [edition, setEdition] = useState<Utilisateur | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ role: "all", etat: "all" });
+  const [acces, setAcces] = useState<AccesOuvert | null>(null);
 
   const actifs = comptes.filter((c) => c.actif).length;
   const sansEntite = comptes.filter((c) => !entiteById(c.entiteId)).length;
@@ -58,7 +67,6 @@ export default function AdministrationPage() {
     .filter((c) => filtres.etat === "all" || (filtres.etat === "actif" ? c.actif : !c.actif))
     .sort((a, b) => a.nomComplet.localeCompare(b.nomComplet)), [comptes, filtres]);
 
-  const ouvrirCreation = () => { setEdition(null); setFormulaire({ ...videCompte }); };
   const ouvrirEdition = (c: Utilisateur) => {
     setEdition(c);
     setFormulaire({
@@ -104,12 +112,18 @@ export default function AdministrationPage() {
     toast.success(compte.actif ? "Compte réactivé" : "Compte suspendu");
   };
 
+  /* Un mot de passe engendré pour ce compte, et pour lui seul. Le même pour
+     tout le monde — « Nexus2026 » posé sur deux mille comptes — ouvrait chacun
+     d'eux dès qu'on en connaissait l'adresse. */
   const reinitialiser = async (c: Utilisateur) => {
-    const compte = { ...c, motDePasse: "Nexus2026", motDePasseAChanger: true };
+    const provisoire = motDePasseProvisoire();
+    const compte = { ...c, motDePasse: provisoire, motDePasseAChanger: true };
     await enregistrerCompte.mutateAsync({ compte, utilisateur: user, creation: false });
-    toast.success("Mot de passe réinitialisé", {
-      description: `${c.nomComplet} devra saisir Nexus2026 puis en choisir un nouveau.`,
-      duration: 8000,
+    setAcces({
+      nom: c.nomComplet,
+      identifiant: c.email,
+      provisoire,
+      qualite: "Mot de passe réinitialisé",
     });
   };
 
@@ -155,22 +169,23 @@ export default function AdministrationPage() {
     <>
       <PageHeader
         titre="Système"
-        description="Accès, paramétrage, santé de l'installation. L'administrateur ouvre les portes et règle l'outil ; il n'instruit ni ne signe, et il ne décide pas de l'organisation — celle-ci relève du directeur général (§11)."
+        description="Le cadre dans lequel le ministère s'administre lui-même : les entités, les profils d'accès, et la délégation que les chefs exercent dans leur périmètre. L'administrateur ouvre les portes et règle l'outil ; il n'instruit ni ne signe, et il ne décide pas de l'organisation — celle-ci relève du directeur général (§11)."
       >
-        <Button size="sm" onClick={ouvrirCreation}>
-          <Plus className="mr-1.5 h-4 w-4" /> Ouvrir un compte
+        {/* Les comptes ne se créent plus ici. Un compte naît d'une personne :
+            le responsable d'une entité nouvelle, désigné depuis l'organisation,
+            ou un agent inscrit par son chef. Ouvrir un compte à côté de ces
+            deux chemins produisait ce qu'on voyait — des accès sans dossier,
+            sans habilitation, et que personne n'avait accordés. */}
+        <Button size="sm" variant="outline" asChild>
+          <Link href="/dgarh/organisation">
+            <Plus className="mr-1.5 h-4 w-4" /> Créer une entité
+          </Link>
         </Button>
       </PageHeader>
 
-      <RangeeKpi tuiles={[
-        { ton: "bleu", titre: "Comptes", valeur: fmtNum(comptes.length), sousTitre: `${fmtNum(actifs)} actifs`, icon: Users },
-        { ton: "indigo", titre: "Écritures d'audit", valeur: fmtNum(journal.length), sousTitre: "journal en ajout seul", icon: Database },
-        { ton: "ambre", titre: "Réclamations ouvertes", valeur: fmtNum(tickets.filter((t) => t.statut !== "CLOS" && t.statut !== "RESOLU").length), sousTitre: `${fmtNum(tickets.length)} au total`, icon: Activity },
-        { ton: "rose", titre: "Anomalies", valeur: fmtNum(sansEntite), sousTitre: "comptes sans entité valide", icon: ShieldCheck },
-      ]} />
-
-      <Tabs defaultValue="comptes" className="space-y-4">
+      <Tabs defaultValue="bord" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="bord">Tableau de bord</TabsTrigger>
           <TabsTrigger value="comptes">Comptes et accès</TabsTrigger>
           <TabsTrigger value="droits">Matrice des droits</TabsTrigger>
           <TabsTrigger value="parametres">Paramétrage</TabsTrigger>
@@ -178,7 +193,24 @@ export default function AdministrationPage() {
           <TabsTrigger value="sante">Santé et maintenance</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="bord">
+          <TableauDeBord
+            entites={entites}
+            comptes={comptes}
+            habilitations={habilitations}
+            profils={profils}
+            aujourdhui={new Date().toISOString().slice(0, 10)}
+          />
+        </TabsContent>
+
         <TabsContent value="comptes" className="space-y-4">
+          <RangeeKpi tuiles={[
+            { ton: "bleu", titre: "Comptes", valeur: fmtNum(comptes.length), sousTitre: `${fmtNum(actifs)} actifs`, icon: Users },
+            { ton: "indigo", titre: "Écritures d'audit", valeur: fmtNum(journal.length), sousTitre: "journal en ajout seul", icon: Database },
+            { ton: "ambre", titre: "Réclamations ouvertes", valeur: fmtNum(tickets.filter((t) => t.statut !== "CLOS" && t.statut !== "RESOLU").length), sousTitre: `${fmtNum(tickets.length)} au total`, icon: Activity },
+            { ton: "rose", titre: "Anomalies", valeur: fmtNum(sansEntite), sousTitre: "comptes sans entité valide", icon: ShieldCheck },
+          ]} />
+
           <TableauModule<Utilisateur>
             titre="Comptes"
             description="Le périmètre ne se saisit pas : il se déduit du rattachement dans l'organigramme."
@@ -279,19 +311,15 @@ export default function AdministrationPage() {
         )}
       </PanneauDetail>
 
-      {/* --- Création / modification de compte --- */}
+      {/* --- Modification d'un compte existant --- */}
       <DialogueFormulaire
         ouvert={!!formulaire}
         surFermeture={() => { setFormulaire(null); setEdition(null); }}
-        titre={edition ? `Modifier ${edition.nomComplet}` : "Ouvrir un compte"}
-        description={
-          edition
-            ? "Toute modification est portée au journal d'audit."
-            : "Le compte est utilisable immédiatement, avec le mot de passe provisoire Nexus2026."
-        }
+        titre={`Modifier ${edition?.nomComplet ?? ""}`}
+        description="Toute modification est portée au journal d'audit."
         surValidation={enregistrer}
         validationPossible={valide}
-        libelleValidation={edition ? "Enregistrer" : "Ouvrir le compte"}
+        libelleValidation="Enregistrer"
         large
       >
         {formulaire && (
@@ -305,7 +333,7 @@ export default function AdministrationPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <ChampSelect label="Rôle" obligatoire valeur={formulaire.role}
-                surChangement={(v) => setFormulaire({ ...formulaire, role: v as Role })}
+                surChangement={(v) => setFormulaire({ ...formulaire, role: v as CodeProfil })}
                 options={ROLES.map((r) => ({ valeur: r, libelle: ROLE_LABELS[r] }))} />
               <ChampSelect label="Rattachement" obligatoire valeur={formulaire.entiteId}
                 surChangement={(v) => setFormulaire({ ...formulaire, entiteId: v })}
@@ -328,6 +356,8 @@ export default function AdministrationPage() {
           </>
         )}
       </DialogueFormulaire>
+
+      <DialogueAccesOuvert acces={acces} surFermeture={() => setAcces(null)} />
     </>
   );
 }

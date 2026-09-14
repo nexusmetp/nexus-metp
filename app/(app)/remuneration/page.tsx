@@ -10,7 +10,8 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   CATEGORIES_CONTRACTUELLES, DEVISE, NATURE_REMUNERATION_LABELS, REGLES_CATEGORIE,
-  VALEUR_DU_POINT, entiteById, estComplet, horsGrille, montantOuMention, peut,
+  VALEUR_DU_POINT, entiteById, estComplet, horsGrille, montantOuMention,
+  perimetreVisible, peut,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
@@ -50,7 +51,7 @@ const videRemu: SaisieRemu = {
 export default function RemunerationPage() {
   const user = useAuth((s) => s.user)!;
   const redacteur = peut(user.role, "remuneration", "W");
-  const { data: agents, pret } = useAgentsProjetes();
+  const { data: tousAgents, pret } = useAgentsProjetes();
   const { data: remunerations = [], isLoading } = useRemunerations();
   const { data: parametres } = useParametres();
   const enregistrer = useEnregistrerRemuneration();
@@ -60,6 +61,17 @@ export default function RemunerationPage() {
   const [saisiePoint, setSaisiePoint] = useState<SaisiePoint | null>(null);
 
   const valeurPoint = parametres?.valeurPoint ?? null;
+
+  /* La masse salariale se lit à l'échelle où l'on décide. Le ministère pour
+     qui en répond ; sa direction pour un directeur central — lui montrer la
+     masse du ministère au-dessus d'une liste bornée à sa direction ne lui
+     donnerait ni le chiffre de l'un, ni celui de l'autre. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+
+  const agents = useMemo(
+    () => tousAgents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))),
+    [tousAgents, perimetreDroit]
+  );
 
   /* Une rémunération par agent : la plus récente encore ouverte. */
   const remuDe = useMemo(() => {
@@ -222,6 +234,7 @@ export default function RemunerationPage() {
           "Ce que coûte le personnel, par direction et par catégorie — et, pour les agents qui ne "
           + "relèvent d'aucune grille, ce que portent leurs contrats. Chaque agrégat dit combien "
           + "d'agents il laisse dehors."
+          + (perimetreDroit ? " Les chiffres portent sur votre périmètre." : "")
         }
       >
         {redacteur && (

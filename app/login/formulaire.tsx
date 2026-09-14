@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, HelpCircle, Loader2, ShieldAlert, UserPlus } from "lucide-react";
 import { useTextes } from "@/lib/langues";
 import { useUtilisateurs } from "@/lib/queries";
 import type { Utilisateur } from "@/lib/types";
+import { RANG_HIERARCHIQUE } from "@/lib/referentiels";
 import { ComptesDemo } from "./comptes-demo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 export function Formulaire({ onValide }: { onValide: (u: Utilisateur) => void }) {
   const t = useTextes();
   const { data: utilisateurs = [], isLoading } = useUtilisateurs();
+
+  /**
+   * Un compte par profil, et non les deux mille quatre cents.
+   *
+   * Depuis que tout agent du ministère dispose d'un accès, la liste des
+   * comptes de démonstration compterait l'effectif entier — inutilisable, et
+   * trompeur : ce qu'on vient y chercher, c'est *ce que voit un chef de
+   * bureau*, pas l'identité d'un agent en particulier. On en montre donc un
+   * par profil, en commençant par le plus élevé.
+   */
+  const vitrine = useMemo(() => {
+    const vus = new Set<string>();
+    return [...utilisateurs]
+      .sort((a, b) => (RANG_HIERARCHIQUE[b.role] ?? 0) - (RANG_HIERARCHIQUE[a.role] ?? 0))
+      .filter((u) => (vus.has(u.role) ? false : (vus.add(u.role), true)));
+  }, [utilisateurs]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -142,7 +159,7 @@ export function Formulaire({ onValide }: { onValide: (u: Utilisateur) => void })
         </div>
       </div>
 
-      <ComptesDemo utilisateurs={utilisateurs} onChoisir={remplir} />
+      <ComptesDemo utilisateurs={vitrine} onChoisir={remplir} />
     </div>
   );
 }

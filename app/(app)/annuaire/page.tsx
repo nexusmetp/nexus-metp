@@ -42,6 +42,14 @@ export default function AnnuairePage() {
     return m;
   }, [comptes]);
 
+  /* L'annuaire n'est **pas** borné au périmètre, et c'est délibéré.
+     C'est le répertoire téléphonique du ministère : son objet est justement de
+     joindre quelqu'un qu'on ne connaît pas et dont on ne dépend pas. Le borner
+     reviendrait à le vider de son sens — un agent de Pointe-Noire ne pourrait
+     plus appeler le bureau du courrier à Brazzaville. Il n'expose que ce qu'un
+     annuaire expose : nom, fonction, service, ligne professionnelle — jamais
+     le dossier, jamais la carrière, jamais la rémunération, qui sont, eux,
+     bornés au périmètre. */
   const perimetre = useMemo(
     () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
     [filtres.entite, entitesDb]

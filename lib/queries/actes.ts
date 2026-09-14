@@ -3,11 +3,11 @@
 import { appliquerTransition, calculerEffets, entreeJournal } from "@/lib/actes";
 import type { CodeTransition } from "@/lib/actes";
 import { all, save } from "@/lib/db";
-import { hydraterEntites } from "@/lib/referentiels";
+import { hydraterEntites, hydraterProfils } from "@/lib/referentiels";
 import type { Acte, Affectation, Entite, EntreeJournal, Position, SituationCarriere, Utilisateur } from "@/lib/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useActes, useEntites } from "./base";
+import { useActes, useEntites, useProfils } from "./base";
 
 /* Écriture — cahier §09, §12                                          */
 /* ------------------------------------------------------------------ */
@@ -92,8 +92,14 @@ export function useActesDeLAgent(agentId?: string) {
  */
 export function useArbreVivant(): { pret: boolean; entites: Entite[] } {
   const { data: entites = [], isSuccess, isError } = useEntites();
+  /* Les profils de la maison s'hydratent ici aussi, et pour la même raison :
+     `peut()` est synchrone et interrogé partout. Un profil créé à l'écran
+     qui ne serait pas reposé dans les registres avant le premier rendu
+     laisserait son porteur sans aucun droit, sans que rien ne le dise. */
+  const { data: profils = [], isSuccess: profilsCharges } = useProfils();
   const charge = isSuccess && entites.length > 0;
   useMemo(() => { if (charge) hydraterEntites(entites); }, [entites, charge]);
+  useMemo(() => { if (profilsCharges) hydraterProfils(profils); }, [profils, profilsCharges]);
   // `pret` inclut l'échec : mieux vaut une application dégradée qu'un écran
   // de chargement perpétuel si la base est inaccessible.
   return { pret: charge || isError, entites };

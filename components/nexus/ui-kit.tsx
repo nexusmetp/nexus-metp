@@ -10,7 +10,7 @@ import {
   POSITION_LABELS, PROVENANCE_LABELS, REGLES_CATEGORIE, ROLE_LABELS, STATUT_ACTE_LABELS,
   peut, type ModuleKey,
 } from "@/lib/referentiels";
-import type { CategoriePersonnel, NaturePosition, Provenance, Role, StatutActe } from "@/lib/types";
+import type { CategoriePersonnel, CodeProfil, NaturePosition, Provenance, StatutActe } from "@/lib/types";
 import { TONS, type Ton } from "@/components/nexus/tons";
 import { ArrowDownRight, ArrowUpRight, ShieldOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -146,7 +146,7 @@ export function PageHeader({
  */
 export function GardeModule({
   module, role, children,
-}: { module: ModuleKey; role: Role; children: React.ReactNode }) {
+}: { module: ModuleKey; role: CodeProfil; children: React.ReactNode }) {
   if (peut(role, module)) return <>{children}</>;
   return (
     <div className="grid min-h-[50vh] place-items-center">

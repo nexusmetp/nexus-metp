@@ -7,9 +7,11 @@ import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { useActes, useAgentsProjetes } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
 import {
   DGARH_ID, POSITION_LABELS, REGLES_CATEGORIE, STATUTS_EN_COURS,
   cheminDe, departementDe, descendantsDe, entiteById, gradeById, typeActeById,
+  perimetreVisible,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, joursDepuis } from "@/lib/format";
 import { copier, telecharger, versCSV } from "@/lib/export";
@@ -24,9 +26,28 @@ const infobulle = {
 };
 
 export default function RapportsPage() {
-  const { data: agents, pret } = useAgentsProjetes();
-  const { data: actes = [] } = useActes();
+  const user = useAuth((s) => s.user)!;
+  const { data: tousAgents, pret } = useAgentsProjetes();
+  const { data: tousActes = [] } = useActes();
   const [enCours, setEnCours] = useState<string | null>(null);
+
+  /* C'est ici que la borne compte le plus : un état nominatif s'exporte en
+     un clic, et un fichier parti n'est plus administrable. Tout le reste de
+     la page — tuiles, graphiques, quatre états — se calcule sur `agents` et
+     `actes` ; on les borne donc une seule fois, à la source, plutôt que de
+     compter sur quatre filtres posés au bon endroit. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+
+  const agents = useMemo(
+    () => tousAgents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))),
+    [tousAgents, perimetreDroit]
+  );
+
+  const actes = useMemo(
+    () => tousActes.filter((a) => !perimetreDroit
+      || (a.entiteInstructriceId && perimetreDroit.has(a.entiteInstructriceId))),
+    [tousActes, perimetreDroit]
+  );
 
   const dgarh = useMemo(() => new Set(descendantsDe(DGARH_ID).map((e) => e.id)), []);
 
@@ -157,8 +178,23 @@ export default function RapportsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard ton="bleu" titre="Effectif ministère" valeur={fmtNum(agents.length)} sousTitre={`dont ${fmtNum(stats.enseignants)} enseignants`} icon={Users} />
-        <KpiCard ton="cyan" titre="Effectif DGARH" valeur={fmtNum(stats.dgarhEffectif)} sousTitre="périmètre de la direction générale" icon={BarChart3} />
+        <KpiCard
+          ton="bleu"
+          titre={perimetreDroit ? "Effectif de votre périmètre" : "Effectif ministère"}
+          valeur={fmtNum(agents.length)}
+          sousTitre={`dont ${fmtNum(stats.enseignants)} enseignants`}
+          icon={Users}
+        />
+        <KpiCard
+          ton="cyan"
+          /* Borné, ce chiffre est l'intersection du périmètre et de la DGARH :
+             le dire évite de lire deux fois le même nombre sans comprendre
+             pourquoi il se répète quand on sert déjà à la DGARH. */
+          titre={perimetreDroit ? "Dont rattachés à la DGARH" : "Effectif DGARH"}
+          valeur={fmtNum(stats.dgarhEffectif)}
+          sousTitre={perimetreDroit ? "part de votre périmètre" : "périmètre de la direction générale"}
+          icon={BarChart3}
+        />
         <KpiCard ton="ambre" titre="Délai moyen" valeur={`${stats.delaiMoyen} j`} sousTitre="tous actes signés confondus" icon={Timer} />
         <KpiCard ton="violet" titre="Dossiers ouverts" valeur={fmtNum(stats.ouverts)} sousTitre="en circulation" icon={FileSpreadsheet} />
       </div>

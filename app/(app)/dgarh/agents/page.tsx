@@ -9,7 +9,7 @@ import { useAgentsProjetes, useEntites, useInscrireAgent } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
   CATEGORIES, ENTITES, GRADES, POSITION_LABELS, REGLES_CATEGORIE,
-  cheminDe, descendantsDe, entiteById, gradeById, peut,
+  cheminDe, descendantsDe, entiteById, gradeById, perimetreVisible, peut, visible,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import {
@@ -20,6 +20,9 @@ import {
   PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
 import { Portrait } from "@/components/nexus/portrait";
+import { DialogueAccesOuvert, type AccesOuvert } from "@/components/nexus/acces-ouvert";
+import { GraphiquesAgents } from "./graphiques";
+import { verdictInscription } from "./inscription";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,6 +50,7 @@ export default function AgentsPage() {
   const { data: agents, pret } = useAgentsProjetes();
   const { data: entitesDb = [] } = useEntites();
   const inscrire = useInscrireAgent();
+  const [acces, setAcces] = useState<AccesOuvert | null>(null);
 
   const [selection, setSelection] = useState<AgentProjete | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videAgent | null>(null);
@@ -66,9 +70,19 @@ export default function AgentsPage() {
       NIVEAUX_PORTEURS.includes(e.niveau) && e.actif !== false && perimetre.has(e.id));
   }, [user.entiteId, entitesDb]);
 
+  /* Ce que ce profil a le droit de voir. Le filtre d'entité, lui, sert à
+     réduire encore — il n'élargit jamais : il joue à l'intérieur de cette
+     borne, et « toutes les entités » veut dire « toutes celles que je vois ». */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const entitesFiltrables = useMemo(
-    () => ENTITES.filter((e) => NIVEAUX_PORTEURS.includes(e.niveau) && e.actif !== false),
-    [entitesDb]
+    () => ENTITES.filter((e) =>
+      NIVEAUX_PORTEURS.includes(e.niveau) && e.actif !== false
+      && visible(perimetreDroit, e.id)),
+    [entitesDb, perimetreDroit]
   );
 
   const perimetreFiltre = useMemo(
@@ -77,11 +91,14 @@ export default function AgentsPage() {
   );
 
   const lignes = useMemo(() => agents.filter((a) => {
+    /* La borne d'abord, le filtre ensuite. L'ordre importe : vérifier le droit
+       après le filtre laisserait passer une adresse forgée à la main. */
+    if (!visible(perimetreDroit, a.entiteId)) return false;
     if (perimetreFiltre && !(a.entiteId && perimetreFiltre.has(a.entiteId))) return false;
     if (filtres.categorie !== "all" && a.categorie !== filtres.categorie) return false;
     if (filtres.position !== "all" && a.nature !== filtres.position) return false;
     return true;
-  }), [agents, perimetreFiltre, filtres]);
+  }), [agents, perimetreDroit, perimetreFiltre, filtres]);
 
   const stats = useMemo(() => ({
     total: lignes.length,
@@ -123,7 +140,7 @@ export default function AgentsPage() {
       competences: [],
       langues: ["Français"],
     };
-    await inscrire.mutateAsync({
+    const { compte, provisoire } = await inscrire.mutateAsync({
       agent,
       entiteId: formulaire.entiteId,
       fonction: formulaire.fonction.trim() || (formulaire.enseignant ? "Enseignant" : "Agent"),
@@ -136,6 +153,15 @@ export default function AgentsPage() {
       duration: 8000,
     });
     setFormulaire(null);
+    /* L'accès s'ouvre avec le dossier : il faut donc remettre à l'agent son
+       identifiant et son mot de passe provisoire, sans quoi on a inscrit
+       quelqu'un qui ne peut pas entrer. */
+    setAcces({
+      nom: compte.nomComplet,
+      identifiant: compte.email,
+      provisoire,
+      qualite: `Agent — ${entiteById(formulaire.entiteId)?.sigle ?? ""}`,
+    });
   };
 
   const colonnes: Colonne<AgentProjete>[] = [
@@ -188,13 +214,15 @@ export default function AgentsPage() {
     },
   ];
 
+  const peutInscrire = verdictInscription({ user, redacteur, entitesOuvertes });
+
   if (!pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   return (
     <>
       <PageHeader
         titre="Agents"
-        description="Grade, échelon et affectation résultent des actes : ils ne se corrigent pas ici (§06). Inscrire un agent ouvre un acte de recrutement, qui porte son entrée au fichier."
+        description="C'est ici, et nulle part ailleurs, qu'un agent entre au fichier du personnel — on y choisit la direction ou le service auquel il est affecté. Grade, échelon et affectation résultent ensuite des actes : ils ne se corrigent pas à la main (§06)."
       >
         {redacteur && entitesOuvertes.length > 0 && (
           <Button size="sm" onClick={() => setFormulaire({
@@ -206,12 +234,35 @@ export default function AgentsPage() {
         )}
       </PageHeader>
 
+      {/* Un bouton absent sans explication se lit comme une panne, et c'est
+          exactement ce qui arrive : on cherche « où ajoute-t-on un agent ? »
+          alors que la réponse est « ici, mais pas sous ce profil ». L'écran
+          doit le dire, et dire qui peut le faire. */}
+      {peutInscrire.ok === false && (
+        <div className="rounded-lg border border-dashed bg-muted/30 px-4 py-3">
+          <p className="text-sm font-medium">{peutInscrire.titre}</p>
+          <p className="pt-1 text-xs leading-relaxed text-muted-foreground">{peutInscrire.motif}</p>
+        </div>
+      )}
+
       <RangeeKpi tuiles={[
-        { ton: "bleu", titre: "Agents", valeur: fmtNum(stats.total), sousTitre: `sur ${fmtNum(agents.length)} au ministère`, icon: Users },
+        {
+          ton: "bleu", titre: "Agents", valeur: fmtNum(stats.total), icon: Users,
+          /* On dit le périmètre réel plutôt que « sur 2 422 au ministère », qui
+             laissait croire qu'on regardait un extrait d'un tout accessible. */
+          sousTitre: perimetreDroit === null
+            ? `sur ${fmtNum(agents.length)} au ministère`
+            : `dans votre périmètre — ${entiteById(user.entiteId)?.sigle ?? ""} et ce qu'elle contient`,
+        },
         { ton: "cyan", titre: "Enseignants", valeur: fmtNum(stats.enseignants), sousTitre: "personnel enseignant et d'encadrement", icon: GraduationCap },
         { ton: "emeraude", titre: "En activité", valeur: fmtNum(stats.activite), sousTitre: "position administrative courante", icon: ShieldCheck },
         { ton: "violet", titre: "Dossiers complets", valeur: fmtPct(stats.completude), sousTitre: "moyenne des pièces attendues", icon: UserPlus },
       ]} />
+
+      {/* Les courbes se placent entre les tuiles et le tableau : elles
+          répondent à « de quoi cette sélection est-elle faite », qu'on se pose
+          avant d'ouvrir un dossier, jamais après. Elles suivent le filtre. */}
+      <GraphiquesAgents lignes={lignes} />
 
       <TableauModule<AgentProjete>
         titre="Fichier du personnel"
@@ -397,6 +448,8 @@ export default function AgentsPage() {
           </>
         )}
       </DialogueFormulaire>
+
+      <DialogueAccesOuvert acces={acces} surFermeture={() => setAcces(null)} />
     </>
   );
 }

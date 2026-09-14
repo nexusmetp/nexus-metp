@@ -29,8 +29,12 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Pilotage",
     items: [
-      { href: "/ministre", label: "Espace du ministre", icon: ShieldCheck, mod: "ministre", pret: true },
+      /* Le tableau de bord vient en premier, pour tous — ministre compris.
+         C'est la page qui porte les effectifs, les dossiers et les courbes :
+         celle qu'on ouvre en arrivant. « Pilotage du ministère » pose les
+         quatre questions du ministre et se lit après les chiffres, pas avant. */
       { href: "/dgarh", label: "Tableau de bord", icon: LayoutDashboard, mod: "dgarh", pret: true },
+      { href: "/ministre", label: "Pilotage du ministère", icon: ShieldCheck, mod: "ministre", pret: true },
       { href: "/dgarh/pilotage", label: "Pilotage des directions", icon: Gauge, mod: "pilotage", pret: true },
       { href: "/dgarh/national", label: "Vue nationale", icon: Map, mod: "national", pret: true },
       { href: "/rapports", label: "Rapports et états", icon: BarChart3, mod: "rapports", pret: true },
@@ -39,7 +43,11 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Organisation",
     items: [
-      { href: "/dgarh/organisation", label: "Organisation", icon: Landmark, mod: "organisation", pret: true },
+      /* « Organisation » nommait à la fois le groupe, l'entrée et le module :
+         trois fois le même mot pour trois choses différentes, et personne ne
+         savait où se créait une direction. L'entrée dit maintenant ce qu'on y
+         trouve — le registre des directions, services et bureaux. */
+      { href: "/dgarh/organisation", label: "Directions et services", icon: Landmark, mod: "organisation", pret: true },
       { href: "/dgarh/organigramme", label: "Organigramme", icon: Network, mod: "organigramme", pret: true },
       { href: "/delegations", label: "Délégations et intérims", icon: PenLine, mod: "delegations", pret: true },
     ],
@@ -78,7 +86,6 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Documentation",
     items: [
-      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
       { href: "/textes", label: "Fonds réglementaire", icon: BookMarked, mod: "textes", pret: true },
       { href: "/documents", label: "Documents et GED", icon: FolderOpen, mod: "documents", pret: true },
       { href: "/redaction", label: "Rédaction", icon: FileSignature, mod: "redaction", pret: true },
@@ -103,7 +110,13 @@ const GROUPES: { titre: string; items: NavItem[] }[] = [
   {
     titre: "Supervision",
     items: [
+      /* Les référentiels sont les nomenclatures du système — corps, grades,
+         échelons, catégories — et non de la documentation. Les ranger ici,
+         c'est les mettre là où on les cherche : avec le journal et les profils,
+         entre les mains de qui règle la plateforme. */
+      { href: "/referentiels", label: "Référentiels", icon: Library, mod: "referentiels", pret: true },
       { href: "/journal", label: "Journal d'audit", icon: ScrollText, mod: "journal", pret: true },
+      { href: "/profils", label: "Profils d'accès", icon: ShieldCheck, mod: "profils", pret: true },
       { href: "/administration", label: "Système", icon: Settings, mod: "administration", pret: true },
     ],
   },

@@ -13,6 +13,7 @@ import {
   DEVISE, SEUIL_ABSENCE_PROLONGEE, statutEffectif,
 } from "@/lib/referentiels";
 import { fmtNum, fmtPct } from "@/lib/format";
+import { useAuth } from "@/lib/store";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import { Jauge, RangeeKpi } from "@/components/nexus/module";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import type { RemunerationContractuelle } from "@/lib/types";
 import { AUJOURDHUI, anomalies, journeeDe, resumerJournee } from "../presences/calculs";
 import { total as coutTotal } from "../remuneration/agregats";
 import { AXES } from "./effectifs";
+import { Approbations } from "./approbations";
 
 /* ------------------------------------------------------------------ */
 /* L'espace du ministre — quatre questions, quatre réponses            */
@@ -70,6 +72,7 @@ function Question({
 }
 
 export default function MinistrePage() {
+  const user = useAuth((s) => s.user)!;
   const { data: agents, pret } = useAgentsProjetes();
   const { data: postes = [] } = usePostes();
   const { data: pointages = [] } = usePointages();
@@ -151,13 +154,20 @@ export default function MinistrePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titre="Espace du ministre"
+        titre="Pilotage du ministère"
         description={
-          "Les quatre questions auxquelles la plateforme doit savoir répondre, et l'état de chacune. "
-          + "Quand un chiffre manque, l'écran dit pourquoi plutôt que d'afficher un blanc — et chaque "
-          + "réponse mène au module qui la produit, pour qu'elle puisse être vérifiée."
+          "Les quatre questions auxquelles la plateforme doit savoir répondre à l'échelle du "
+          + "ministère, et l'état de chacune. Quand un chiffre manque, l'écran dit pourquoi plutôt "
+          + "que d'afficher un blanc — et chaque réponse mène au module qui la produit, pour "
+          + "qu'elle puisse être vérifiée. Cet écran n'appartient à personne : il s'ouvre par le "
+          + "profil d'accès, comme tous les autres."
         }
       />
+
+      {/* Ce qui appelle une décision passe avant ce qui appelle une lecture :
+          un tableau de bord qui enterre une signature attendue sous quatre
+          graphiques apprend surtout à ne pas le lire. */}
+      <Approbations utilisateur={user} />
 
       <RangeeKpi tuiles={[
         { ton: "bleu", titre: "Effectif du ministère", valeur: fmtNum(agents.length), sousTitre: "toutes catégories confondues", icon: Users, href: "/dgarh/agents" },

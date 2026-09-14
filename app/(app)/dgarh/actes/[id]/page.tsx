@@ -12,7 +12,9 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { calculerEffets, effetsVides, transitionsPour } from "@/lib/actes";
-import { STATUT_ACTE_LABELS, cheminDe, entiteById, gradeById, typeActeById } from "@/lib/referentiels";
+import {
+  STATUT_ACTE_LABELS, cheminDe, entiteById, gradeById, perimetreVisible, typeActeById,
+} from "@/lib/referentiels";
 import { fmtDate, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
 import { DocumentsLies } from "@/components/nexus/documents-lies";
@@ -55,12 +57,42 @@ export default function ActePage() {
 
   const actions = useMemo(() => (acte ? transitionsPour(acte, user) : []), [acte, user]);
 
+  /* Même règle qu'au dossier d'agent : borner le registre sans borner
+     l'adresse ne borne rien. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+  const horsPerimetre = !!acte
+    && !!perimetreDroit
+    && !(acte.entiteInstructriceId && perimetreDroit.has(acte.entiteInstructriceId));
+
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
   if (!acte) {
     return (
       <>
         <PageHeader titre="Acte introuvable" />
         <Button variant="outline" asChild><Link href="/dgarh/actes"><ArrowLeft className="mr-2 h-4 w-4" /> Retour</Link></Button>
+      </>
+    );
+  }
+
+  if (horsPerimetre) {
+    return (
+      <>
+        <PageHeader
+          titre="Acte hors de votre périmètre"
+          description="Ce dossier est instruit par une autre entité que celle que vous administrez."
+        />
+        <Card>
+          <CardContent className="space-y-3 p-6 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              Le registre que vous tenez est celui des actes instruits dans votre périmètre.
+              Celui-ci ne s'y trouve pas : il appartient au bureau qui l'instruit, et c'est à lui
+              qu'il faut s'adresser.
+            </p>
+            <Button variant="outline" asChild>
+              <Link href="/dgarh/actes"><ArrowLeft className="mr-2 h-4 w-4" /> Retour au registre</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </>
     );
   }

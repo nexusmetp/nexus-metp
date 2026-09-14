@@ -1,4 +1,4 @@
-import type { Communicabilite, Role, SerieArchive, SortFinal } from "@/lib/types";
+import type { CodeProfil, Communicabilite, Role, SerieArchive, SortFinal } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
 /* Plan de classement des archives — cahier §14                        */
@@ -139,4 +139,4 @@ export const duaEchue = (echeance: string, aujourdHui = new Date()) =>
  */
 export const ROLES_ELIMINATION: Role[] = ["ADMIN_SYSTEME", "CHEF_SERVICE", "CHEF_BUREAU"];
 
-export const peutEliminer = (role: Role) => ROLES_ELIMINATION.includes(role);
+export const peutEliminer = (role: CodeProfil) => (ROLES_ELIMINATION as string[]).includes(role);

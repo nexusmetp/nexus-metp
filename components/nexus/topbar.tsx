@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import {
-  Bell, FileClock, LifeBuoy, LogOut, Megaphone, Moon, RefreshCw, Search, Sun,
+  Bell, FileClock, KeyRound, LifeBuoy, LogOut, Megaphone, Moon, RefreshCw, Search, Sun,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/store";
@@ -14,6 +14,7 @@ import {
   useActes, useAgents, useAnnonces, useResetData, useTickets,
 } from "@/lib/queries";
 import { Armoiries } from "@/components/nexus/logo";
+import { DialogueMotDePasse } from "@/components/nexus/mot-de-passe";
 import { FilAssistance } from "@/components/ia/fil-assistance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import { fmtDate, initiales, joursDepuis } from "@/lib/format";
 export function Topbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const [motDePasse, setMotDePasse] = useState(false);
   const { theme, setTheme } = useTheme();
   const { data: agents = [] } = useAgents();
   const { data: actes = [] } = useActes();
@@ -200,6 +202,15 @@ export function Topbar() {
               <div className="text-xs font-normal text-muted-foreground">{user.fonction}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {/* Changer son mot de passe ne dépend d'aucun profil : c'est le
+                menu de la personne, pas un module qu'on peut lui fermer. */}
+            <DropdownMenuItem onClick={() => setMotDePasse(true)}>
+              <KeyRound className="mr-2 h-4 w-4" /> Changer mon mot de passe
+              {user.motDePasseAChanger && (
+                <Badge variant="outline" className="ml-auto text-[9px]">à faire</Badge>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() =>
                 reset.mutate(undefined, {
@@ -222,6 +233,15 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Un compte dont le mot de passe est encore le provisoire ne fait rien
+          d'autre avant d'en avoir changé : celui qui le lui a remis le connaît,
+          et tant qu'il n'a pas changé, l'accès n'est pas personnel. */}
+      <DialogueMotDePasse
+        ouvert={motDePasse || !!user.motDePasseAChanger}
+        force={!!user.motDePasseAChanger}
+        surFermeture={() => setMotDePasse(false)}
+      />
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Nom, prénom ou matricule…" />

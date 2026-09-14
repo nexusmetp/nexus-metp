@@ -4,7 +4,7 @@ import { projeterTous } from "@/lib/carriere";
 import type { Historique } from "@/lib/carriere";
 import { all, one, remove, resetDB, save } from "@/lib/db";
 import type { StoreName } from "@/lib/db";
-import type { Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature, CarteProfessionnelle, Conge, Conversation, Corps, Delegation, DocumentEmis, Entite, EntreeJournal, Grade, InscriptionFormation, Message, MessageTicket, Notification, OffreFormation, Position, Poste, SituationCarriere, TexteReglementaire, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive } from "@/lib/types";
+import type { Acte, Affectation, Agent, AgentProjete, Annonce, BesoinPersonnel, CampagneRecrutement, Candidature, CarteProfessionnelle, Conge, Conversation, Corps, Delegation, DocumentEmis, Entite, EntreeJournal, Grade, InscriptionFormation, Message, MessageTicket, Notification, OffreFormation, Position, Poste, SituationCarriere, TexteReglementaire, Ticket, Utilisateur, Versement, ArticleArchive, CommunicationArchive, ProfilAcces } from "@/lib/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
@@ -23,6 +23,7 @@ export const usePositions = () => liste<Position>("positions");
 export const useActes = () => liste<Acte>("actes");
 export const useBesoins = () => liste<BesoinPersonnel>("besoins");
 export const useUtilisateurs = () => liste<Utilisateur>("utilisateurs");
+export const useProfils = () => liste<ProfilAcces>("profils");
 export const useJournal = () => liste<EntreeJournal>("journal");
 export const useNotifications = () => liste<Notification>("notifications");
 export const useTickets = () => liste<Ticket>("tickets");

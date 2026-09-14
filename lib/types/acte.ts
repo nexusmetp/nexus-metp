@@ -58,6 +58,16 @@ export interface CibleActe {
   motif?: string;
   /** Date d'effet de la décision, distincte de la date de signature. */
   dateEffet?: string;
+  /**
+   * Le profil d'accès que la nomination confère, quand l'acte en est une.
+   *
+   * Il voyage dans l'acte parce qu'une nomination soumise à l'approbation du
+   * ministre s'applique **à la notification**, parfois des jours après avoir
+   * été établie : sans cela, il faudrait redemander au ministre un
+   * renseignement qu'il n'a pas à fournir — il approuve une nomination, pas
+   * un formulaire.
+   */
+  profil?: string;
 }
 
 export interface Acte {

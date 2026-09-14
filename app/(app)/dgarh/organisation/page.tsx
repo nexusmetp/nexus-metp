@@ -5,10 +5,14 @@ import Link from "next/link";
 import {
   Building2, ChevronRight, Network, Pencil, Plus, ShieldCheck, UserPlus,
 } from "lucide-react";
-import { useAgentsProjetes, useEntites, useUtilisateurs } from "@/lib/queries";
 import {
-  ENTITES, NIVEAU_LABELS, PROVENANCE_LABELS, ROLE_LABELS,
-  cheminDe, descendantsDe, enfantsDe, entiteById,
+  useAgentsProjetes, useEntites, useHabilitations, useUtilisateurs,
+} from "@/lib/queries";
+import { useAuth } from "@/lib/store";
+import {
+  ENTITES, NIVEAU_LABELS, PROVENANCE_LABELS, RANG_HIERARCHIQUE, ROLE_LABELS,
+  niveauxCreablesSous, perimetreAdministrable,
+  cheminDe, descendantsDe, enfantsDe, entiteById, habilitationsEnVigueur, peut,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
@@ -16,6 +20,8 @@ import {
   LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
 import { useGestionEntite } from "@/components/nexus/gestion-entite";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Responsables, lignesResponsables } from "./responsables";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +31,8 @@ export default function OrganisationPage() {
   const { data: agents, pret } = useAgentsProjetes();
   const { data: comptes = [] } = useUtilisateurs();
   const { data: entitesDb = [] } = useEntites();
+  const { data: habilitations = [] } = useHabilitations();
+  const user = useAuth((s) => s.user)!;
 
   const [selection, setSelection] = useState<Entite | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ niveau: "all", provenance: "all" });
@@ -43,21 +51,78 @@ export default function OrganisationPage() {
     return { direct, total };
   }, [agents, entitesDb]);
 
+  /**
+   * Le responsable d'une entité — et non le premier compte venu.
+   *
+   * La carte se construisait jusqu'ici en prenant le premier compte rattaché à
+   * l'entité, ce qui désignait un agent au hasard : l'écran affichait son nom
+   * en face de « Responsable », et le bouton de désignation disparaissait
+   * parce qu'il croyait la place prise. Depuis que chaque agent a un compte,
+   * cela concernait presque toutes les entités.
+   *
+   * Est responsable celui dont le profil **commande** — rang supérieur à celui
+   * d'un agent — et dont l'habilitation est en vigueur aujourd'hui. À égalité,
+   * le rang le plus élevé l'emporte.
+   */
   const responsableDe = useMemo(() => {
+    const aujourdhui = new Date().toISOString().slice(0, 10);
+    const socle = RANG_HIERARCHIQUE.AGENT ?? 10;
     const m = new Map<string, Utilisateur>();
-    comptes.forEach((c) => { if (!m.has(c.entiteId)) m.set(c.entiteId, c); });
+    comptes
+      .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) > socle)
+      .filter((c) => habilitationsEnVigueur(habilitations, c.id, aujourdhui).length > 0)
+      .forEach((c) => {
+        const tenant = m.get(c.entiteId);
+        if (!tenant || (RANG_HIERARCHIQUE[c.role] ?? 0) > (RANG_HIERARCHIQUE[tenant.role] ?? 0)) {
+          m.set(c.entiteId, c);
+        }
+      });
     return m;
-  }, [comptes]);
+  }, [comptes, habilitations]);
 
-  const lignes = useMemo(() => ENTITES
+  /* Le registre ne montre que ce qu'on administre. C'est une autre borne que
+     celle des listes nominatives : ici la question n'est pas « de qui ai-je le
+     droit de lire le dossier » mais « où ai-je qualité pour créer et
+     désigner ». Montrer les cent cinquante et une entités à un chef de
+     service lui offrait cent quarante-sept boutons « Désigner » dont chacun
+     se solde par un refus — et un écran qui propose ce qu'il refuse enseigne
+     surtout à se méfier de l'écran. L'organigramme complet reste consultable :
+     c'est l'objet de la page voisine. */
+  const perimetreAdmin = useMemo(
+    () => perimetreAdministrable(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
+  /* Créer et désigner est une écriture. Le ministre lit ce registre — il doit
+     pouvoir consulter l'organisation qu'il dirige — mais il n'y crée rien :
+     l'administration du personnel de toutes les structures relève de la
+     DGARH. Lui laisser le bouton lui promettait un geste qui aurait été
+     refusé au moment de l'enregistrement, ce qui est la pire des façons de
+     dire non. */
+  const redacteur = peut(user.role, "organisation", "W");
+
+  const administrees = useMemo(
+    () => (perimetreAdmin === null ? ENTITES : ENTITES.filter((e) => perimetreAdmin.has(e.id))),
+    [perimetreAdmin, entitesDb]
+  );
+
+  const responsables = useMemo(() => lignesResponsables({
+    entites: administrees,
+    comptes,
+    habilitations,
+    effectifs: effectifs.total,
+    aujourdhui: new Date().toISOString().slice(0, 10),
+  }), [comptes, habilitations, effectifs, administrees]);
+
+  const lignes = useMemo(() => administrees
     .filter((e) => filtres.niveau === "all" || e.niveau === filtres.niveau)
     .filter((e) => filtres.provenance === "all" || e.provenance === filtres.provenance)
     .sort((a, b) => cheminDe(a.id).length - cheminDe(b.id).length || a.sigle.localeCompare(b.sigle)),
-    [filtres, entitesDb]);
+    [filtres, administrees]);
 
-  const creees = ENTITES.filter((e) => e.creePar).length;
-  const aVerifier = ENTITES.filter((e) => e.provenance === "A_VERIFIER").length;
-  const sansChef = ENTITES.filter((e) => !responsableDe.has(e.id)).length;
+  const creees = administrees.filter((e) => e.creePar).length;
+  const aVerifier = administrees.filter((e) => e.provenance === "A_VERIFIER").length;
+  const sansChef = administrees.filter((e) => !responsableDe.has(e.id)).length;
 
   const colonnes: Colonne<Entite>[] = [
     {
@@ -107,24 +172,63 @@ export default function OrganisationPage() {
   return (
     <>
       <PageHeader
-        titre="Organisation"
-        description="Créer une direction, la rattacher, en nommer le responsable. Une entité créée ici entre aussitôt dans le calcul des périmètres : elle décide de ce que chacun voit (§11)."
+        titre="Directions et services"
+        description={
+          "Le registre de l'organigramme, et le seul endroit où l'on crée. Direction, "
+          + "service, bureau, établissement : c'est toujours la même création — une entité — "
+          + "et c'est son niveau qui change, avec ce qu'elle peut contenir et qui peut la "
+          + "diriger. Une entité créée ici entre aussitôt dans le calcul des périmètres : "
+          + "elle décide de ce que chacun voit (§11)."
+        }
       >
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dgarh/pilotage">Pilotage</Link>
-        </Button>
-        <Button size="sm" onClick={() => gestion.ouvrirCreation()}>
-          <Plus className="mr-1.5 h-4 w-4" /> Créer une entité
-        </Button>
+        {/* L'administrateur système n'a pas le pilotage : lui montrer le bouton
+            ne ferait que le mener à un refus d'accès. */}
+        {peut(user.role, "pilotage") && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dgarh/pilotage">Pilotage</Link>
+          </Button>
+        )}
+        {redacteur && (
+          <Button size="sm" onClick={() => gestion.ouvrirCreation()}>
+            <Plus className="mr-1.5 h-4 w-4" /> Créer une entité
+          </Button>
+        )}
       </PageHeader>
 
       <RangeeKpi tuiles={[
-        { ton: "bleu", titre: "Entités", valeur: ENTITES.length, sousTitre: `dont ${fmtNum(creees)} créées dans l'outil`, icon: Network, href: "/dgarh/organigramme" },
-        { ton: "cyan", titre: "Directions", valeur: ENTITES.filter((e) => ["DIRECTION", "DIRECTION_GENERALE", "CABINET"].includes(e.niveau)).length, sousTitre: "centrales, générales et cabinet", icon: Building2, href: "/dgarh/pilotage" },
-        { ton: "rose", titre: "Sans responsable", valeur: sansChef, sousTitre: "aucun compte rattaché", icon: UserPlus },
+        {
+          ton: "bleu",
+          /* « Que vous administrez » ne se dit que si l'on administre
+             quelque chose : le ministre voit les cent cinquante et une, et
+             n'en administre aucune. */
+          titre: redacteur && perimetreAdmin ? "Entités que vous administrez" : "Entités",
+          valeur: administrees.length,
+          sousTitre: `dont ${fmtNum(creees)} créées dans l'outil`,
+          icon: Network, href: "/dgarh/organigramme",
+        },
+        {
+          ton: "cyan", titre: "Directions",
+          valeur: administrees.filter((e) => ["DIRECTION", "DIRECTION_GENERALE", "CABINET"].includes(e.niveau)).length,
+          sousTitre: "centrales, générales et cabinet", icon: Building2, href: "/dgarh/pilotage",
+        },
+        { ton: "rose", titre: "Sans responsable", valeur: sansChef, sousTitre: "personne n'y commande ni n'y inscrit", icon: UserPlus },
         { ton: "ambre", titre: "À confirmer", valeur: aVerifier, sousTitre: "provenance non établie par un texte", icon: ShieldCheck, href: "/referentiels" },
       ]} />
 
+      <Tabs defaultValue="arborescence" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="arborescence">Arborescence</TabsTrigger>
+          <TabsTrigger value="responsables">Qui dirige quoi</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="responsables">
+          <Responsables
+            lignes={responsables}
+            surDesignation={redacteur ? (e) => gestion.ouvrirNomination(e) : undefined}
+          />
+        </TabsContent>
+
+        <TabsContent value="arborescence">
       <TableauModule<Entite>
         titre="Arborescence"
         description="Cliquez une ligne pour la prévisualiser, la modifier ou lui nommer un responsable."
@@ -143,6 +247,8 @@ export default function OrganisationPage() {
         ligneActive={selection?.id}
         parPage={14}
       />
+        </TabsContent>
+      </Tabs>
 
       <PanneauDetail
         ouvert={!!selection}
@@ -156,20 +262,24 @@ export default function OrganisationPage() {
             {selection.actif === false && <Badge variant="outline" className="text-[10px]">désactivée</Badge>}
           </>
         )}
-        actions={selection && (
+        actions={selection && redacteur && (
           <>
             <Button variant="outline" size="sm" onClick={() => gestion.basculerActivite(selection)}>
               {selection.actif === false ? "Réactiver" : "Désactiver"}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirCreation(c.id); }}>
-              <Plus className="mr-1.5 h-3.5 w-3.5" /> Sous-entité
-            </Button>
+            {/* « Sous-entité » n'a de sens que si le niveau en admet une :
+                un bureau et un établissement sont des mailles terminales. */}
+            {niveauxCreablesSous(selection.id).length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirCreation(c.id); }}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" /> Sous-entité
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirEdition(c); }}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
             </Button>
             {!chef && (
               <Button size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirNomination(c); }}>
-                <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Nommer le responsable
+                <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Désigner le responsable
               </Button>
             )}
           </>
@@ -201,8 +311,9 @@ export default function OrganisationPage() {
                 </>
               ) : (
                 <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                  Aucun compte n'est rattaché à cette entité. Tant qu'il n'y en a pas, personne ne peut
-                  y instruire de dossier ni y inscrire de personnel.
+                  Personne n'est à la tête de cette entité — des agents peuvent y servir, mais
+                  aucun n'y commande. Tant qu'il n'y a pas de responsable, aucun agent ne peut y
+                  être inscrit et aucun profil n'y être attribué : la chaîne s'arrête ici.
                 </p>
               )}
             </Section>

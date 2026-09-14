@@ -11,6 +11,7 @@ import { useAgentsProjetes, useEnregistrerPoste, useEntites, usePostes } from "@
 import { useAuth } from "@/lib/store";
 import {
   ENTITES, GRADES, NIVEAU_LABELS, cheminDe, descendantsDe, entiteById, gradeById, peut,
+  bornerPerimetre, perimetreVisible,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -68,9 +69,19 @@ export default function TableauDesEmploisPage() {
     return m;
   }, [agents]);
 
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le filtre
+     d'entité réduit à l'intérieur de cette borne ; il ne l'élargit jamais. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
-    [filtres.entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))
+    ),
+    [perimetreDroit, filtres.entite, entitesDb]
   );
 
   const lignes = useMemo(() => postes
@@ -91,14 +102,21 @@ export default function TableauDesEmploisPage() {
     };
   }, [postes, perimetre]);
 
-  /* Le graphe qui compte : où sont les emplois vides. */
+  /* Le graphe qui compte : où sont les emplois vides.
+     Il se regroupe à l'échelle de celui qui regarde. Le ministère se lit par
+     direction ; un chef de service dont tous les emplois tiennent dans une
+     seule direction n'y lirait qu'une barre — on descend alors à l'entité
+     qui porte le poste, qui est la maille où il peut agir. */
   const parEntite = useMemo(() => {
     const m = new Map<string, { nom: string; occupe: number; vacant: number; gele: number }>();
-    postes.forEach((p) => {
+    const dansLeChamp = perimetreDroit ? postes.filter((p) => perimetreDroit.has(p.entiteId)) : postes;
+    dansLeChamp.forEach((p) => {
       const chaine = cheminDe(p.entiteId);
-      const tete = chaine.find((e) =>
-        ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
-         "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE"].includes(e.niveau));
+      const tete = perimetreDroit
+        ? entiteById(p.entiteId)
+        : chaine.find((e) =>
+          ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
+           "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE"].includes(e.niveau));
       if (!tete) return;
       const cur = m.get(tete.id) ?? { nom: tete.sigle, occupe: 0, vacant: 0, gele: 0 };
       if (p.statut === "OCCUPE") cur.occupe++;
@@ -109,13 +127,14 @@ export default function TableauDesEmploisPage() {
     return [...m.values()]
       .sort((a, b) => (b.vacant + b.gele) - (a.vacant + a.gele))
       .slice(0, 10);
-  }, [postes]);
+  }, [postes, perimetreDroit]);
 
   const entitesPorteuses = useMemo(() => ENTITES.filter((e) =>
-    postes.some((p) => descendantsDe(e.id).some((x) => x.id === p.entiteId))
+    (!perimetreDroit || perimetreDroit.has(e.id))
+    && postes.some((p) => descendantsDe(e.id).some((x) => x.id === p.entiteId))
     && ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
         "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE", "SERVICE", "BUREAU", "ETABLISSEMENT"].includes(e.niveau)),
-    [postes, entitesDb]);
+    [postes, entitesDb, perimetreDroit]);
 
   const colonnes: Colonne<Poste>[] = [
     {
@@ -236,7 +255,7 @@ export default function TableauDesEmploisPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Où sont les emplois vides</CardTitle>
-          <CardDescription>Les dix entités qui cumulent le plus de postes vacants et gelés.</CardDescription>
+          <CardDescription>Les entités qui cumulent le plus de postes vacants et gelés.</CardDescription>
         </CardHeader>
         <CardContent className="h-[300px] pt-2">
           <ResponsiveContainer width="100%" height="100%">

@@ -7,7 +7,7 @@ import { ArrowLeft, CalendarClock, FileText, GitBranch, GraduationCap, Landmark,
 import { useActesDeLAgent, useAgents, useHistorique } from "@/lib/queries";
 import { decisionsAVenir, ligneDeVie, projeter } from "@/lib/carriere";
 import {
-  REGLES_CATEGORIE, cheminDe, entiteById, gradeById, typeActeById,
+  REGLES_CATEGORIE, cheminDe, entiteById, gradeById, perimetreVisible, typeActeById,
 } from "@/lib/referentiels";
 import { fmtDate } from "@/lib/format";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/nexus/ui-kit";
 import { Portrait } from "@/components/nexus/portrait";
 import { DocumentsLies } from "@/components/nexus/documents-lies";
+import { AccesAgent } from "@/components/nexus/acces-agent";
 import { useAuth } from "@/lib/store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,18 @@ export default function DossierAgentPage() {
   const evenements = useMemo(() => (agent ? ligneDeVie(agent.id, historique) : []), [agent, historique]);
   const aVenir = useMemo(() => (agent ? decisionsAVenir(agent.id, historique) : []), [agent, historique]);
 
+  /* Borner la liste et laisser l'adresse ouverte ne borne rien : le dossier
+     d'un agent d'une autre direction s'atteindrait en changeant l'identifiant
+     dans la barre du navigateur. Son propre dossier fait exception — on ne
+     s'interdit pas à soi-même. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+  /* L'entité vient de la projection : elle est portée par l'affectation en
+     vigueur, pas par la fiche de l'agent. */
+  const horsPerimetre = !!a
+    && user.agentId !== a.id
+    && !!perimetreDroit
+    && !(a.entiteId && perimetreDroit.has(a.entiteId));
+
   if (isLoading || !pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   if (!a) {
@@ -51,6 +64,33 @@ export default function DossierAgentPage() {
       <>
         <PageHeader titre="Dossier introuvable" />
         <Button variant="outline" asChild><Link href="/dgarh/agents"><ArrowLeft className="mr-2 h-4 w-4" /> Retour</Link></Button>
+      </>
+    );
+  }
+
+  if (horsPerimetre) {
+    return (
+      <>
+        <PageHeader
+          titre="Dossier hors de votre périmètre"
+          description="Ce dossier relève d'une autre entité que celle que vous administrez."
+        />
+        <Card>
+          <CardContent className="space-y-3 p-6 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              Vous administrez {entiteById(user.entiteId)?.sigle ?? "votre entité"} et ce qu'elle
+              contient. Le dossier demandé n'en fait pas partie ; il n'est donc pas ouvert, et la
+              tentative n'est pas une faute — l'adresse a pu être transmise.
+            </p>
+            <p>
+              Si vous avez besoin de cette pièce, demandez-la au chef de l'entité concernée, ou
+              faites-vous habiliter sur un périmètre plus large.
+            </p>
+            <Button variant="outline" asChild>
+              <Link href="/dgarh/agents"><ArrowLeft className="mr-2 h-4 w-4" /> Retour aux agents</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </>
     );
   }
@@ -114,6 +154,8 @@ export default function DossierAgentPage() {
           </CardContent>
         </Card>
       )}
+
+      <AccesAgent agent={agent} utilisateur={user} />
 
       <Card>
         <CardHeader className="pb-3">

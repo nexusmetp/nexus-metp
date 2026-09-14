@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, FileCheck2, Plus, Timer } from "lucide-react";
 import { useActes, useAgents } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
 import {
-  STATUTS_EN_COURS, STATUT_ACTE_LABELS, TYPES_ACTE, entiteById, typeActeById,
+  STATUTS_EN_COURS, STATUT_ACTE_LABELS, TYPES_ACTE, entiteById, perimetreVisible,
+  typeActeById,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
@@ -18,10 +20,22 @@ import { cn } from "@/lib/utils";
 import type { Acte } from "@/lib/types";
 
 export default function ActesPage() {
-  const { data: actes = [], isLoading } = useActes();
+  const user = useAuth((s) => s.user)!;
+  const { data: tousActes = [], isLoading } = useActes();
   const { data: agents = [] } = useAgents();
   const [filtres, setFiltres] = useState<Record<string, string>>({ statut: "en_cours" });
   const [selection, setSelection] = useState<Acte | null>(null);
+
+  /* Le registre qu'on tient est celui qu'on instruit. Un chef de service qui
+     verrait circuler les actes des autres directions lirait des noms qu'il
+     n'a pas à connaître, et son compteur de retards ne parlerait pas de lui. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+
+  const actes = useMemo(
+    () => tousActes.filter((a) => !perimetreDroit
+      || (a.entiteInstructriceId && perimetreDroit.has(a.entiteInstructriceId))),
+    [tousActes, perimetreDroit]
+  );
 
   const nomAgent = useMemo(() => {
     const m = new Map(agents.map((a) => [a.id, `${a.prenom} ${a.nom}`]));

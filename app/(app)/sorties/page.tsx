@@ -10,7 +10,7 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   COULEUR_SORTIE, ENTITES, NATURE_SORTIE_LABELS, STATUT_SORTIE_LABELS,
-  descendantsDe, entiteById, peut, statutEffectif,
+  bornerPerimetre, descendantsDe, perimetreVisible, entiteById, peut, statutEffectif,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -67,18 +67,46 @@ export default function SortiesPage() {
 
   const agentDe = useMemo(() => new Map(agents.map((a) => [a.id, a])), [agents]);
 
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le
+     filtre d'entité réduit à l'intérieur de cette borne ; il ne l'élargit
+     jamais, et « toutes les entités » veut dire « toutes celles que je
+     vois ». Une règle de confidentialité laissée au menu déroulant se
+     contourne en changeant le menu déroulant. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
-    [filtres.entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))
+    ),
+    [perimetreDroit, filtres.entite, entitesDb]
   );
 
   /* Le statut est recalculé à l'affichage. Un enregistrement vieillit : une
      sortie « autorisée » dont le retour était prévu la semaine dernière est
      un retard, et personne n'est venu le déclarer. */
-  const vues = useMemo<SortieVue[]>(() => sorties.map((s) => ({
-    ...s,
-    effectif: statutEffectif(s, AUJOURDHUI),
-  })), [sorties]);
+  const vues = useMemo<SortieVue[]>(() => sorties
+    /* Bornées dès la projection : les tuiles comptent sur `vues`, et les
+       laisser compter le ministère entier au-dessus d'une liste bornée
+       apprendrait au lecteur, par le compteur, ce que la liste lui cache. */
+    .filter((s) => {
+      if (!perimetreDroit) return true;
+      const a = agentDe.get(s.agentId);
+      return !!a?.entiteId && perimetreDroit.has(a.entiteId);
+    })
+    .map((s) => ({ ...s, effectif: statutEffectif(s, AUJOURDHUI) })),
+    [sorties, perimetreDroit, agentDe]);
+
+  /* On n'autorise une sortie que pour un agent qu'on administre : proposer
+     tout le ministère dans la liste déroulante ferait écrire, depuis un
+     service, une autorisation au nom d'une direction voisine. */
+  const agentsVus = useMemo(
+    () => agents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))),
+    [agents, perimetreDroit]
+  );
 
   const lignes = useMemo(() => vues
     .filter((s) => filtres.statut === "all" || s.effectif === filtres.statut)
@@ -220,7 +248,7 @@ export default function SortiesPage() {
         }
       >
         {redacteur && (
-          <Button size="sm" onClick={() => setFormulaire({ ...videSortie, agentId: agents[0]?.id ?? "" })}>
+          <Button size="sm" onClick={() => setFormulaire({ ...videSortie, agentId: agentsVus[0]?.id ?? "" })}>
             <Plus className="mr-1.5 h-4 w-4" /> Enregistrer une autorisation
           </Button>
         )}
@@ -347,7 +375,7 @@ export default function SortiesPage() {
             <ChampSelect
               label="Agent" obligatoire valeur={formulaire.agentId}
               surChangement={(v) => setFormulaire({ ...formulaire, agentId: v })}
-              options={agents.slice(0, 400).map((a) => ({ valeur: a.id, libelle: `${a.matricule} — ${a.prenom} ${a.nom}` }))}
+              options={agentsVus.slice(0, 400).map((a) => ({ valeur: a.id, libelle: `${a.matricule} — ${a.prenom} ${a.nom}` }))}
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <ChampTexte label="Ville de destination" obligatoire valeur={formulaire.destination}

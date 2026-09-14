@@ -1,3 +1,4 @@
+import type { NiveauEntite } from "./organisation";
 import type { ReglagesIA } from "./ia";
 import type { Acte } from "./acte";
 import type { Agent } from "./agent";
@@ -141,6 +142,16 @@ export interface ParametresSysteme {
   seuilAbsenceProlongee?: number;
   /** Délai cible de réponse à un ticket, par priorité, en heures. */
   delaiTicket: Record<PrioriteTicket, number>;
+  /**
+   * Les niveaux d'entité dont la nomination du responsable est soumise à
+   * l'approbation du ministre.
+   *
+   * Absent = jamais réglé : le défaut s'applique (les directions et au-dessus).
+   * Une liste vide veut dire « aucune approbation », et c'est un choix qui se
+   * lit comme tel — non une lacune. Voir `lib/referentiels/approbation.ts`,
+   * qui explique pourquoi tout approuver revient à ne rien approuver.
+   */
+  niveauxSoumisApprobation?: NiveauEntite[];
   /** Droits surchargés par l'administrateur, par rôle et par module. */
   droitsSurcharges: Record<string, Record<string, "R" | "W" | "N">>;
   messagerieActive: boolean;

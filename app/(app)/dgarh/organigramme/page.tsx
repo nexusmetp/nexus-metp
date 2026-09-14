@@ -5,7 +5,7 @@ import { ChevronRight, Landmark, Network, ShieldCheck, Users } from "lucide-reac
 import {
   DGARH_ID, ENTITES, NIVEAU_LABELS, PROVENANCE_LABELS, cheminDe, descendantsDe, enfantsDe, entiteById,
 } from "@/lib/referentiels";
-import { useAgentsProjetes } from "@/lib/queries";
+import { useAgentsProjetes, useEntites } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
 import { RangeeKpi } from "@/components/nexus/module";
@@ -117,13 +117,19 @@ function Noeud({
 
 export default function OrganigrammePage() {
   const { direct, total, pret } = useEffectifs();
+  /* Non pour lire la liste — `ENTITES` est le registre vivant — mais pour que
+     les comptes se refassent quand une entité est créée ou désactivée. */
+  const { data: entites = [] } = useEntites();
   const [fiche, setFiche] = useState<Entite | null>(null);
 
+  /* Recalculé quand l'arbre bouge : une liste de dépendances vide figeait ce
+     compte au premier rendu, et une entité créée depuis l'application n'y
+     entrait qu'au rechargement de la page. */
   const compteProvenance = useMemo(() => {
     const c: Record<Provenance, number> = { TEXTE: 0, A_VERIFIER: 0, RECOMMANDATION: 0 };
     descendantsDe(DGARH_ID).forEach((e) => c[e.provenance]++);
     return c;
-  }, []);
+  }, [entites]);
 
   const dgarh = entiteById(DGARH_ID)!;
   const hors = ENTITES.filter((e) => e.parentId === "ENT-METP" && e.id !== DGARH_ID);
@@ -138,10 +144,15 @@ export default function OrganigrammePage() {
       />
 
       <RangeeKpi tuiles={[
-        { ton: "bleu", titre: "Entités", valeur: fmtNum(descendantsDe(DGARH_ID).length), sousTitre: "sous la direction générale", icon: Network },
-        { ton: "cyan", titre: "Effectif rattaché", valeur: fmtNum(total[DGARH_ID] ?? 0), sousTitre: "agents du périmètre", icon: Users },
-        { ton: "emeraude", titre: "Établies par un texte", valeur: fmtNum(compteProvenance.TEXTE), sousTitre: "fondement juridique connu", icon: ShieldCheck },
-        { ton: "ambre", titre: "À confirmer", valeur: fmtNum(compteProvenance.A_VERIFIER + compteProvenance.RECOMMANDATION), sousTitre: "provenance non établie", icon: Landmark },
+        /* Chaque intitulé porte son périmètre. Ces quatre tuiles ne comptent
+           que sous la direction générale, tandis que celles d'« Organisation »
+           comptent le ministère entier : deux nombres différents sous le même
+           mot « Entités » ne se lisaient pas comme deux périmètres, mais comme
+           une contradiction de la plateforme. */
+        { ton: "bleu", titre: "Entités sous la DGARH", valeur: fmtNum(descendantsDe(DGARH_ID).length), sousTitre: "hors cabinet, inspection et départements", icon: Network, href: "/dgarh/organisation" },
+        { ton: "cyan", titre: "Effectif rattaché", valeur: fmtNum(total[DGARH_ID] ?? 0), sousTitre: "agents du périmètre de la DGARH", icon: Users },
+        { ton: "emeraude", titre: "Établies par un texte", valeur: fmtNum(compteProvenance.TEXTE), sousTitre: "fondement juridique connu, dans ce périmètre", icon: ShieldCheck },
+        { ton: "ambre", titre: "À confirmer sous la DGARH", valeur: fmtNum(compteProvenance.A_VERIFIER + compteProvenance.RECOMMANDATION), sousTitre: "provenance non établie", icon: Landmark },
       ]} />
 
       <div className="grid gap-3 sm:grid-cols-3">

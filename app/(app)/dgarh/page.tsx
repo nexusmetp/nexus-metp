@@ -14,6 +14,7 @@ import {
 import { useActes, useAgentsProjetes, useTickets, useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import { useTableauDeBord } from "./donnees";
+import { EffectifsParCategorie } from "./categories";
 import {
   CABINET_ID, DGARH_ID, ENTITES, LACUNES, METP_ID, NIVEAU_LABELS, POSITION_LABELS,
   REGLES_CATEGORIE, ROLE_LABELS, STATUTS_EN_COURS, cheminDe, descendantsDe,
@@ -95,6 +96,12 @@ export default function TableauDeBordPage() {
         { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/agents?entite=${CABINET_ID}` },
         { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
       ]} />
+
+      {/* ── Sous quel régime ils servent ──
+          Placé juste après les effectifs globaux, parce que c'est la question
+          qui suit immédiatement « combien sommes-nous » : combien d'entre eux
+          sont des agents de l'État, et combien servent hors statut. */}
+      <EffectifsParCategorie agents={agents} perimetreBorne={false} />
 
       {/* ── L'activité ── */}
       <RangeeKpi tuiles={[

@@ -3,14 +3,20 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Landmark } from "lucide-react";
-import { useEnregistrerCompte, useEnregistrerEntite } from "@/lib/queries";
+import { useDesignerResponsable, useEnregistrerEntite, useParametres } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
-import { ENTITES, NIVEAU_LABELS, ROLE_LABELS, entiteById } from "@/lib/referentiels";
+import {
+  ENTITES, NIVEAU_LABELS, PROFILS, PROFILS_TECHNIQUES,
+  creeUnCycle, entiteById, exigeApprobation, libelleProfil, mentionApprobation,
+  niveauxApprobation, niveauxCreablesSous, optionsNiveaux, perimetreAdministrable,
+  verdictRattachement,
+} from "@/lib/referentiels";
 import {
   Champ, ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
 } from "@/components/nexus/module";
 import { SelecteurPoint } from "@/components/nexus/selecteur-point";
-import type { Entite, NiveauEntite, Role, Utilisateur } from "@/lib/types";
+import { DialogueAccesOuvert, type AccesOuvert } from "@/components/nexus/acces-ouvert";
+import type { Agent, Entite, NiveauEntite, Role } from "@/lib/types";
 
 /**
  * La création et la nomination, en un seul endroit.
@@ -20,56 +26,55 @@ import type { Entite, NiveauEntite, Role, Utilisateur } from "@/lib/types";
  * rend les déclencheurs et le bloc de dialogues à poser dans la page.
  */
 
-/** Niveaux que le directeur général peut créer. Le ministère ne se crée pas. */
-export const NIVEAUX_CREABLES: NiveauEntite[] = [
-  "CABINET", "DIRECTION_GENERALE", "INSPECTION_GENERALE", "SECRETARIAT", "DIRECTION",
-  "SERVICE", "BUREAU", "DIRECTION_DEPARTEMENTALE",
-  "INSPECTION_INTERDEPARTEMENTALE", "ANTENNE_DEPARTEMENTALE", "ETABLISSEMENT",
-];
+import {
+  CATEGORIES, LIBELLES_CATEGORIE, NIVEAUX_CREABLES, ROLE_ATTENDU,
+  coordonneeValide, videEntite, videResponsable,
+} from "./entite-constantes";
 
-/** Rôle proposé par défaut selon le niveau que l'on vient de créer. */
-export const ROLE_ATTENDU: Partial<Record<NiveauEntite, Role>> = {
-  CABINET: "DIRECTEUR_CENTRAL",
-  DIRECTION_GENERALE: "DIRECTEUR_GENERAL",
-  INSPECTION_GENERALE: "DIRECTEUR_CENTRAL",
-  SECRETARIAT: "CHEF_SERVICE",
-  DIRECTION: "DIRECTEUR_CENTRAL",
-  SERVICE: "CHEF_SERVICE",
-  BUREAU: "CHEF_BUREAU",
-  DIRECTION_DEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
-  INSPECTION_INTERDEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
-  ANTENNE_DEPARTEMENTALE: "CHEF_SERVICE",
-  ETABLISSEMENT: "CHEF_ETABLISSEMENT",
-};
-
-const videEntite = {
-  sigle: "", nom: "", code: "", niveau: "DIRECTION" as NiveauEntite,
-  parentId: "ENT-METP", ville: "", reference: "", lat: "", lon: "",
-};
-
-const videResponsable = {
-  nomComplet: "", email: "", fonction: "", telephone: "", role: "DIRECTEUR_CENTRAL" as Role,
-};
-
-/** Bornes du territoire congolais : refuser une coordonnée hors emprise vaut mieux
- *  que planter un marqueur au milieu de l'Atlantique. */
-export function coordonneeValide(v: string): boolean {
-  const n = Number(v);
-  return v.trim() !== "" && Number.isFinite(n) && Math.abs(n) <= 180;
-}
+export { NIVEAUX_CREABLES, ROLE_ATTENDU, coordonneeValide };
 
 export function useGestionEntite(surChangement?: (e: Entite) => void) {
   const user = useAuth((s) => s.user)!;
   const enregistrerEntite = useEnregistrerEntite();
-  const enregistrerCompte = useEnregistrerCompte();
+  const designer = useDesignerResponsable();
+  const { data: parametres } = useParametres();
 
   const [formulaire, setFormulaire] = useState<typeof videEntite | null>(null);
   const [edition, setEdition] = useState<Entite | null>(null);
   const [nomination, setNomination] = useState<{ entite: Entite; champs: typeof videResponsable } | null>(null);
+  const [acces, setAcces] = useState<AccesOuvert | null>(null);
+
+  /* Les profils qu'on peut poser à la tête d'une entité : tous ceux du
+     catalogue, sauf les techniques — l'administrateur système n'est pas un
+     agent et ne dirige aucun service. Du plus élevé au plus bas, parce qu'on
+     désigne ici un responsable, pas un exécutant. */
+  const profilsDesignables = PROFILS
+    .filter((p) => p.actif && !p.technique)
+    .sort((a, b) => b.rang - a.rang);
+
+  /* Les entités auxquelles on peut rattacher : celles qu'on administre.
+     Pour presque tous, c'est la sienne et ce qu'elle contient ; pour le
+     directeur général de la DGARH, c'est le ministère, cabinet compris —
+     administrer les autres structures est l'objet de sa direction. La règle
+     est vérifiée à l'écriture ; ici elle évite de proposer un refus. */
+  const perimetreAdmin = perimetreAdministrable(user);
+  const rattachables = perimetreAdmin === null
+    ? ENTITES
+    : ENTITES.filter((e) => perimetreAdmin.has(e.id));
 
   const ouvrirCreation = (parentId?: string) => {
     setEdition(null);
-    setFormulaire({ ...videEntite, parentId: entiteById(parentId ?? "ENT-METP")?.id ?? "ENT-METP" });
+    /* À défaut de parent désigné, la sienne : un chef de service qui crée un
+       bureau le crée chez lui, pas à la racine du ministère. */
+    const defaut = perimetreAdministrable(user) === null ? "ENT-METP" : user.entiteId;
+    const parent = entiteById(parentId ?? defaut)?.id ?? defaut;
+    /* Le niveau proposé est le premier que ce parent accepte : ouvrir sur
+       « Direction » sous un service donnerait un formulaire déjà fautif. */
+    setFormulaire({
+      ...videEntite,
+      parentId: parent,
+      niveau: niveauxCreablesSous(parent)[0] ?? videEntite.niveau,
+    });
   };
 
   const ouvrirEdition = (e: Entite) => {
@@ -86,11 +91,31 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     champs: {
       ...videResponsable,
       role: ROLE_ATTENDU[e.niveau] ?? "CHEF_SERVICE",
+      motif: "",
       fonction: `Responsable — ${e.nom}`,
     },
   });
 
-  const entiteValide = !!formulaire && formulaire.sigle.trim().length >= 2 && formulaire.nom.trim().length >= 4;
+  /* Ce que le parent choisi accepte. Recalculé à chaque rendu : changer le
+     rattachement change la liste des niveaux, et laisser l'ancien choix en
+     place produirait un formulaire valide à l'œil et refusé à l'envoi. */
+  const niveauxOfferts = formulaire ? optionsNiveaux(formulaire.parentId) : [];
+
+  /* Au-dessus du seuil, le texte fondateur cesse d'être facultatif : c'est le
+     contrôle qui répond, pour les structures, à ce que l'approbation du
+     ministre fait pour les nominations. */
+  const texteExige = !!formulaire
+    && niveauxApprobation(parametres).includes(formulaire.niveau);
+  const rattachement = formulaire
+    ? verdictRattachement(formulaire.niveau, formulaire.parentId)
+    : { ok: false as boolean, motif: undefined as string | undefined };
+
+  const entiteValide = !!formulaire
+    && formulaire.sigle.trim().length >= 2
+    && formulaire.nom.trim().length >= 4
+    && rattachement.ok
+    && (!texteExige || formulaire.reference.trim().length >= 8)
+    && !(edition && creeUnCycle(edition.id, formulaire.parentId));
 
   const enregistrer = async () => {
     if (!formulaire || !entiteValide) return;
@@ -142,35 +167,68 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
   };
 
   const nominationValide = !!nomination
-    && nomination.champs.nomComplet.trim().length > 3
-    && /.+@.+\..+/.test(nomination.champs.email);
+    && nomination.champs.nom.trim().length > 1
+    && nomination.champs.prenom.trim().length > 1
+    && !!nomination.champs.dateNaissance
+    && !!nomination.champs.dateEffet
+    && nomination.champs.motif.trim().length >= 10
+    && (!nomination.champs.email.trim() || /.+@.+\..+/.test(nomination.champs.email));
+
+  /* La nomination attend-elle le ministre ? Le seuil est un réglage du
+     ministère ; ici on ne fait que le lire, pour que l'écran le dise. */
+  const soumisAuMinistre = !!nomination
+    && exigeApprobation(nomination.entite.niveau, user, parametres, ["MINISTRE", ...PROFILS_TECHNIQUES]);
 
   const nommer = async () => {
     if (!nomination || !nominationValide) return;
     const { entite: cible, champs } = nomination;
-    const compte: Utilisateur = {
-      id: `USR-${Date.now().toString(36).toUpperCase().slice(-6)}`,
-      email: champs.email.trim().toLowerCase(),
-      motDePasse: "Nexus2026",
-      nomComplet: champs.nomComplet.trim(),
-      role: champs.role,
-      entiteId: cible.id,
-      fonction: champs.fonction.trim() || `Responsable — ${cible.nom}`,
-      telephone: champs.telephone.trim() || undefined,
-      actif: true,
-      dateCreation: new Date().toISOString(),
-      creePar: user.id,
-      motDePasseAChanger: true,
-    };
-    await enregistrerCompte.mutateAsync({ compte, utilisateur: user, creation: true });
-    await enregistrerEntite.mutateAsync({
-      entite: { ...cible, responsableId: compte.id }, utilisateur: user, creation: false,
-    });
-    toast.success(`${compte.nomComplet} peut se connecter`, {
-      description: `Identifiant ${compte.email} — mot de passe provisoire Nexus2026, à changer à la première connexion.`,
-      duration: 9000,
-    });
-    setNomination(null);
+    try {
+      const { compte, provisoire, enAttente, acte } = await designer.mutateAsync({
+        entite: cible,
+        identite: {
+          nom: champs.nom, prenom: champs.prenom, sexe: champs.sexe,
+          dateNaissance: champs.dateNaissance,
+          telephone: champs.telephone.trim(),
+          email: champs.email.trim().toLowerCase(),
+          categorie: champs.categorie,
+        },
+        profil: champs.role,
+        fonction: champs.fonction.trim() || `Responsable — ${cible.nom}`,
+        dateEffet: champs.dateEffet,
+        motif: champs.motif,
+        utilisateur: user,
+      });
+      setNomination(null);
+
+      /* La nomination qui attend le ministre n'a rien ouvert : afficher des
+         identifiants ici laisserait croire le contraire, et quelqu'un
+         essaierait de se connecter avec un compte qui n'existe pas. */
+      if (enAttente || !compte || !provisoire) {
+        toast.success("Nomination soumise au ministre", {
+          description:
+            `${acte.reference} — ${champs.prenom} ${champs.nom.toUpperCase()} à la tête de `
+            + `${cible.sigle}. Aucun accès n'est ouvert tant que l'acte n'est pas notifié : `
+            + "le compte et l'habilitation suivront l'approbation.",
+          duration: 12000,
+        });
+        return;
+      }
+
+      /* Les identifiants dans un dialogue et non dans une notification : le
+         mot de passe provisoire ne s'affiche qu'une fois, et une notification
+         qui s'efface toute seule ferait perdre l'accès de quelqu'un. */
+      setAcces({
+        nom: compte.nomComplet,
+        identifiant: compte.email,
+        provisoire,
+        qualite: `${libelleProfil(compte.role)} — ${cible.sigle}`,
+      });
+    } catch (e) {
+      toast.error("Désignation refusée", {
+        description: e instanceof Error ? e.message : "Opération impossible.",
+        duration: 9000,
+      });
+    }
   };
 
   const dialogues = (
@@ -199,16 +257,39 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
             <ChampTexte label="Intitulé complet" obligatoire valeur={formulaire.nom}
               surChangement={(v) => setFormulaire({ ...formulaire, nom: v })}
               placeholder="Direction générale de l'administration et des ressources humaines" />
+            {/* Le rattachement d'abord : c'est lui qui décide des niveaux
+                possibles. L'ordre inverse obligeait à choisir un niveau, puis
+                à découvrir qu'il ne tenait pas sous le parent retenu. */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <ChampSelect label="Niveau" obligatoire valeur={formulaire.niveau}
-                surChangement={(v) => setFormulaire({ ...formulaire, niveau: v as NiveauEntite })}
-                options={NIVEAUX_CREABLES.map((n) => ({ valeur: n, libelle: NIVEAU_LABELS[n] }))} />
               <ChampSelect label="Rattachée à" obligatoire valeur={formulaire.parentId}
-                surChangement={(v) => setFormulaire({ ...formulaire, parentId: v })}
-                options={ENTITES.filter((e) => e.id !== edition?.id)
+                surChangement={(v) => setFormulaire({
+                  ...formulaire,
+                  parentId: v,
+                  /* Le niveau suit le parent : garder l'ancien produirait un
+                     couple refusé à l'envoi, sans que l'écran l'annonce. */
+                  niveau: niveauxCreablesSous(v).includes(formulaire.niveau)
+                    ? formulaire.niveau
+                    : niveauxCreablesSous(v)[0] ?? formulaire.niveau,
+                })}
+                options={rattachables.filter((e) => e.id !== edition?.id)
                   .map((e) => ({ valeur: e.id, libelle: `${e.sigle} — ${NIVEAU_LABELS[e.niveau]}` }))}
                 aide="Le rattachement détermine le périmètre : qui verra cette entité et son personnel." />
+              <ChampSelect label="Niveau" obligatoire valeur={formulaire.niveau}
+                surChangement={(v) => setFormulaire({ ...formulaire, niveau: v as NiveauEntite })}
+                options={niveauxOfferts}
+                placeholder={niveauxOfferts.length ? "Choisir…" : "Aucun niveau possible ici"}
+                aide="Seuls figurent les niveaux que le rattachement choisi admet." />
             </div>
+            {!rattachement.ok && rattachement.motif && (
+              <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-500">
+                {rattachement.motif}
+              </p>
+            )}
+            {edition && creeUnCycle(edition.id, formulaire.parentId) && (
+              <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-[11px] leading-relaxed text-destructive">
+                Une entité ne peut pas être rattachée à l'une de celles qu'elle contient.
+              </p>
+            )}
             <ChampTexte label="Ville" valeur={formulaire.ville}
               surChangement={(v) => setFormulaire({ ...formulaire, ville: v })} placeholder="Brazzaville" />
 
@@ -239,9 +320,12 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
               </div>
             </Champ>
             <ChampZone label="Texte fondateur" lignes={2} valeur={formulaire.reference}
+              obligatoire={texteExige}
               surChangement={(v) => setFormulaire({ ...formulaire, reference: v })}
               placeholder="Arrêté n° … du … portant organisation de …"
-              aide="Si vous citez un texte, l'entité est marquée « établie par un texte ». Sinon elle reste une décision d'organisation, signalée comme telle dans l'organigramme." />
+              aide={texteExige
+                ? `Obligatoire à ce niveau : une ${NIVEAU_LABELS[formulaire.niveau].toLowerCase()} ne naît pas d'une décision de service, mais d'un décret ou d'un arrêté. Citez son numéro et sa date.`
+                : "Si vous citez un texte, l'entité est marquée « établie par un texte ». Sinon elle reste une décision d'organisation, signalée comme telle dans l'organigramme."} />
           </>
         )}
       </DialogueFormulaire>
@@ -249,46 +333,87 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
       <DialogueFormulaire
         ouvert={!!nomination}
         surFermeture={() => setNomination(null)}
-        titre={`Nommer le responsable — ${nomination?.entite.sigle ?? ""}`}
-        description="Le compte est ouvert immédiatement. Son périmètre se déduit du rattachement de l'entité : il n'y a rien d'autre à régler."
+        titre={`Désigner le responsable — ${nomination?.entite.sigle ?? ""}`}
+        description={
+          "Une seule personne, celle qui dirige. C'est elle qui inscrira ensuite son secrétariat "
+          + "et son personnel, et leur attribuera les profils — vous n'aurez plus à intervenir."
+        }
         surValidation={nommer}
         validationPossible={nominationValide}
-        libelleValidation="Ouvrir le compte"
+        libelleValidation={soumisAuMinistre ? "Soumettre au ministre" : "Désigner et ouvrir l'accès"}
         large
       >
-        {nomination && (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ChampTexte label="Nom complet" obligatoire valeur={nomination.champs.nomComplet}
-                surChangement={(v) => setNomination({ ...nomination, champs: { ...nomination.champs, nomComplet: v } })}
-                placeholder="Alphonse NGATSE" />
-              <ChampTexte label="Adresse électronique" obligatoire type="email" valeur={nomination.champs.email}
-                surChangement={(v) => setNomination({ ...nomination, champs: { ...nomination.champs, email: v } })}
-                placeholder="prenom.nom@metp.gouv.cg" />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ChampSelect label="Rôle" obligatoire valeur={nomination.champs.role}
-                surChangement={(v) => setNomination({ ...nomination, champs: { ...nomination.champs, role: v as Role } })}
-                options={(Object.keys(ROLE_LABELS) as Role[]).filter((r) => r !== "ADMIN_SYSTEME")
-                  .map((r) => ({ valeur: r, libelle: ROLE_LABELS[r] }))}
-                aide="Le rôle dit ce qu'il peut faire ; l'entité dit sur qui." />
-              <ChampTexte label="Téléphone" valeur={nomination.champs.telephone}
-                surChangement={(v) => setNomination({ ...nomination, champs: { ...nomination.champs, telephone: v } })}
-                placeholder="+242 …" />
-            </div>
-            <ChampTexte label="Fonction" valeur={nomination.champs.fonction}
-              surChangement={(v) => setNomination({ ...nomination, champs: { ...nomination.champs, fonction: v } })} />
-            <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
-              <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Un mot de passe provisoire — <span className="font-mono font-semibold">Nexus2026</span> — est
-                attribué et devra être changé à la première connexion. Le responsable pourra alors inscrire
-                son personnel et instruire les dossiers de son périmètre.
-              </p>
-            </div>
-          </>
+        {/* Dit avant le geste, jamais après : un bouton qui promet d'ouvrir un
+            accès et soumet une demande à la place est un bouton qui ment. */}
+        {nomination && soumisAuMinistre && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-500">
+            {mentionApprobation(nomination.entite.niveau)}
+          </p>
         )}
+        {nomination && (() => {
+          const maj = (c: Partial<typeof nomination.champs>) =>
+            setNomination({ ...nomination, champs: { ...nomination.champs, ...c } });
+          return (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ChampTexte label="Nom" obligatoire valeur={nomination.champs.nom}
+                  surChangement={(v) => maj({ nom: v })} placeholder="NGATSE" />
+                <ChampTexte label="Prénom" obligatoire valeur={nomination.champs.prenom}
+                  surChangement={(v) => maj({ prenom: v })} placeholder="Alphonse" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <ChampSelect label="Sexe" obligatoire valeur={nomination.champs.sexe}
+                  surChangement={(v) => maj({ sexe: v as Agent["sexe"] })}
+                  options={[{ valeur: "M", libelle: "Masculin" }, { valeur: "F", libelle: "Féminin" }]} />
+                <ChampTexte label="Date de naissance" obligatoire type="date"
+                  valeur={nomination.champs.dateNaissance}
+                  surChangement={(v) => maj({ dateNaissance: v })} />
+                <ChampSelect label="Catégorie" obligatoire valeur={nomination.champs.categorie}
+                  surChangement={(v) => maj({ categorie: v as Agent["categorie"] })}
+                  options={CATEGORIES.map((c) => ({ valeur: c, libelle: LIBELLES_CATEGORIE[c] }))} />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ChampTexte label="Adresse électronique" type="email" valeur={nomination.champs.email}
+                  surChangement={(v) => maj({ email: v })}
+                  placeholder="prenom.nom@metp.gouv.cg"
+                  aide="Laissée vide, elle est dérivée du nom, comme pour tout agent." />
+                <ChampTexte label="Téléphone" valeur={nomination.champs.telephone}
+                  surChangement={(v) => maj({ telephone: v })} placeholder="+242 …" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ChampSelect label="Profil d'accès" obligatoire valeur={nomination.champs.role}
+                  surChangement={(v) => maj({ role: v })}
+                  options={profilsDesignables.map((p) => ({
+                    valeur: p.code, libelle: `${p.libelle} · rang ${p.rang}`,
+                  }))}
+                  aide="Le profil dit ce qu'il peut faire ; l'entité dit sur qui. Celui qui est proposé correspond au niveau de l'entité — c'est une suggestion, pas une règle." />
+                <ChampTexte label="À compter du" obligatoire type="date" valeur={nomination.champs.dateEffet}
+                  surChangement={(v) => maj({ dateEffet: v })} />
+              </div>
+              <ChampTexte label="Fonction" valeur={nomination.champs.fonction}
+                surChangement={(v) => maj({ fonction: v })} />
+              <ChampZone label="Acte qui le nomme" obligatoire lignes={2} valeur={nomination.champs.motif}
+                surChangement={(v) => maj({ motif: v })}
+                placeholder="Décret n° … du … portant nomination de …"
+                aide="Obligatoire. Un responsable désigné sans acte cité ne se justifie devant personne — et c'est ce texte que porteront l'acte d'affectation et l'habilitation." />
+              <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
+                <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Trois choses s&apos;ouvrent ensemble : le <strong className="font-medium">dossier
+                  d&apos;agent</strong> — un responsable est d&apos;abord un agent du ministère —, le{" "}
+                  <strong className="font-medium">compte</strong>, et l&apos;<strong className="font-medium">habilitation</strong>{" "}
+                  qui dit de qui il tient son profil. Mot de passe provisoire{" "}
+                  <span className="font-mono font-semibold">Nexus2026</span>, à changer à la première
+                  connexion. Le dossier s&apos;ouvre incomplet : les pièces d&apos;état civil se
+                  déposent ensuite, par l&apos;intéressé ou son secrétariat.
+                </p>
+              </div>
+            </>
+          );
+        })()}
       </DialogueFormulaire>
+
+      <DialogueAccesOuvert acces={acces} surFermeture={() => setAcces(null)} />
     </>
   );
 

@@ -7,8 +7,10 @@ import {
 } from "recharts";
 import { CalendarClock, HeartHandshake, TrendingDown, UserMinus, Users } from "lucide-react";
 import { useActes, useAgentsProjetes, useEntites } from "@/lib/queries";
+import { useAuth } from "@/lib/store";
 import {
   ENTITES, REGLES_CATEGORIE, cheminDe, descendantsDe, entiteById, gradeById,
+  bornerPerimetre, perimetreVisible,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, PageHeader } from "@/components/nexus/ui-kit";
@@ -41,6 +43,7 @@ const infobulle = {
 };
 
 export default function RetraitePage() {
+  const user = useAuth((s) => s.user)!;
   const { data: agents, pret } = useAgentsProjetes();
   const { data: actes = [] } = useActes();
   const { data: entitesDb = [] } = useEntites();
@@ -50,21 +53,35 @@ export default function RetraitePage() {
 
   const annee = new Date().getFullYear();
 
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le filtre
+     d'entité réduit à l'intérieur de cette borne ; il ne l'élargit jamais. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
-    [filtres.entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))
+    ),
+    [perimetreDroit, filtres.entite, entitesDb]
   );
 
   /* Ceux dont le départ tombe dans l'horizon retenu, plus ceux qui l'ont
      dépassé sans acte de fin de carrière : ce sont les cas à régulariser. */
   const concernes = useMemo(() => agents
+    /* Borné au périmètre de droit avant tout calcul : les tuiles comptent sur
+       `concernes`, et un chef de service n'a pas à lire « 230 départs » quand
+       la liste au-dessous en montre trois. */
+    .filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId)))
     .filter((a) => anneeDepart(a) <= annee + HORIZON)
     .map((a) => ({
       ...a,
       annee: anneeDepart(a),
       reste: anneeDepart(a) - annee,
       acteFin: actes.find((x) => x.agentId === a.id && x.type === "FIN_CARRIERE"),
-    })), [agents, actes, annee]);
+    })), [agents, actes, annee, perimetreDroit]);
 
   const lignes = useMemo(() => concernes
     .filter((a) => !perimetre || (a.entiteId && perimetre.has(a.entiteId)))
@@ -76,12 +93,20 @@ export default function RetraitePage() {
     })
     .sort((a, b) => a.annee - b.annee || a.nom.localeCompare(b.nom)), [concernes, perimetre, filtres]);
 
+  /* Le dénominateur de la part doit être le même effectif que le numérateur :
+     un compte borné divisé par l'effectif du ministère donnerait un taux qui
+     ne décrit ni l'un ni l'autre. */
+  const effectifVu = useMemo(
+    () => agents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))).length,
+    [agents, perimetreDroit]
+  );
+
   const stats = useMemo(() => ({
     horizon: concernes.filter((a) => a.reste >= 0).length,
     cetteAnnee: concernes.filter((a) => a.reste === 0).length,
     depasses: concernes.filter((a) => a.reste < 0 && !a.acteFin).length,
-    part: agents.length ? (concernes.filter((a) => a.reste >= 0).length / agents.length) * 100 : 0,
-  }), [concernes, agents.length]);
+    part: effectifVu ? (concernes.filter((a) => a.reste >= 0).length / effectifVu) * 100 : 0,
+  }), [concernes, effectifVu]);
 
   const parAnnee = useMemo(() => Array.from({ length: HORIZON + 1 }, (_, i) => {
     const an = annee + i;
@@ -92,21 +117,25 @@ export default function RetraitePage() {
     };
   }), [concernes, annee]);
 
-  /* Les entités qui perdront le plus de monde : c'est là qu'il faut recruter. */
+  /* Les entités qui perdront le plus de monde : c'est là qu'il faut recruter.
+     La maille suit le lecteur — le ministère se lit par direction, un chef de
+     service par entité, faute de quoi son graphe n'aurait qu'une barre. */
   const parEntite = useMemo(() => {
     const m = new Map<string, { nom: string; nb: number }>();
     concernes.filter((a) => a.reste >= 0).forEach((a) => {
       if (!a.entiteId) return;
-      const tete = cheminDe(a.entiteId).find((e) =>
-        ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
-         "DIRECTION_DEPARTEMENTALE"].includes(e.niveau));
+      const tete = perimetreDroit
+        ? entiteById(a.entiteId)
+        : cheminDe(a.entiteId).find((e) =>
+          ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
+           "DIRECTION_DEPARTEMENTALE"].includes(e.niveau));
       if (!tete) return;
       const cur = m.get(tete.id) ?? { nom: tete.sigle, nb: 0 };
       cur.nb++;
       m.set(tete.id, cur);
     });
     return [...m.values()].sort((a, b) => b.nb - a.nb).slice(0, 8);
-  }, [concernes]);
+  }, [concernes, perimetreDroit]);
 
   const colonnes: Colonne<typeof lignes[number]>[] = [
     {

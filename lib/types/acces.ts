@@ -1,4 +1,5 @@
 import type { Affectation, Agent, NaturePosition, Position, SituationCarriere } from "./agent";
+import type { CodeProfil } from "./profil";
 import type { CategorieStatutaire } from "./organisation";
 
 /* ------------------------------------------------------------------ */
@@ -22,6 +23,11 @@ export type Role =
   | "AGENT_INSTRUCTEUR"
   | "DIRECTEUR_DEPARTEMENTAL"
   | "CHEF_ETABLISSEMENT"
+  /* Le secrétariat, ajouté en dernier et pourtant central : c'est lui qui
+     reçoit l'agent qui arrive et qui tient le cahier d'émargement. Sans ce
+     rôle, le responsable d'un point d'accueil n'était qu'un nom recopié,
+     sans droit propre et sans compte pour l'exercer. */
+  | "SECRETAIRE"
   | "AGENT";
 
 export interface Utilisateur {
@@ -29,8 +35,21 @@ export interface Utilisateur {
   email: string;
   motDePasse: string;
   nomComplet: string;
-  role: Role;
-  /** Le périmètre se déduit de l'arborescence, il ne se saisit pas. §11 */
+  /**
+   * Le code du profil que porte ce compte. Les treize d'origine en font
+   * partie, mais rien ne les distingue plus : depuis que le catalogue vit en
+   * table, « Ministre » et « Chargé du courrier » sont deux profils d'accès.
+   */
+  role: CodeProfil;
+  /**
+   * Le périmètre se déduit de l'arborescence, il ne se saisit pas. §11
+   *
+   * `role` et `entiteId` sont désormais la **projection** de l'habilitation
+   * en vigueur (`lib/types/habilitation.ts`), recopiée ici pour la lecture.
+   * Les écrire directement reste possible — le semis le fait — mais tout
+   * changement décidé par un chef passe par une habilitation, qui, elle,
+   * porte son auteur, sa durée et son motif.
+   */
   entiteId: string;
   agentId?: string | null;
   fonction: string;

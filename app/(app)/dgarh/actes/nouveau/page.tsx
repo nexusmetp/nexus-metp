@@ -8,7 +8,7 @@ import { ArrowLeft, GitBranch, Loader2, Search } from "lucide-react";
 import { useAgentsProjetes, useCreerActe } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  CIRCUIT_ACTE, ENTITES, cheminDe, entiteById, typeActeById,
+  CIRCUIT_ACTE, ENTITES, cheminDe, entiteById, perimetreVisible, typeActeById,
 } from "@/lib/referentiels";
 import { fmtDate } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -44,17 +44,27 @@ export default function NouvelleMutationPage() {
   const [dateEffet, setDateEffet] = useState(dansNJours(30));
   const [motif, setMotif] = useState("");
 
+  /* On n'ouvre un acte que pour un agent qu'on administre. Une recherche qui
+     répond sur tout le fichier ferait proposer une mutation au nom d'une
+     direction voisine — et le formulaire ne dirait rien d'anormal. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user.role, user.entiteId]);
+
+  const administres = useMemo(
+    () => agents.filter((a) => !perimetreDroit || (a.entiteId && perimetreDroit.has(a.entiteId))),
+    [agents, perimetreDroit]
+  );
+
   const resultats = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (t.length < 2) return [];
-    return agents
+    return administres
       .filter((a) =>
         a.nom.toLowerCase().includes(t) || a.prenom.toLowerCase().includes(t) || a.matricule.includes(t)
       )
       .slice(0, 6);
-  }, [agents, q]);
+  }, [administres, q]);
 
-  const agent = useMemo(() => agents.find((a) => a.id === agentId), [agents, agentId]);
+  const agent = useMemo(() => administres.find((a) => a.id === agentId), [administres, agentId]);
   const origine = entiteById(agent?.entiteId);
   const destination = entiteById(entiteCible);
 

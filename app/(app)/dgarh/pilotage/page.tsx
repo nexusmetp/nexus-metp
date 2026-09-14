@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import {
   AlertTriangle, ArrowRight, Building2, ClipboardList, Gauge, LifeBuoy, Pencil,
-  Plus, ShieldCheck, Timer, UserPlus, Users,
+  ShieldCheck, Timer, UserPlus, Users,
 } from "lucide-react";
 import {
   useActes, useAgentsProjetes, useBesoins, useEntites, useTickets, useUtilisateurs,
@@ -200,11 +200,12 @@ export default function PilotagePage() {
         titre="Pilotage des directions"
         description="Ce qui se passe dans chaque direction remonte ici. Une pastille rouge signale une direction sous tension : un dossier y dort, ou des réclamations s'y accumulent."
       >
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dgarh/organisation">Toute l'arborescence</Link>
-        </Button>
-        <Button size="sm" onClick={() => gestion.ouvrirCreation("ENT-METP")}>
-          <Plus className="mr-1.5 h-4 w-4" /> Créer une direction
+        {/* La création d'entité vivait ici **et** au registre : deux boutons
+            pour un seul geste, et le second créait toujours à la racine du
+            ministère quel que soit le profil. Cette page pilote ce qui
+            existe ; ce qui se crée se crée au registre, à un seul endroit. */}
+        <Button size="sm" asChild>
+          <Link href="/dgarh/organisation">Registre des directions et services</Link>
         </Button>
       </PageHeader>
 

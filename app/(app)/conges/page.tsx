@@ -10,7 +10,8 @@ import { CalendarCheck, CalendarDays, CalendarX, Check, Plane, Plus, X } from "l
 import { useAgentsProjetes, useConges, useEnregistrerConge, useEntites } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, POSITION_LABELS, cheminDe, descendantsDe, entiteById, peut,
+  ENTITES, POSITION_LABELS, bornerPerimetre, cheminDe, descendantsDe, entiteById,
+  perimetreVisible, peut,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgePosition, PageHeader } from "@/components/nexus/ui-kit";
@@ -74,9 +75,22 @@ export default function CongesPage() {
 
   const agentDe = useMemo(() => new Map(agents.map((a) => [a.id, a])), [agents]);
 
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le
+     filtre d'entité réduit à l'intérieur de cette borne ; il ne l'élargit
+     jamais, et « toutes les entités » veut dire « toutes celles que je
+     vois ». Une règle de confidentialité laissée au menu déroulant se
+     contourne en changeant le menu déroulant. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
-    [filtres.entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))
+    ),
+    [perimetreDroit, filtres.entite, entitesDb]
   );
 
   const lignes = useMemo(() => conges
@@ -89,20 +103,33 @@ export default function CongesPage() {
     })
     .sort((a, b) => b.dateDebut.localeCompare(a.dateDebut)), [conges, filtres, perimetre, agentDe]);
 
+  /* Les agents et les congés **de mon périmètre**. Borner la liste et laisser
+     les tuiles compter le ministère entier était pire que de ne rien borner :
+     l'écran affichait « 1 089 congés en cours » au-dessus d'une liste qui en
+     montrait trois, et le lecteur en concluait que la liste était incomplète —
+     ou, s'il y regardait de plus près, apprenait par le compteur ce que la
+     liste lui cachait. */
+  const agentsVus = useMemo(
+    () => agents.filter((a) => !perimetre || (a.entiteId && perimetre.has(a.entiteId))),
+    [agents, perimetre]
+  );
+
   const stats = useMemo(() => {
-    const annuels = conges.filter((c) => c.nature === "ANNUEL" && (c.statut === "PRIS" || c.statut === "ACCORDE"));
+    const dansLeChamp = new Set(agentsVus.map((a) => a.id));
+    const vus = conges.filter((c) => dansLeChamp.has(c.agentId));
+    const annuels = vus.filter((c) => c.nature === "ANNUEL" && (c.statut === "PRIS" || c.statut === "ACCORDE"));
     const joursPris = annuels.reduce((s, c) => s + c.jours, 0);
     const beneficiaires = new Set(annuels.map((c) => c.agentId)).size;
-    const droitTotal = agents.length * DROIT_ANNUEL;
+    const droitTotal = agentsVus.length * DROIT_ANNUEL;
     return {
-      enCours: conges.filter((c) => c.statut === "ACCORDE" || c.statut === "DEMANDE").length,
-      demandes: conges.filter((c) => c.statut === "DEMANDE").length,
+      enCours: vus.filter((c) => c.statut === "ACCORDE" || c.statut === "DEMANDE").length,
+      demandes: vus.filter((c) => c.statut === "DEMANDE").length,
       joursPris,
       taux: droitTotal ? (joursPris / droitTotal) * 100 : 0,
       beneficiaires,
-      absents: agents.filter((a) => a.nature !== "ACTIVITE").length,
+      absents: agentsVus.filter((a) => a.nature !== "ACTIVITE").length,
     };
-  }, [conges, agents]);
+  }, [conges, agentsVus]);
 
   /* Le solde de chacun : le droit annuel moins ce qui est pris ou accordé. */
   const soldes = useMemo(() => {
@@ -412,7 +439,10 @@ export default function CongesPage() {
           <>
             <ChampSelect label="Agent" obligatoire valeur={formulaire.agentId}
               surChangement={(v) => setFormulaire({ ...formulaire, agentId: v })}
-              options={agents.slice(0, 400).map((a) => ({
+              /* Les agents de son périmètre, et pas les deux mille quatre
+                 cents du ministère : on ne pose pas une demande de congé pour
+                 quelqu'un dont on ne répond pas. */
+              options={agentsVus.slice(0, 400).map((a) => ({
                 valeur: a.id, libelle: `${a.prenom} ${a.nom} — ${a.matricule}`,
               }))} />
             <ChampSelect label="Nature" obligatoire valeur={formulaire.nature}

@@ -9,7 +9,7 @@ import { useAgentsProjetes, useEntites, useParametres, usePointages } from "@/li
 import { useAuth } from "@/lib/store";
 import {
   ENTITES, HEURE_OUVERTURE_NON_RENSEIGNEE, SEUIL_ABSENCE_PROLONGEE,
-  descendantsDe, peut,
+  bornerPerimetre, descendantsDe, perimetreVisible, peut,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -23,6 +23,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AUJOURDHUI, journeeDe, resumerJournee, serie, tauxDePointage } from "./calculs";
+import { PrisesDeService } from "./prises";
+import { RegistresEntite } from "./registres";
 import { Journee } from "./journee";
 import { AVerifier, Historique } from "./suivi";
 
@@ -59,9 +61,22 @@ export default function PresencesPage() {
   /* Le périmètre : une direction et tout ce qu'elle contient. C'est la même
      dérivation que partout ailleurs — un périmètre ne se saisit pas, il se
      déduit de l'arborescence. */
+  /* Ce que ce profil a le droit de voir, quel que soit le filtre. Le
+     filtre d'entité réduit à l'intérieur de cette borne ; il ne l'élargit
+     jamais, et « toutes les entités » veut dire « toutes celles que je
+     vois ». Une règle de confidentialité laissée au menu déroulant se
+     contourne en changeant le menu déroulant. */
+  const perimetreDroit = useMemo(
+    () => perimetreVisible(user),
+    [user.role, user.entiteId, entitesDb]
+  );
+
   const perimetre = useMemo(
-    () => (entite === "all" ? null : new Set(descendantsDe(entite).map((e) => e.id))),
-    [entite, entitesDb]
+    () => bornerPerimetre(
+      perimetreDroit,
+      entite === "all" ? null : new Set(descendantsDe(entite).map((e) => e.id))
+    ),
+    [perimetreDroit, entite, entitesDb]
   );
 
   const agentsVus = useMemo(
@@ -164,6 +179,8 @@ export default function PresencesPage() {
           <TabsTrigger value="tendance">Vingt jours</TabsTrigger>
           <TabsTrigger value="verifier">À contrôler</TabsTrigger>
           <TabsTrigger value="historique">Historique</TabsTrigger>
+          <TabsTrigger value="prises">Prises de service</TabsTrigger>
+          <TabsTrigger value="registres">Points d&apos;accueil</TabsTrigger>
         </TabsList>
 
         <TabsContent value="journee">
@@ -210,6 +227,17 @@ export default function PresencesPage() {
 
         <TabsContent value="historique">
           <Historique agents={agentsVus} pointages={pointages} />
+        </TabsContent>
+
+        {/* Les deux onglets qui suivent portent leur propre périmètre : ils
+            regardent les services, pas les agents, et la journée choisie
+            en haut ne les commande pas toujours. */}
+        <TabsContent value="prises">
+          <PrisesDeService />
+        </TabsContent>
+
+        <TabsContent value="registres">
+          <RegistresEntite />
         </TabsContent>
       </Tabs>
     </div>

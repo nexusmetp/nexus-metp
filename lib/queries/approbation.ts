@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { all, remove, save } from "@/lib/db";
-import { hydraterEntites, libelleProfil } from "@/lib/referentiels";
+import { entiteById, hydraterEntites, libelleProfil } from "@/lib/referentiels";
 import { motDePasseProvisoire } from "@/lib/acces/motdepasse";
 import type {
   Acte, Affectation, Agent, Entite, Habilitation, Position, Utilisateur,
@@ -79,6 +79,10 @@ export function useDeciderNomination() {
       const agent = agents.find((a) => a.id === acte.agentId);
       if (!agent) throw new Error("Le dossier de l'intéressé est introuvable.");
 
+      /* Le journal se lit par des humains : un identifiant technique y rend
+         l'entrée inutilisable six mois plus tard. */
+      const ouSigle = entiteById(entiteId)?.sigle ?? entiteId ?? "—";
+
       /* ---------------- Le refus ---------------- */
       if (decision === "REFUSER") {
         await save<Acte>("actes", {
@@ -93,7 +97,7 @@ export function useDeciderNomination() {
           nouvelleValeur: "REJETE",
           justification:
             `Nomination refusée : ${agent.prenom} ${agent.nom.toUpperCase()} à la tête de `
-            + `${entiteId ?? "—"}. ${motif.trim()} Aucun compte n'avait été ouvert ; le dossier `
+            + `${ouSigle}. ${motif.trim()} Aucun compte n'avait été ouvert ; le dossier `
             + "provisoire est retiré.",
         });
         return { decision, compte: null, provisoire: null, agent };

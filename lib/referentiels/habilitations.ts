@@ -307,6 +307,42 @@ export const enVigueur = (h: Habilitation, date: string) =>
   && (h.dateFin === null || h.dateFin >= date);
 
 /**
+ * Qui dirige quoi — la projection, écrite une fois.
+ *
+ * Elle l'avait été trois fois, et l'une des trois était fausse : le tableau de
+ * bord de l'administrateur tenait une entité pour « pourvue » dès qu'un compte
+ * y était rattaché. Depuis que **chaque agent a un compte**, cela rendait
+ * toutes les entités pourvues, et l'écran annonçait « toutes pourvues » là où
+ * soixante-seize directions, services et établissements n'avaient personne à
+ * leur tête. C'est l'erreur la plus coûteuse qu'un tableau de bord puisse
+ * commettre : rassurer faussement sur ce qu'il est seul à pouvoir signaler.
+ *
+ * Est responsable celui dont le profil **commande** — rang strictement
+ * supérieur à celui d'un agent — et dont l'habilitation est **en vigueur** à
+ * la date considérée. À égalité de lieu, le rang le plus élevé l'emporte :
+ * un directeur et son chef de service rattachés à la même entité ne laissent
+ * aucun doute sur lequel la dirige.
+ */
+export function chefsParEntite(
+  comptes: Utilisateur[],
+  habilitations: Habilitation[],
+  date: string
+): Map<string, Utilisateur> {
+  const socle = RANG_HIERARCHIQUE.AGENT ?? 10;
+  const m = new Map<string, Utilisateur>();
+  comptes
+    .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) > socle)
+    .filter((c) => habilitationsEnVigueur(habilitations, c.id, date).length > 0)
+    .forEach((c) => {
+      const tenant = m.get(c.entiteId);
+      if (!tenant || (RANG_HIERARCHIQUE[c.role] ?? 0) > (RANG_HIERARCHIQUE[tenant.role] ?? 0)) {
+        m.set(c.entiteId, c);
+      }
+    });
+  return m;
+}
+
+/**
  * Les habilitations d'un compte en vigueur à une date, la plus forte d'abord.
  *
  * Un agent peut en cumuler : chef de bureau à demeure, et secrétaire du point

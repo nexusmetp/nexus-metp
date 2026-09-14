@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import type { Entite, Habilitation, ProfilAcces, Utilisateur } from "@/lib/types";
 import {
-  NIVEAU_LABELS, entiteById, habilitationsEnVigueur, incoherencesOrganigramme,
-  libelleProfil,
+  NIVEAU_LABELS, chefsParEntite, entiteById, habilitationsEnVigueur,
+  incoherencesOrganigramme, libelleProfil,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { RangeeKpi } from "@/components/nexus/module";
@@ -30,10 +30,19 @@ import {
 /* Sans cet écran, il ne pouvait pas le vérifier.                      */
 /* ------------------------------------------------------------------ */
 
-/** Les niveaux qui, dans ce ministère, portent un chef et donc une délégation. */
+/**
+ * Les niveaux qui, dans ce ministère, portent un chef et donc une délégation.
+ *
+ * La liste s'arrêtait aux directions. C'était trop court : un **service**, un
+ * **établissement** et une **inspection interdépartementale** portent eux aussi
+ * un responsable qui inscrit du personnel, et une chaîne qui s'interrompt à ce
+ * niveau-là s'interrompt pour de bon — l'administrateur ne le voyait pas. Le
+ * bureau n'y figure pas : il est la maille terminale, son chef relève du
+ * service, et l'y compter noierait le signal dans trente-neuf lignes. */
 const NIVEAUX_DE_COMMANDEMENT: Entite["niveau"][] = [
   "DIRECTION_GENERALE", "DIRECTION", "DIRECTION_DEPARTEMENTALE",
-  "INSPECTION_GENERALE", "CABINET",
+  "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE", "CABINET",
+  "SERVICE", "ETABLISSEMENT",
 ];
 
 export function TableauDeBord({
@@ -71,9 +80,13 @@ export function TableauDeBord({
     const entiteDisparue = comptes.filter((c) => c.actif && !entiteById(c.entiteId));
     const profilsInutilises = profils.filter((p) => p.actif && !porteurs.get(p.code));
     const profilsFermesPortes = profils.filter((p) => !p.actif && (porteurs.get(p.code) ?? 0) > 0);
-    const directionsSansCompte = actives
-      .filter((e) => NIVEAUX_DE_COMMANDEMENT.includes(e.niveau))
-      .filter((e) => !parEntite.get(e.id));
+    /* « Pourvue » ne veut pas dire « quelqu'un y est rattaché » : depuis que
+       chaque agent a un compte, ce test rendait toutes les entités pourvues et
+       l'écran annonçait « toutes pourvues » sur soixante-seize entités sans
+       chef. On demande donc un responsable réellement habilité. */
+    const chefs = chefsParEntite(comptes, habilitations, aujourdhui);
+    const aCommander = actives.filter((e) => NIVEAUX_DE_COMMANDEMENT.includes(e.niveau));
+    const directionsSansCompte = aCommander.filter((e) => !chefs.has(e.id));
 
     return {
       actives, deleguees, porteurs,
@@ -84,7 +97,8 @@ export function TableauDeBord({
       profilsActifs: profils.filter((p) => p.actif).length,
       reserves: profils.filter((p) => p.actif && p.reserveAdmin).length,
       maison: profils.filter((p) => p.origine === "MAISON").length,
-      commandement: actives.filter((e) => NIVEAUX_DE_COMMANDEMENT.includes(e.niveau)).length,
+      commandement: aCommander.length,
+      pourvues: aCommander.length - directionsSansCompte.length,
       anomalies: [
         {
           cle: "sans-habilitation",
@@ -134,7 +148,11 @@ export function TableauDeBord({
       <RangeeKpi tuiles={[
         {
           ton: "bleu", titre: "Entités au registre", valeur: fmtNum(vue.actives.length), icon: Building2,
-          sousTitre: `dont ${fmtNum(vue.commandement)} portent un chef`, href: "/dgarh/organigramme",
+          /* Le sous-titre annonçait « dont 22 portent un chef » en affichant le
+             nombre d'entités qui *devraient* en porter un. Deux chiffres
+             différents sous un seul libellé : on dit maintenant les deux. */
+          sousTitre: `${fmtNum(vue.pourvues)} des ${fmtNum(vue.commandement)} entités de commandement ont un chef`,
+          href: "/dgarh/organisation",
         },
         {
           ton: "indigo", titre: "Profils au catalogue", valeur: fmtNum(vue.profilsActifs), icon: KeyRound,

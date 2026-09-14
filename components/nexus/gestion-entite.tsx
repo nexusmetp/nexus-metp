@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Landmark } from "lucide-react";
-import { useDesignerResponsable, useEnregistrerEntite, useParametres } from "@/lib/queries";
+import {
+  useAgentsProjetes, useDesignerResponsable, useEnregistrerEntite, useParametres,
+} from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
   ENTITES, NIVEAU_LABELS, PROFILS, PROFILS_TECHNIQUES,
-  creeUnCycle, entiteById, exigeApprobation, libelleProfil, mentionApprobation,
-  niveauxApprobation, niveauxCreablesSous, optionsNiveaux, perimetreAdministrable,
-  verdictRattachement,
+  creeUnCycle, entiteById, exigeApprobation, libelleProfil, niveauxApprobation,
+  niveauxCreablesSous, optionsNiveaux, perimetreAdministrable, verdictRattachement,
 } from "@/lib/referentiels";
 import {
   Champ, ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
 } from "@/components/nexus/module";
 import { SelecteurPoint } from "@/components/nexus/selecteur-point";
 import { DialogueAccesOuvert, type AccesOuvert } from "@/components/nexus/acces-ouvert";
+import { DialogueNomination } from "@/components/nexus/nomination-dialogue";
 import type { Agent, Entite, NiveauEntite, Role } from "@/lib/types";
 
 /**
@@ -27,8 +28,7 @@ import type { Agent, Entite, NiveauEntite, Role } from "@/lib/types";
  */
 
 import {
-  CATEGORIES, LIBELLES_CATEGORIE, NIVEAUX_CREABLES, ROLE_ATTENDU,
-  coordonneeValide, videEntite, videResponsable,
+  NIVEAUX_CREABLES, ROLE_ATTENDU, coordonneeValide, videEntite, videResponsable,
 } from "./entite-constantes";
 
 export { NIVEAUX_CREABLES, ROLE_ATTENDU, coordonneeValide };
@@ -38,6 +38,7 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
   const enregistrerEntite = useEnregistrerEntite();
   const designer = useDesignerResponsable();
   const { data: parametres } = useParametres();
+  const { data: agents = [] } = useAgentsProjetes();
 
   const [formulaire, setFormulaire] = useState<typeof videEntite | null>(null);
   const [edition, setEdition] = useState<Entite | null>(null);
@@ -86,15 +87,22 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     });
   };
 
-  const ouvrirNomination = (e: Entite) => setNomination({
-    entite: e,
-    champs: {
-      ...videResponsable,
-      role: ROLE_ATTENDU[e.niveau] ?? "CHEF_SERVICE",
-      motif: "",
-      fonction: `Responsable — ${e.nom}`,
-    },
-  });
+  const ouvrirNomination = (e: Entite) => {
+    /* Le mode proposé suit la situation : s'il y a du monde dans l'entité, on
+       nomme parmi eux ; si elle vient de naître, il faut bien inscrire
+       quelqu'un. */
+    const surPlace = agents.some((a) => a.entiteId === e.id);
+    setNomination({
+      entite: e,
+      champs: {
+        ...videResponsable,
+        source: surPlace ? "EN_POSTE" : "A_INSCRIRE",
+        role: ROLE_ATTENDU[e.niveau] ?? "CHEF_SERVICE",
+        motif: "",
+        fonction: `Responsable — ${e.nom}`,
+      },
+    });
+  };
 
   /* Ce que le parent choisi accepte. Recalculé à chaque rendu : changer le
      rattachement change la liste des niveaux, et laisser l'ancien choix en
@@ -166,13 +174,23 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     });
   };
 
+  /* Les agents qui servent déjà dans l'entité : c'est parmi eux qu'on nomme
+     d'ordinaire, et les proposer évite d'inventer une identité à côté de la
+     leur. */
+  const candidats = useMemo(
+    () => (nomination ? agents.filter((a) => a.entiteId === nomination.entite.id) : []),
+    [agents, nomination]
+  );
+
   const nominationValide = !!nomination
-    && nomination.champs.nom.trim().length > 1
-    && nomination.champs.prenom.trim().length > 1
-    && !!nomination.champs.dateNaissance
     && !!nomination.champs.dateEffet
     && nomination.champs.motif.trim().length >= 10
-    && (!nomination.champs.email.trim() || /.+@.+\..+/.test(nomination.champs.email));
+    && (nomination.champs.source === "EN_POSTE"
+      ? !!nomination.champs.agentId
+      : nomination.champs.nom.trim().length > 1
+        && nomination.champs.prenom.trim().length > 1
+        && !!nomination.champs.dateNaissance
+        && (!nomination.champs.email.trim() || /.+@.+\..+/.test(nomination.champs.email)));
 
   /* La nomination attend-elle le ministre ? Le seuil est un réglage du
      ministère ; ici on ne fait que le lire, pour que l'écran le dise. */
@@ -183,15 +201,19 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     if (!nomination || !nominationValide) return;
     const { entite: cible, champs } = nomination;
     try {
-      const { compte, provisoire, enAttente, acte } = await designer.mutateAsync({
+      const { agent, compte, provisoire, enAttente, promotionInterne, acte } = await designer.mutateAsync({
         entite: cible,
-        identite: {
-          nom: champs.nom, prenom: champs.prenom, sexe: champs.sexe,
-          dateNaissance: champs.dateNaissance,
-          telephone: champs.telephone.trim(),
-          email: champs.email.trim().toLowerCase(),
-          categorie: champs.categorie,
-        },
+        ...(champs.source === "EN_POSTE"
+          ? { agentExistantId: champs.agentId }
+          : {
+            identite: {
+              nom: champs.nom, prenom: champs.prenom, sexe: champs.sexe,
+              dateNaissance: champs.dateNaissance,
+              telephone: champs.telephone.trim(),
+              email: champs.email.trim().toLowerCase(),
+              categorie: champs.categorie,
+            },
+          }),
         profil: champs.role,
         fonction: champs.fonction.trim() || `Responsable — ${cible.nom}`,
         dateEffet: champs.dateEffet,
@@ -200,16 +222,36 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
       });
       setNomination(null);
 
-      /* La nomination qui attend le ministre n'a rien ouvert : afficher des
-         identifiants ici laisserait croire le contraire, et quelqu'un
-         essaierait de se connecter avec un compte qui n'existe pas. */
-      if (enAttente || !compte || !provisoire) {
+      /* Trois issues et non deux, et les confondre faisait mentir l'écran :
+         la nomination a pu partir au ministre, prendre effet en promouvant
+         quelqu'un qui était déjà là, ou ouvrir un accès neuf. Seule la
+         dernière a des identifiants à transmettre. Le nom vient du dossier
+         rendu et non du formulaire — en mode « agent en poste », les champs
+         d'identité sont vides, et le bandeau annonçait « à la tête de IAF »
+         sans dire de qui. */
+      const qui = `${agent.prenom} ${agent.nom.toUpperCase()}`;
+
+      if (enAttente) {
         toast.success("Nomination soumise au ministre", {
           description:
-            `${acte.reference} — ${champs.prenom} ${champs.nom.toUpperCase()} à la tête de `
-            + `${cible.sigle}. Aucun accès n'est ouvert tant que l'acte n'est pas notifié : `
-            + "le compte et l'habilitation suivront l'approbation.",
+            `${acte.reference} — ${qui} à la tête de ${cible.sigle}. Aucun accès n'est ouvert `
+            + "tant que l'acte n'est pas notifié : le compte et l'habilitation suivront "
+            + "l'approbation.",
           duration: 12000,
+        });
+        return;
+      }
+
+      if (!compte || !provisoire) {
+        /* Promotion sur place : le compte existait, son mot de passe n'a pas
+           bougé. Rien à remettre à l'intéressé, donc pas de dialogue — mais il
+           faut le dire, sinon on attend des identifiants qui ne viendront pas. */
+        toast.success(`${qui} prend la tête de ${cible.sigle}`, {
+          description:
+            `${acte.reference} — ${promotionInterne ? "l'intéressé servait déjà dans cette entité. " : ""}`
+            + "Son compte passe au profil et son mot de passe ne change pas : il n'y a pas "
+            + "d'accès nouveau à lui transmettre.",
+          duration: 10000,
         });
         return;
       }
@@ -330,88 +372,18 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
         )}
       </DialogueFormulaire>
 
-      <DialogueFormulaire
-        ouvert={!!nomination}
+      <DialogueNomination
+        nomination={nomination}
+        surChamps={(c) => nomination && setNomination({
+          ...nomination, champs: { ...nomination.champs, ...c },
+        })}
         surFermeture={() => setNomination(null)}
-        titre={`Désigner le responsable — ${nomination?.entite.sigle ?? ""}`}
-        description={
-          "Une seule personne, celle qui dirige. C'est elle qui inscrira ensuite son secrétariat "
-          + "et son personnel, et leur attribuera les profils — vous n'aurez plus à intervenir."
-        }
         surValidation={nommer}
-        validationPossible={nominationValide}
-        libelleValidation={soumisAuMinistre ? "Soumettre au ministre" : "Désigner et ouvrir l'accès"}
-        large
-      >
-        {/* Dit avant le geste, jamais après : un bouton qui promet d'ouvrir un
-            accès et soumet une demande à la place est un bouton qui ment. */}
-        {nomination && soumisAuMinistre && (
-          <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-500">
-            {mentionApprobation(nomination.entite.niveau)}
-          </p>
-        )}
-        {nomination && (() => {
-          const maj = (c: Partial<typeof nomination.champs>) =>
-            setNomination({ ...nomination, champs: { ...nomination.champs, ...c } });
-          return (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ChampTexte label="Nom" obligatoire valeur={nomination.champs.nom}
-                  surChangement={(v) => maj({ nom: v })} placeholder="NGATSE" />
-                <ChampTexte label="Prénom" obligatoire valeur={nomination.champs.prenom}
-                  surChangement={(v) => maj({ prenom: v })} placeholder="Alphonse" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <ChampSelect label="Sexe" obligatoire valeur={nomination.champs.sexe}
-                  surChangement={(v) => maj({ sexe: v as Agent["sexe"] })}
-                  options={[{ valeur: "M", libelle: "Masculin" }, { valeur: "F", libelle: "Féminin" }]} />
-                <ChampTexte label="Date de naissance" obligatoire type="date"
-                  valeur={nomination.champs.dateNaissance}
-                  surChangement={(v) => maj({ dateNaissance: v })} />
-                <ChampSelect label="Catégorie" obligatoire valeur={nomination.champs.categorie}
-                  surChangement={(v) => maj({ categorie: v as Agent["categorie"] })}
-                  options={CATEGORIES.map((c) => ({ valeur: c, libelle: LIBELLES_CATEGORIE[c] }))} />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ChampTexte label="Adresse électronique" type="email" valeur={nomination.champs.email}
-                  surChangement={(v) => maj({ email: v })}
-                  placeholder="prenom.nom@metp.gouv.cg"
-                  aide="Laissée vide, elle est dérivée du nom, comme pour tout agent." />
-                <ChampTexte label="Téléphone" valeur={nomination.champs.telephone}
-                  surChangement={(v) => maj({ telephone: v })} placeholder="+242 …" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ChampSelect label="Profil d'accès" obligatoire valeur={nomination.champs.role}
-                  surChangement={(v) => maj({ role: v })}
-                  options={profilsDesignables.map((p) => ({
-                    valeur: p.code, libelle: `${p.libelle} · rang ${p.rang}`,
-                  }))}
-                  aide="Le profil dit ce qu'il peut faire ; l'entité dit sur qui. Celui qui est proposé correspond au niveau de l'entité — c'est une suggestion, pas une règle." />
-                <ChampTexte label="À compter du" obligatoire type="date" valeur={nomination.champs.dateEffet}
-                  surChangement={(v) => maj({ dateEffet: v })} />
-              </div>
-              <ChampTexte label="Fonction" valeur={nomination.champs.fonction}
-                surChangement={(v) => maj({ fonction: v })} />
-              <ChampZone label="Acte qui le nomme" obligatoire lignes={2} valeur={nomination.champs.motif}
-                surChangement={(v) => maj({ motif: v })}
-                placeholder="Décret n° … du … portant nomination de …"
-                aide="Obligatoire. Un responsable désigné sans acte cité ne se justifie devant personne — et c'est ce texte que porteront l'acte d'affectation et l'habilitation." />
-              <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
-                <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Trois choses s&apos;ouvrent ensemble : le <strong className="font-medium">dossier
-                  d&apos;agent</strong> — un responsable est d&apos;abord un agent du ministère —, le{" "}
-                  <strong className="font-medium">compte</strong>, et l&apos;<strong className="font-medium">habilitation</strong>{" "}
-                  qui dit de qui il tient son profil. Mot de passe provisoire{" "}
-                  <span className="font-mono font-semibold">Nexus2026</span>, à changer à la première
-                  connexion. Le dossier s&apos;ouvre incomplet : les pièces d&apos;état civil se
-                  déposent ensuite, par l&apos;intéressé ou son secrétariat.
-                </p>
-              </div>
-            </>
-          );
-        })()}
-      </DialogueFormulaire>
+        valide={nominationValide}
+        profilsDesignables={profilsDesignables}
+        candidats={candidats}
+        soumisAuMinistre={soumisAuMinistre}
+      />
 
       <DialogueAccesOuvert acces={acces} surFermeture={() => setAcces(null)} />
     </>

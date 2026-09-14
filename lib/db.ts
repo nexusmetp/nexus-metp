@@ -33,7 +33,7 @@ const DB_NAME = "nexus-metp";
  * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
  * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 27;
+const DB_VERSION = 28;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -157,6 +157,23 @@ const RAFRAICHIR: { version: number; tiroirs: StoreName[] }[] = [
      Sans cette réécriture, une base déjà montée garderait les anciennes
      lignes, et la portée d'administration y serait absente. */
   { version: 27, tiroirs: ["profils"] },
+  /* v28 : le semis désigne enfin la tête de chaque entité qu'il peuple.
+     Jusqu'ici il dressait l'organigramme, y affectait deux mille quatre cents
+     agents, et ne nommait de responsable que pour les quinze entités portant
+     un compte de démonstration : soixante-seize services, directions
+     départementales et lycées techniques arrivaient **peuplés et acéphales**.
+     Le tableau de bord le comptait comme une anomalie du ministère alors que
+     l'anomalie était dans le décor.
+
+     Quatre tiroirs sont réécrits parce que la désignation les touche tous :
+     l'**entité** reçoit son responsable, le **compte** de l'intéressé passe du
+     profil d'agent à celui de son niveau, son **affectation** prend le titre
+     de la fonction, et une **habilitation** dit de qui il le tient — le chef
+     de l'entité de rattachement, puisque l'arbre est pourvu de haut en bas.
+     Personne n'est inventé : le chef est le plus ancien en service parmi les
+     agents déjà affectés là, et une entité sans personne en poste reste sans
+     chef. */
+  { version: 28, tiroirs: ["entites", "utilisateurs", "habilitations", "affectations"] },
 ];
 
 let dbp: Promise<IDBPDatabase> | null = null;

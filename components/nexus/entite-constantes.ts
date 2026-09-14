@@ -1,4 +1,4 @@
-import type { Agent, NiveauEntite, Role } from "@/lib/types";
+import type { Agent, NiveauEntite } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
 /* Constantes de la création et de la nomination                       */
@@ -26,33 +26,11 @@ export const NIVEAUX_CREABLES: NiveauEntite[] = [
 ];
 
 /**
- * Profil **proposé** selon le niveau de l'entité que l'on vient de créer.
- *
- * Une proposition, non une règle : la correspondance entre un niveau
- * d'organigramme et un profil d'accès relève de l'organisation du ministère,
- * pas de l'outil. Elle évite de choisir au jugé dans une liste de quinze, et
- * se corrige d'un clic.
+ * Le profil proposé selon le niveau vient du référentiel : le semis le lit
+ * pour pourvoir les entités, l'écran pour préremplir la liste. Réexporté ici
+ * pour qu'aucun site d'appel ne bouge.
  */
-export const ROLE_ATTENDU: Partial<Record<NiveauEntite, Role>> = {
-  MINISTERE: "MINISTRE",
-  /* Le cabinet est dirigé par le directeur de cabinet, dont le profil porte
-     ce nom et ce rang. Y proposer « directeur central » le plaçait deux
-     marches en dessous de sa fonction réelle, et lui interdisait de désigner
-     les chefs de service de son propre cabinet. */
-  CABINET: "CABINET",
-  DIRECTION_GENERALE: "DIRECTEUR_GENERAL",
-  /* L'inspection générale est dirigée par un inspecteur, pas par un directeur
-     central : c'est un corps distinct, et la confusion se voyait à l'écran. */
-  INSPECTION_GENERALE: "INSPECTEUR",
-  SECRETARIAT: "CHEF_SERVICE",
-  DIRECTION: "DIRECTEUR_CENTRAL",
-  SERVICE: "CHEF_SERVICE",
-  BUREAU: "CHEF_BUREAU",
-  DIRECTION_DEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
-  INSPECTION_INTERDEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
-  ANTENNE_DEPARTEMENTALE: "CHEF_SERVICE",
-  ETABLISSEMENT: "CHEF_ETABLISSEMENT",
-};
+export { ROLE_ATTENDU } from "@/lib/referentiels";
 
 /** Les catégories de personnel, et leur libellé. Le référentiel fait foi. */
 export const CATEGORIES: Agent["categorie"][] = [
@@ -72,13 +50,39 @@ export const videEntite = {
   parentId: "ENT-METP", ville: "", reference: "", lat: "", lon: "",
 };
 
-export const videResponsable = {
-  nom: "", prenom: "", sexe: "M" as Agent["sexe"], dateNaissance: "",
+/**
+ * Les champs de la désignation.
+ *
+ * `source` décide de la moitié du formulaire : nommer quelqu'un qui sert déjà
+ * dans l'entité — le cas ordinaire — ou inscrire une personne au fichier, ce
+ * qui ne se justifie que pour une entité qui vient de naître.
+ */
+export interface ChampsResponsable {
+  source: "EN_POSTE" | "A_INSCRIRE";
+  /** Renseigné en mode « en poste » : l'agent choisi dans l'entité. */
+  agentId: string;
+  nom: string;
+  prenom: string;
+  sexe: Agent["sexe"];
+  dateNaissance: string;
+  email: string;
+  telephone: string;
+  fonction: string;
+  categorie: Agent["categorie"];
+  dateEffet: string;
+  motif: string;
+  role: string;
+}
+
+export const videResponsable: ChampsResponsable = {
+  source: "EN_POSTE",
+  agentId: "",
+  nom: "", prenom: "", sexe: "M", dateNaissance: "",
   email: "", telephone: "", fonction: "",
-  categorie: "FONCTIONNAIRE" as Agent["categorie"],
+  categorie: "FONCTIONNAIRE",
   dateEffet: new Date().toISOString().slice(0, 10),
   motif: "",
-  role: "DIRECTEUR_CENTRAL" as string,
+  role: "DIRECTEUR_CENTRAL",
 };
 
 /** Bornes du territoire congolais : refuser une coordonnée hors emprise vaut mieux

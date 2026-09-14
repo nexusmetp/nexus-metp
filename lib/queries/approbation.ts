@@ -3,12 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { all, remove, save } from "@/lib/db";
 import { entiteById, hydraterEntites, libelleProfil } from "@/lib/referentiels";
-import { motDePasseProvisoire } from "@/lib/acces/motdepasse";
-import type {
-  Acte, Affectation, Agent, Entite, Habilitation, Position, Utilisateur,
-} from "@/lib/types";
-import { journaliser, nouvelId } from "./audit";
-import { courrielDe } from "./organisation";
+import type { Acte, Agent, Entite, Utilisateur } from "@/lib/types";
+import { journaliser } from "./audit";
+import { appliquerNomination } from "./nomination";
 
 /* ------------------------------------------------------------------ */
 /* Les nominations qui attendent le ministre                           */
@@ -110,53 +107,15 @@ export function useDeciderNomination() {
         throw new Error("L'acte ne porte plus l'entité ou le profil : il ne peut pas être notifié.");
       }
 
-      const comptes = await all<Utilisateur>("utilisateurs");
-      const pris = new Set(comptes.map((u) => u.email.split("@")[0]));
-      const provisoire = motDePasseProvisoire();
-      const compteId = nouvelId("USR");
-
-      await save<Affectation>("affectations", {
-        id: nouvelId("AFF"), agentId: agent.id, entiteId: entite.id, posteId: null,
-        fonction, dateEffet, dateFin: null, acteId: acte.id,
-      } as unknown as Affectation);
-      await save<Position>("positions", {
-        id: nouvelId("POS"), agentId: agent.id, nature: "ACTIVITE",
-        dateEffet, dateFin: null, acteId: acte.id,
-      } as unknown as Position);
-
-      const compte: Utilisateur = {
-        id: compteId,
-        email: (agent.email || courrielDe(agent, pris)).toLowerCase(),
-        motDePasse: provisoire,
-        motDePasseAChanger: true,
-        nomComplet: `${agent.prenom} ${agent.nom.toUpperCase()}`,
-        role: profil,
-        entiteId: entite.id,
-        agentId: agent.id,
-        fonction,
-        actif: true,
-        dateCreation: horodatage,
-        creePar: utilisateur.id,
-      };
-      await save<Utilisateur>("utilisateurs", compte);
-      await save<Habilitation>("habilitations", {
-        id: nouvelId("HAB"),
-        utilisateurId: compteId,
-        role: profil,
-        entiteId: entite.id,
-        /* Accordée par celui qui approuve, non par celui qui a proposé : c'est
-           la signature qui fonde le droit, et l'historique doit le dire. */
-        accordePar: utilisateur.id,
-        accordeParNom: utilisateur.nomComplet,
-        accordeLe: horodatage,
-        dateDebut: dateEffet,
-        dateFin: null,
+      /* Les effets sont ceux de toute nomination : ils vivent en un seul
+         endroit, appelé ici comme sur le chemin direct. Un agent déjà en poste
+         garde son compte et son mot de passe ; seul un nouveau venu en reçoit
+         un provisoire. */
+      const { compte, provisoire, promotionInterne } = await appliquerNomination({
+        agent, entite, profil, fonction, dateEffet,
         motif: `${acte.cible?.motif ?? ""} Approuvée : ${motif.trim()}`.trim(),
-        acteId: acte.id,
+        acteId: acte.id, parQui: utilisateur, horodatage,
       });
-
-      await save<Entite>("entites", { ...entite, responsableId: agent.id });
-      hydraterEntites(await all<Entite>("entites"));
 
       await save<Acte>("actes", {
         ...acte,
@@ -172,7 +131,9 @@ export function useDeciderNomination() {
         justification:
           `Nomination approuvée : ${agent.prenom} ${agent.nom.toUpperCase()} — `
           + `${libelleProfil(profil)} — ${entite.sigle}. ${motif.trim()} `
-          + `Dossier, compte (${compte.email}) et habilitation ouverts à la notification.`,
+          + (promotionInterne
+            ? `Le compte (${compte.email}) passe au profil à la notification ; son mot de passe ne change pas.`
+            : `Dossier, compte (${compte.email}) et habilitation ouverts à la notification.`),
       });
 
       return { decision, compte, provisoire, agent };

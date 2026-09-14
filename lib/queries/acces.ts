@@ -12,7 +12,7 @@ import type {
   Utilisateur,
 } from "@/lib/types";
 import { journaliser, nouvelId } from "./audit";
-import { courrielDe } from "./organisation";
+import { appliquerNomination } from "./nomination";
 
 /* ------------------------------------------------------------------ */
 /* La tête d'une entité — le seul agent que l'administrateur inscrit   */
@@ -39,11 +39,28 @@ export function useDesignerResponsable() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      entite, identite, profil, fonction, dateEffet, motif, utilisateur,
+      entite, identite, agentExistantId, profil, fonction, dateEffet, motif, utilisateur,
     }: {
       entite: Entite;
-      identite: Pick<Agent, "nom" | "prenom" | "sexe" | "dateNaissance" | "telephone" | "email">
+      /** Requise seulement pour inscrire quelqu'un qui n'est pas encore au fichier. */
+      identite?: Pick<Agent, "nom" | "prenom" | "sexe" | "dateNaissance" | "telephone" | "email">
         & { categorie: Agent["categorie"] };
+      /**
+       * Nommer un agent **qui sert déjà dans cette entité** — le cas ordinaire,
+       * et celui que la plateforme ne savait pas faire.
+       *
+       * Elle n'offrait qu'un geste : saisir une identité nouvelle. Appliqué aux
+       * soixante-dix-sept entités sans chef — toutes peuplées, aucune vide —
+       * cela revenait à inventer soixante-dix-sept personnes à côté de celles
+       * qui y travaillent. C'est faux administrativement, puisqu'on nomme parmi
+       * le personnel en poste, et c'est le contraire de la règle du dépôt : on
+       * n'invente pas une identité d'agent.
+       *
+       * Ici, rien n'est créé : le dossier existe, la carrière existe, le compte
+       * existe. On change sa fonction, on lui accorde un profil, et le mot de
+       * passe ne bouge pas — il n'y a pas de nouvel accès à ouvrir.
+       */
+      agentExistantId?: string;
       profil: string;
       fonction: string;
       dateEffet: string;
@@ -109,13 +126,25 @@ export function useDesignerResponsable() {
       );
 
       const horodatage = new Date().toISOString();
-      const agent: Agent = {
+
+      const tousAgents = await all<Agent>("agents");
+      const dejaLa = agentExistantId
+        ? tousAgents.find((a) => a.id === agentExistantId)
+        : undefined;
+      if (agentExistantId && !dejaLa) {
+        throw new Error("L'agent désigné est introuvable au fichier.");
+      }
+      if (!dejaLa && !identite) {
+        throw new Error("Indiquez soit un agent en poste, soit l'identité de la personne à inscrire.");
+      }
+
+      const agent: Agent = dejaLa ?? {
         id: nouvelId("AGT"),
-        matricule: `${identite.categorie.slice(0, 3)}-${Date.now().toString().slice(-6)}`,
-        nom: identite.nom.trim().toUpperCase(),
-        prenom: identite.prenom.trim(),
-        sexe: identite.sexe,
-        dateNaissance: identite.dateNaissance,
+        matricule: `${identite!.categorie.slice(0, 3)}-${Date.now().toString().slice(-6)}`,
+        nom: identite!.nom.trim().toUpperCase(),
+        prenom: identite!.prenom.trim(),
+        sexe: identite!.sexe,
+        dateNaissance: identite!.dateNaissance,
         /* Ce que le formulaire ne demande pas, il ne l'invente pas : le
            dossier s'ouvre incomplet et le dit, et son taux de complétude le
            signalera au responsable lui-même dès sa première connexion. */
@@ -123,10 +152,10 @@ export function useDesignerResponsable() {
         nationalite: "Donnée non renseignée",
         situationFamiliale: "Célibataire",
         enfants: 0,
-        telephone: identite.telephone.trim(),
-        email: identite.email.trim(),
+        telephone: identite!.telephone.trim(),
+        email: identite!.email.trim(),
         adresse: "",
-        categorie: identite.categorie,
+        categorie: identite!.categorie,
         enseignant: false,
         dateRecrutement: dateEffet,
         datePriseService: dateEffet,
@@ -162,7 +191,9 @@ export function useDesignerResponsable() {
         pieces: [],
       };
 
-      await save<Agent>("agents", agent);
+      /* Un dossier qui existe déjà ne se réécrit pas : la nomination change
+         une fonction, pas une identité. */
+      if (!dejaLa) await save<Agent>("agents", agent);
       await save<Acte>("actes", acte);
 
       if (attendLeMinistre) {
@@ -178,89 +209,29 @@ export function useDesignerResponsable() {
             + `niveau « ${entite.niveau} ». ${motif.trim()} Aucun effet n'est appliqué avant `
             + "notification — ni compte, ni habilitation, ni prise de fonction.",
         });
-        return { agent, compte: null, provisoire: null, acte, enAttente: true as const };
+        return {
+          agent, compte: null, provisoire: null, acte,
+          enAttente: true as const, promotionInterne: !!dejaLa,
+        };
       }
 
-      await save<Affectation>("affectations", {
-        id: nouvelId("AFF"), agentId: agent.id, entiteId: entite.id, posteId: null as any,
-        fonction, dateEffet, dateFin: null, acteId,
-      } as Affectation);
-      await save<Position>("positions", {
-        id: nouvelId("POS"), agentId: agent.id, nature: "ACTIVITE",
-        dateEffet, dateFin: null, acteId,
-      } as Position);
-
-      const pris = new Set(comptes.map((u) => u.email.split("@")[0]));
-      const compteId = nouvelId("USR");
-      const provisoire = motDePasseProvisoire();
-      const compte: Utilisateur = {
-        id: compteId,
-        /* L'adresse est l'identifiant de connexion : celle que le formulaire
-           a saisie, ou celle qu'on dérive du nom comme pour tout agent. */
-        email: (agent.email || courrielDe(agent, pris)).toLowerCase(),
-        motDePasse: provisoire,
-        motDePasseAChanger: true,
-        nomComplet: `${agent.prenom} ${agent.nom.toUpperCase()}`,
-        role: profil,
-        entiteId: entite.id,
-        agentId: agent.id,
-        fonction,
-        actif: true,
-        dateCreation: horodatage,
-        creePar: utilisateur.id,
-      };
-      await save<Utilisateur>("utilisateurs", compte);
-      await save<Habilitation>("habilitations", {
-        id: nouvelId("HAB"),
-        utilisateurId: compteId,
-        role: profil,
-        entiteId: entite.id,
-        accordePar: utilisateur.id,
-        accordeParNom: utilisateur.nomComplet,
-        accordeLe: horodatage,
-        dateDebut: dateEffet,
-        dateFin: null,
-        motif: motif.trim(),
-        acteId,
+      const { compte, provisoire, promotionInterne } = await appliquerNomination({
+        agent, entite, profil, fonction, dateEffet, motif,
+        acteId, parQui: utilisateur, horodatage,
       });
-      /* La relève, s'il y en a une : on clôt avant d'ouvrir, jamais l'inverse.
-         Une habilitation ne s'efface pas — elle se termine, et l'historique dit
-         toujours qui tenait la direction en mars et de qui il le tenait. */
-      for (const sortant of enPlace) {
-        for (const h of habilitationsEnVigueur(habilitations, sortant.id, aujourdhui)) {
-          await save<Habilitation>("habilitations", {
-            ...h,
-            dateFin: dateEffet,
-            revoqueePar: utilisateur.id,
-            revoqueeParNom: utilisateur.nomComplet,
-            revoqueeLe: horodatage,
-            motifRevocation:
-              `Relève à la tête de ${entite.sigle} par ${agent.prenom} ${agent.nom.toUpperCase()}. `
-              + motif.trim(),
-          });
-        }
-        await save<Utilisateur>("utilisateurs", { ...sortant, role: "AGENT" });
-        await journaliser(utilisateur, "MODIFICATION", "Utilisateur", sortant.id, {
-          champ: "role",
-          ancienneValeur: sortant.role,
-          nouvelleValeur: "AGENT",
-          justification:
-            `Fin de fonctions à la tête de ${entite.sigle}. Le compte reste ouvert au profil `
-            + "d'agent : l'intéressé demeure agent du ministère.",
-        });
-      }
 
-      await save<Entite>("entites", { ...entite, responsableId: agent.id });
-      hydraterEntites(await all<Entite>("entites"));
 
-      await journaliser(utilisateur, "CREATION", "Agent", agent.id, {
+      await journaliser(utilisateur, promotionInterne ? "MODIFICATION" : "CREATION", "Agent", agent.id, {
         acteId,
         nouvelleValeur: `${agent.prenom} ${agent.nom} — ${libelleProfil(profil)} — ${entite.sigle}`,
-        justification:
-          `Désignation du responsable de ${entite.sigle}. ${motif.trim()} `
-          + `Dossier, compte (${compte.email}) et habilitation ouverts du même geste.`,
+        justification: promotionInterne
+          ? `Désignation du responsable de ${entite.sigle} parmi le personnel en poste. `
+            + `${motif.trim()} Le compte (${compte.email}) passe au profil ; son mot de passe `
+            + "ne change pas."
+          : `Désignation du responsable de ${entite.sigle}. ${motif.trim()} `
+            + `Dossier, compte (${compte.email}) et habilitation ouverts du même geste.`,
       });
-      return { agent, compte, provisoire, acte, enAttente: false as const };
+      return { agent, compte, provisoire, acte, enAttente: false as const, promotionInterne };
     },
     onSuccess: () => {
       ["agents", "actes", "affectations", "positions", "entites",

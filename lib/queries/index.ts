@@ -14,6 +14,7 @@ export * from "./actes";
 export * from "./organisation";
 export * from "./acces";
 export * from "./approbation";
+export * from "./nomination";
 export * from "./collaboration";
 export * from "./gestion";
 export * from "./presence";

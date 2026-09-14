@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import type { Entite, Habilitation, ProfilAcces, Utilisateur } from "@/lib/types";
 import {
-  NIVEAU_LABELS, chefsParEntite, entiteById, habilitationsEnVigueur,
-  incoherencesOrganigramme, libelleProfil,
+  NIVEAUX_DE_COMMANDEMENT, NIVEAU_LABELS, chefsParEntite, entiteById,
+  habilitationsEnVigueur, incoherencesOrganigramme, libelleProfil,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { RangeeKpi } from "@/components/nexus/module";
@@ -29,21 +29,6 @@ import {
 /* il pose le cadre, et ce sont les directions qui le remplissent.     */
 /* Sans cet écran, il ne pouvait pas le vérifier.                      */
 /* ------------------------------------------------------------------ */
-
-/**
- * Les niveaux qui, dans ce ministère, portent un chef et donc une délégation.
- *
- * La liste s'arrêtait aux directions. C'était trop court : un **service**, un
- * **établissement** et une **inspection interdépartementale** portent eux aussi
- * un responsable qui inscrit du personnel, et une chaîne qui s'interrompt à ce
- * niveau-là s'interrompt pour de bon — l'administrateur ne le voyait pas. Le
- * bureau n'y figure pas : il est la maille terminale, son chef relève du
- * service, et l'y compter noierait le signal dans trente-neuf lignes. */
-const NIVEAUX_DE_COMMANDEMENT: Entite["niveau"][] = [
-  "DIRECTION_GENERALE", "DIRECTION", "DIRECTION_DEPARTEMENTALE",
-  "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE", "CABINET",
-  "SERVICE", "ETABLISSEMENT",
-];
 
 export function TableauDeBord({
   entites, comptes, habilitations, profils, aujourdhui,

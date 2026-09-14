@@ -60,6 +60,71 @@ export const ENFANTS_AUTORISES: Record<NiveauEntite, NiveauEntite[]> = {
 };
 
 /**
+ * Les niveaux qui, dans ce ministère, portent un chef et donc une délégation.
+ *
+ * La liste vivait dans l'écran de l'administrateur et s'arrêtait aux
+ * directions. C'était trop court : un **service**, un **établissement** et une
+ * **inspection interdépartementale** portent eux aussi un responsable qui
+ * inscrit du personnel, et une chaîne qui s'interrompt à ce niveau-là
+ * s'interrompt pour de bon. Le bureau n'y figure pas : il est la maille
+ * terminale, son chef relève du service, et l'y compter noierait le signal.
+ *
+ * Elle est ici, avec le reste de la grammaire, parce que trois lecteurs la
+ * lisent désormais — le tableau de bord qui compte les entités sans chef, le
+ * semis qui les pourvoit, et l'écran qui propose de désigner. Trois copies,
+ * c'est trois vérités le jour où l'une bouge.
+ */
+export const NIVEAUX_DE_COMMANDEMENT: NiveauEntite[] = [
+  "DIRECTION_GENERALE", "DIRECTION", "DIRECTION_DEPARTEMENTALE",
+  "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE", "CABINET",
+  "SERVICE", "ETABLISSEMENT",
+];
+
+/**
+ * Profil **proposé** pour celui qui dirige une entité de ce niveau.
+ *
+ * Une proposition, non une règle : la correspondance entre un niveau
+ * d'organigramme et un profil d'accès relève de l'organisation du ministère,
+ * pas de l'outil. Elle évite de choisir au jugé dans une liste de quinze, et
+ * se corrige d'un clic à l'écran.
+ */
+export const ROLE_ATTENDU: Partial<Record<NiveauEntite, string>> = {
+  MINISTERE: "MINISTRE",
+  /* Le cabinet est dirigé par le directeur de cabinet, dont le profil porte
+     ce nom et ce rang. Y proposer « directeur central » le plaçait deux
+     marches en dessous de sa fonction réelle, et lui interdisait de désigner
+     les chefs de service de son propre cabinet. */
+  CABINET: "CABINET",
+  DIRECTION_GENERALE: "DIRECTEUR_GENERAL",
+  /* L'inspection générale est dirigée par un inspecteur, pas par un directeur
+     central : c'est un corps distinct, et la confusion se voyait à l'écran. */
+  INSPECTION_GENERALE: "INSPECTEUR",
+  SECRETARIAT: "CHEF_SERVICE",
+  DIRECTION: "DIRECTEUR_CENTRAL",
+  SERVICE: "CHEF_SERVICE",
+  BUREAU: "CHEF_BUREAU",
+  DIRECTION_DEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
+  INSPECTION_INTERDEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
+  ANTENNE_DEPARTEMENTALE: "CHEF_SERVICE",
+  ETABLISSEMENT: "CHEF_ETABLISSEMENT",
+};
+
+/** Le titre que porte celui qui dirige une entité de ce niveau. */
+export const TITRE_DU_CHEF: Partial<Record<NiveauEntite, string>> = {
+  CABINET: "Directeur de cabinet",
+  DIRECTION_GENERALE: "Directeur général",
+  INSPECTION_GENERALE: "Inspecteur général",
+  DIRECTION: "Directeur",
+  SERVICE: "Chef de service",
+  SECRETARIAT: "Chef du secrétariat",
+  BUREAU: "Chef de bureau",
+  DIRECTION_DEPARTEMENTALE: "Directeur départemental",
+  INSPECTION_INTERDEPARTEMENTALE: "Inspecteur interdépartemental",
+  ANTENNE_DEPARTEMENTALE: "Chef d'antenne",
+  ETABLISSEMENT: "Chef d'établissement",
+};
+
+/**
  * Les niveaux créables sous une entité donnée.
  *
  * Rend une liste vide quand l'entité est terminale — l'écran doit alors le

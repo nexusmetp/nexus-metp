@@ -25,6 +25,7 @@ import { construireGestion } from "./gestion";
 import { construireArchives } from "./archives";
 import { construirePresence } from "./presence";
 import { construireAccueil } from "./accueil";
+import { construireCommandement } from "./commandement";
 import { construireHabilitations } from "./habilitations";
 import { construireMouvements } from "./mouvements";
 import { construireProfils } from "./profils";
@@ -408,11 +409,18 @@ export function buildDataset(): Dataset {
      un compte, un historique. */
   utilisateurs.push(...comptesAgents);
 
+  /* Qui dirige quoi. Après les habilitations, parce qu'il faut que chaque
+     agent ait son compte pour qu'on puisse en promouvoir un ; et avant les
+     profils, qui comptent les porteurs de chaque rôle. */
+  const { entites: entitesPourvues } = construireCommandement({
+    entites: ENTITES, agents, affectations, utilisateurs, habilitations,
+  });
+
   const { profils } = construireProfils({ utilisateurs });
 
 
   return {
-    entites: ENTITES, corps: CORPS, grades: GRADES,
+    entites: entitesPourvues, corps: CORPS, grades: GRADES,
     postes, agents, situations, affectations, positions, actes, besoins,
     utilisateurs, journal, notifications,
     tickets, messagesTicket, conversations, messages, annonces, parametres,

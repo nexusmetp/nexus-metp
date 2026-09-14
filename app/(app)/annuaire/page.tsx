@@ -12,6 +12,7 @@ import {
 import { fmtNum, initiales } from "@/lib/format";
 import { BadgeCategorie, BadgePosition, PageHeader } from "@/components/nexus/ui-kit";
 import { Portrait } from "@/components/nexus/portrait";
+import { SelecteurEntite } from "@/components/nexus/selecteur-entite";
 import {
   LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
@@ -73,6 +74,21 @@ export default function AnnuairePage() {
     comptes: compteDe.size,
     entites: new Set(agents.map((a) => a.entiteId).filter(Boolean)).size,
   }), [agents, compteDe]);
+
+  /* L'effectif par branche, pour peser chaque entité du sélecteur. */
+  const effectifBranche = useMemo(() => {
+    const direct = new Map<string, number>();
+    agents.forEach((a) => a.entiteId && direct.set(a.entiteId, (direct.get(a.entiteId) ?? 0) + 1));
+    const cache = new Map<string, number>();
+    return (id: string) => {
+      let n = cache.get(id);
+      if (n === undefined) {
+        n = descendantsDe(id).reduce((s, e) => s + (direct.get(e.id) ?? 0), 0);
+        cache.set(id, n);
+      }
+      return n;
+    };
+  }, [agents]);
 
   const entitesFiltrables = useMemo(
     () => ENTITES.filter((e) => NIVEAUX_FILTRABLES.includes(e.niveau) && e.actif !== false),
@@ -158,8 +174,15 @@ export default function AnnuairePage() {
           || (a.fonction ?? "").toLowerCase().includes(t) || (a.email ?? "").toLowerCase().includes(t)
           || (a.telephone ?? "").includes(t) || a.matricule.toLowerCase().includes(t)}
         placeholderRecherche="Nom, fonction, téléphone, adresse…"
+        controles={(
+          <SelecteurEntite
+            entites={entitesFiltrables}
+            valeur={filtres.entite}
+            surChangement={(v) => setFiltres((f) => ({ ...f, entite: v }))}
+            effectifDe={effectifBranche}
+          />
+        )}
         filtres={[
-          { cle: "entite", libelle: "Toutes les entités", options: entitesFiltrables.slice(0, 90).map((e) => ({ valeur: e.id, libelle: `${e.sigle} — ${e.nom.slice(0, 40)}` })) },
           { cle: "categorie", libelle: "Toutes catégories", options: Object.entries(REGLES_CATEGORIE).map(([v, r]) => ({ valeur: v, libelle: (r as any).libelle })) },
         ]}
         valeursFiltres={filtres}

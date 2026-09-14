@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { AgentProjete, Agent, CategoriePersonnel, Sexe } from "@/lib/types";
+import { SelecteurEntite } from "@/components/nexus/selecteur-entite";
 
 /** Entités susceptibles de porter des agents. */
 const NIVEAUX_PORTEURS = [
@@ -84,6 +85,23 @@ export default function AgentsPage() {
       && visible(perimetreDroit, e.id)),
     [entitesDb, perimetreDroit]
   );
+
+  /* L'effectif de la branche, en regard de chaque entité du sélecteur : un
+     filtre qu'on choisit pour le trouver vide n'apprend rien. Indexé une
+     fois — l'appeler par entité rebalaierait le fichier six cents fois. */
+  const effectifBranche = useMemo(() => {
+    const direct = new Map<string, number>();
+    agents.forEach((a) => a.entiteId && direct.set(a.entiteId, (direct.get(a.entiteId) ?? 0) + 1));
+    const cache = new Map<string, number>();
+    return (id: string) => {
+      let n = cache.get(id);
+      if (n === undefined) {
+        n = descendantsDe(id).reduce((s, e) => s + (direct.get(e.id) ?? 0), 0);
+        cache.set(id, n);
+      }
+      return n;
+    };
+  }, [agents]);
 
   const perimetreFiltre = useMemo(
     () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
@@ -272,8 +290,15 @@ export default function AgentsPage() {
         recherche={(a, t) =>
           a.nom.toLowerCase().includes(t) || a.prenom.toLowerCase().includes(t) || a.matricule.toLowerCase().includes(t)}
         placeholderRecherche="Nom, prénom ou matricule…"
+        controles={(
+          <SelecteurEntite
+            entites={entitesFiltrables}
+            valeur={filtres.entite}
+            surChangement={(v) => setFiltres((f) => ({ ...f, entite: v }))}
+            effectifDe={effectifBranche}
+          />
+        )}
         filtres={[
-          { cle: "entite", libelle: "Toutes les entités", options: entitesFiltrables.map((e) => ({ valeur: e.id, libelle: `${e.sigle} — ${e.nom.slice(0, 40)}` })) },
           { cle: "categorie", libelle: "Toutes catégories", options: CATEGORIES.map((c) => ({ valeur: c, libelle: REGLES_CATEGORIE[c].libelle })) },
           { cle: "position", libelle: "Toutes positions", options: Object.entries(POSITION_LABELS).map(([k, v]) => ({ valeur: k, libelle: v as string })) },
         ]}

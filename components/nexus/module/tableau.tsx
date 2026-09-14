@@ -40,7 +40,7 @@ const CLASSE_VISIBILITE: Record<string, string> = {
  * attendue sur chaque écran.
  */
 export function TableauModule<T extends { id: string }>({
-  titre, description, lignes, colonnes, recherche, filtres, valeursFiltres,
+  titre, description, lignes, colonnes, recherche, filtres, controles, valeursFiltres,
   surChangementFiltre, surSelection, ligneActive, vide, actions, parPage = 12,
   rechercheTexte, surRecherche, placeholderRecherche = "Rechercher…",
 }: {
@@ -50,6 +50,13 @@ export function TableauModule<T extends { id: string }>({
   colonnes: Colonne<T>[];
   recherche?: (ligne: T, terme: string) => boolean;
   filtres?: Filtre[];
+  /**
+   * Un contrôle de filtre que le menu déroulant ne sait pas rendre — un
+   * sélecteur d'entité cherchable, par exemple. Il se pose à côté des
+   * filtres ordinaires plutôt que de les remplacer : un écran n'a pas à
+   * choisir entre les deux.
+   */
+  controles?: React.ReactNode;
   valeursFiltres?: Record<string, string>;
   surChangementFiltre?: (cle: string, valeur: string) => void;
   surSelection?: (ligne: T) => void;
@@ -91,7 +98,7 @@ export function TableauModule<T extends { id: string }>({
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
 
-        {(recherche || filtres?.length) && (
+        {(recherche || filtres?.length || controles) && (
           <div className="flex flex-wrap items-center gap-2">
             {recherche && (
               <div className="relative min-w-[200px] flex-1">
@@ -104,6 +111,7 @@ export function TableauModule<T extends { id: string }>({
                 />
               </div>
             )}
+            {controles}
             {filtres?.map((f) => (
               <Select
                 key={f.cle}

@@ -182,7 +182,7 @@ export function construireCollaboration(
   ouvrirFil("CNV-003", "GROUPE", "Commission de titularisation", ["USR-002", "USR-003", "USR-005"], "ENT-DPCEF", 5);
   ouvrirFil("CNV-004", "DIRECT", "Alphonse NGATSE", ["USR-002", "USR-006"], null, 6);
   ouvrirFil("CNV-005", "DIRECT", "Berthe MOUKALA", ["USR-003", "USR-006"], null, 4);
-  ouvrirFil("CNV-006", "ENTITE", "Directions départementales", ["USR-002", "USR-008", "USR-009"], "ENT-DD-02", 6);
+  ouvrirFil("CNV-006", "ENTITE", "Directions départementales", ["USR-002", "USR-008", "USR-009"], "ENT-DDET-02", 6);
   ouvrirFil("CNV-007", "DIRECT", "Assistance technique", ["USR-001", "USR-006"], null, 3);
 
   /* ---------- Annonces et circulaires ---------- */

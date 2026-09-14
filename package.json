@@ -13,7 +13,8 @@
         "marque": "node scripts/resoudre-marque.mjs",
         "carte:vendorer": "node scripts/vendorer-carte.mjs",
         "taille": "node scripts/verifier-taille.mjs",
-        "verifier": "node scripts/verifier-taille.mjs -v"
+        "verifier": "node scripts/verifier-taille.mjs -v",
+        "entites": "npx --yes tsx scripts/verifier-entites.ts"
     },
     "dependencies": {
         "@radix-ui/react-accordion": "1.2.11",

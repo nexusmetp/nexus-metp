@@ -130,12 +130,21 @@ export default function TableauDesEmploisPage() {
       .slice(0, 10);
   }, [postes, perimetreDroit]);
 
-  const entitesPorteuses = useMemo(() => ENTITES.filter((e) =>
-    (!perimetreDroit || perimetreDroit.has(e.id))
-    && postes.some((p) => descendantsDe(e.id).some((x) => x.id === p.entiteId))
-    && ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
-        "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE", "SERVICE", "BUREAU", "ETABLISSEMENT"].includes(e.niveau)),
-    [postes, entitesDb, perimetreDroit]);
+  /* « Porte des postes, chez elle ou sous elle ». On remonte depuis les
+     postes plutôt que de déplier la branche de chaque entité : la seconde
+     écriture est cubique, et elle l'était déjà avant qu'on s'en aperçoive. */
+  const entitesPorteuses = useMemo(() => {
+    const porteuses = new Set<string>();
+    postes.forEach((p) => {
+      if (!p.entiteId) return;
+      cheminDe(p.entiteId).forEach((e) => porteuses.add(e.id));
+    });
+    return ENTITES.filter((e) =>
+      (!perimetreDroit || perimetreDroit.has(e.id))
+      && porteuses.has(e.id)
+      && ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
+          "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE", "SERVICE", "BUREAU", "ETABLISSEMENT"].includes(e.niveau));
+  }, [postes, entitesDb, perimetreDroit]);
 
   const colonnes: Colonne<Poste>[] = [
     {

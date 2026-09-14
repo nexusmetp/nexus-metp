@@ -33,7 +33,7 @@ const DB_NAME = "nexus-metp";
  * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
  * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 29;
+const DB_VERSION = 30;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -195,6 +195,60 @@ const RAFRAICHIR: { version: number; tiroirs: StoreName[] }[] = [
      garderait l'ancienne ligne et le directeur des finances resterait en
      lecture seule sur les finances, l'axe des attributions installé ou non. */
   { version: 29, tiroirs: ["entites", "utilisateurs", "habilitations", "affectations", "profils"] },
+  /* v30 : l'organigramme est relu sur les arrêtés, et il triple.
+     Les textes d'organisation du ministère — Journal officiel n° 44-2022 et
+     n° 45-2022, arrêtés n° 25564 à 25572 du 17 octobre 2022 — sont publics et
+     lisibles ; le référentiel avait été bâti sur l'hypothèse inverse. Ce que
+     la lecture a corrigé : trois directions générales sur quatre manquaient,
+     le cabinet était inventé de toutes pièces, les inspections portaient des
+     noms imaginés, les directions départementales relevaient du ministère au
+     lieu de leur direction générale, et l'une des deux séries n'existait pas.
+     151 entités deviennent 639.
+
+     Tous les tiroirs semés sont donc réécrits, et il n'y a pas de demi-mesure
+     possible : un agent affecté à `ENT-DD-02`, un acte instruit par une entité
+     qui n'existe plus, un compte assis sur un identifiant disparu — chacun
+     serait un orphelin muet. Ce que quelqu'un a écrit (brouillons, modèles de
+     la maison, échanges avec l'assistant) reste intact : `STORES_UTILISATEUR`
+     est hors du semis depuis la v15, et c'est précisément le jour où cela
+     compte. */
+  { version: 30, tiroirs: [...STORES_SEMES] },
+];
+
+/**
+ * Les tiroirs qu'une montée de version doit **vider** avant de les réécrire.
+ *
+ * Le rafraîchissement réécrit **par identifiant**. C'est ce qu'il faut tant
+ * que les identifiants sont stables : la ligne du décor reprend sa valeur, et
+ * ce qu'un service a créé à côté n'est pas touché. Mais quand une version
+ * renomme les identifiants eux-mêmes, réécrire ne remplace rien — cela
+ * **ajoute**, et l'ancien reste.
+ *
+ * La v30 en est le cas exact, et la base l'a montré : après la montée, six
+ * cent trente-neuf entités semées et sept cents en base. Les soixante et une
+ * de trop étaient les entités inventées que la lecture des arrêtés a
+ * supprimées — un cabinet imaginaire, trois inspections qui n'existent pas,
+ * une série de directions départementales sous le mauvais parent. Elles ne
+ * gênaient pas seulement le compteur : un agent affecté à `ENT-DD-02` y était
+ * encore rattaché, et l'écran continuait de le montrer sous une direction que
+ * l'arrêté ne connaît pas.
+ *
+ * **Le prix, à dire en clair :** vider emporte aussi ce qu'un administrateur
+ * aurait créé dans ces tiroirs — une direction ouverte depuis l'application,
+ * par exemple. On l'assume ici parce qu'une telle entité pendait à un
+ * identifiant qui n'existe plus : la garder n'aurait pas sauvé son
+ * rattachement, seulement son orphelinat. Ce que quelqu'un a **écrit** —
+ * brouillons, modèles de la maison, échanges — vit dans `STORES_UTILISATEUR`,
+ * hors du semis, et n'est pas concerné.
+ */
+const VIDER: { version: number; tiroirs: StoreName[]; motif: string }[] = [
+  {
+    version: 30,
+    tiroirs: [...STORES_SEMES],
+    motif:
+      "Le référentiel des entités est rebâti sur les arrêtés n° 25564 à 25572 : "
+      + "les identifiants changent, réécrire par identifiant ne remplacerait rien.",
+  },
 ];
 
 let dbp: Promise<IDBPDatabase> | null = null;
@@ -360,6 +414,22 @@ export async function ensureSeed(force = false): Promise<void> {
   // sont vides par construction.
   if (force) await Promise.all(aRemplir.map((s) => tx.objectStore(s).clear()));
 
+  /* Les vidages déclarés pour les versions franchies. Ils précèdent les
+     écritures — vider après aurait effacé ce qu'on vient de poser — et ne
+     portent que sur des tiroirs déjà dans la transaction, `aRemplir` et
+     `aCompleter` couvrant ensemble tout le semis. */
+  const aVider = new Set<StoreName>(
+    jamaisSeme || force
+      ? []
+      : VIDER.filter((v) => v.version > (meta.version ?? 0) && v.version <= DB_VERSION)
+        .flatMap((v) => v.tiroirs)
+        .filter((t) => dejaLa.has(t))
+  );
+  await Promise.all([...aVider].map((t) => tx.objectStore(t as string).clear()));
+  /* Vidé, le tiroir n'a plus de ligne « déjà là » : sans cela le complément
+     n'y reposerait que ce qui manquait avant le vidage, c'est-à-dire rien. */
+  aVider.forEach((t) => dejaLa.set(t, new Set()));
+
   await Promise.all([
     ...tiroirs
       .filter(([s]) => cible.has(s))
@@ -384,6 +454,9 @@ export async function ensureSeed(force = false): Promise<void> {
       /* Ce que ce semis a réécrit, pour que la question « pourquoi cette
          ligne a-t-elle changé ? » ait une réponse. */
       rafraichis: [...aRafraichir].join(","),
+      /* Et ce qu'il a vidé : c'est la seule opération du semis qui retire
+         quelque chose en masse, elle ne doit pas être silencieuse. */
+      vides: [...aVider].join(","),
     }),
   ]);
   await tx.done;

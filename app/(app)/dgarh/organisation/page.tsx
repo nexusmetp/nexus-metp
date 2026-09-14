@@ -10,7 +10,8 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, NIVEAU_LABELS, PROVENANCE_LABELS, RANG_HIERARCHIQUE, ROLE_LABELS,
+  ENTITES, NIVEAUX_DE_COMMANDEMENT, NIVEAU_LABELS, PROVENANCE_LABELS,
+  RANG_HIERARCHIQUE, ROLE_LABELS,
   niveauxCreablesSous, perimetreAdministrable,
   cheminDe, descendantsDe, enfantsDe, entiteById, habilitationsEnVigueur, peut,
 } from "@/lib/referentiels";
@@ -122,7 +123,14 @@ export default function OrganisationPage() {
 
   const creees = administrees.filter((e) => e.creePar).length;
   const aVerifier = administrees.filter((e) => e.provenance === "A_VERIFIER").length;
-  const sansChef = administrees.filter((e) => !responsableDe.has(e.id)).length;
+  /* « Sans responsable » ne se dit que des niveaux qui en portent un. Le
+     bureau, la section et le secrétariat sont des mailles terminales : leur
+     chef relève du service, et `NIVEAUX_DE_COMMANDEMENT` les exclut
+     délibérément. Les compter ici donnait à un directeur six alertes sur dix
+     entités — un signal rouge permanent qui ne désignait aucune anomalie. */
+  const sansChef = administrees
+    .filter((e) => NIVEAUX_DE_COMMANDEMENT.includes(e.niveau))
+    .filter((e) => !responsableDe.has(e.id)).length;
 
   const colonnes: Colonne<Entite>[] = [
     {

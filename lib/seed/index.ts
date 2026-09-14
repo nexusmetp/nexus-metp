@@ -295,7 +295,7 @@ export function buildDataset(): Dataset {
     { id: "USR-005", email: "spc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Rodrigue OKEMBA", role: "CHEF_SERVICE", entiteId: "ENT-DPCEF-SPC", fonction: "Chef du service du personnel et du contentieux", actif: true },
     { id: "USR-006", email: "brm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ghislain MABIALA", role: "CHEF_BUREAU", entiteId: "ENT-SPC-BRM", fonction: "Chef du bureau du recrutement et des mouvements", actif: true },
     { id: "USR-007", email: "bgc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Nadège BIKINDOU", role: "AGENT_INSTRUCTEUR", entiteId: "ENT-SPC-BGC", fonction: "Instructrice — bureau de la gestion de carrière", actif: true },
-    { id: "USR-008", email: "dd.brazzaville@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Sylvie LOEMBA", role: "DIRECTEUR_DEPARTEMENTAL", entiteId: "ENT-DD-02", fonction: "Directrice départementale — Brazzaville", actif: true },
+    { id: "USR-008", email: "dd.brazzaville@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Sylvie LOEMBA", role: "DIRECTEUR_DEPARTEMENTAL", entiteId: "ENT-DDET-02", fonction: "Directrice départementale — Brazzaville", actif: true },
     /* Il était rattaché à la direction départementale, c'est-à-dire au-dessus
        de l'établissement qu'il est censé diriger : son périmètre couvrait
        alors tout le département, et « chef d'établissement » ne voulait plus

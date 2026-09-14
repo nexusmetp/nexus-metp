@@ -218,7 +218,12 @@ export function construireGestion(
       coutUnitaire: int(120, 850) * 1000,
       publicVise: pick(["Enseignants techniques", "Personnel administratif", "Encadrement", "Chefs d'établissement"]),
       statut: pick(["REALISEE", "OUVERTE", "PROGRAMMEE", "COMPLETE"]) as OffreFormation["statut"],
-      entiteId: "ENT-SPC-BFC",
+      /* Le service de la formation de la DPCEF, tel que l'arrêté n° 25567 le
+         nomme. L'identifiant portait `ENT-SPC-BFC`, un bureau qui n'existe
+         dans aucun texte et que la réécriture du référentiel a fait
+         disparaître : les offres de formation pendaient alors à une entité
+         inconnue, sans que rien ne le signale. */
+      entiteId: "ENT-DPCEF-SF",
     };
   });
 

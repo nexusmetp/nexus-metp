@@ -20,15 +20,24 @@ import type {
 export const effectifDe = (niveau: string) => {
   switch (niveau) {
     case "CABINET": return int(2, 4);
-    case "ANTENNE_DEPARTEMENTALE": return int(4, 9);
+    case "ANTENNE_DEPARTEMENTALE": return int(2, 5);
     case "BUREAU": return int(4, 11);
     case "SERVICE": return int(2, 4);
+    /* La division et la section sont les mailles de l'inspection : peu de
+       monde, et du monde qui contrôle plutôt qu'il n'administre. */
+    case "DIVISION": return int(2, 5);
+    case "SECTION": return int(1, 3);
     case "DIRECTION": return int(2, 4);
     case "SECRETARIAT": return int(1, 3);
     case "DIRECTION_GENERALE": return int(3, 6);
     case "INSPECTION_GENERALE": return int(8, 14);
-    case "INSPECTION_INTERDEPARTEMENTALE": return int(10, 18);
-    case "DIRECTION_DEPARTEMENTALE": return int(14, 26);
+    /* Ces trois échelons portaient tout leur personnel en propre, faute
+       d'avoir les services que leur donnent les arrêtés. Maintenant qu'ils les
+       ont, ce chiffre ne compte plus que l'entourage immédiat du chef :
+       l'effectif de la structure est la somme de son sous-arbre, et l'y
+       ajouter une seconde fois le doublait. */
+    case "INSPECTION_INTERDEPARTEMENTALE": return int(3, 6);
+    case "DIRECTION_DEPARTEMENTALE": return int(3, 6);
     case "ETABLISSEMENT": return int(22, 48);
     default: return 0;
   }
@@ -42,6 +51,10 @@ export const gradesPour = (niveau: string, enseignant: boolean): string[] => {
     case "INSPECTION_GENERALE": return ["GR-INSP-1", "GR-INSP-2"];
     case "DIRECTION": return ["GR-DIR-DC", "GR-ADM-1"];
     case "SERVICE": return ["GR-ENC-CS1", "GR-ENC-CS2"];
+    /* La division relève du contrôle : on y trouve des inspecteurs et de
+       l'encadrement, pas des gestionnaires de dossiers. */
+    case "DIVISION": return ["GR-INSP-2", "GR-ENC-CS2"];
+    case "SECTION": return ["GR-INSP-2", "GR-TECH-1"];
     case "BUREAU": return ["GR-GEST-1", "GR-GEST-2", "GR-GEST-3", "GR-TECH-1", "GR-SERV-1"];
     case "DIRECTION_DEPARTEMENTALE": return ["GR-GEST-1", "GR-TECH-1", "GR-SERV-1", "GR-ENC-CS2"];
     case "ETABLISSEMENT": return ["GR-ENS-PTC", "GR-ENS-PT", "GR-SERV-1", "GR-GEST-3"];

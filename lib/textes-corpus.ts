@@ -4,10 +4,14 @@
  * Chaque entrée porte sa provenance. Les références ci-dessous ont été
  * corroborées auprès de sources publiques (base NATLEX de l'OIT, site du
  * ministère de la fonction publique, base de droit congolais du Secrétariat
- * général du Gouvernement). Le texte intégral des arrêtés du METP n'a pas pu
- * être ouvert depuis cet environnement : leur intitulé et leur publication
- * sont donc établis, mais pas leur contenu article par article — d'où la
- * provenance « à vérifier » sur les entités qu'ils sont censés fonder.
+ * général du Gouvernement).
+ *
+ * **Les neuf arrêtés d'organisation du METP ont depuis été lus.** Les Journaux
+ * officiels n° 44-2022 et 45-2022 portent une couche de texte : les arrêtés
+ * n° 25564 à 25572 du 17 octobre 2022 ont été dépouillés article par article,
+ * et c'est sur eux que `lib/referentiels/entites/` est bâti. Ce qui reste en
+ * « à vérifier » dans ce fonds l'est donc pour une autre raison : le texte
+ * n'a pas été trouvé, et non qu'on ne l'a pas ouvert.
  */
 
 import type { TexteReglementaire } from "@/lib/types";
@@ -51,9 +55,11 @@ export const TEXTES_CORPUS: TexteReglementaire[] = [
     nature: "ARRETE", dateSignature: "2022-10-17",
     journalOfficiel: "Journal officiel n° 44-2022",
     resume:
-      "Texte qui fonde l'organisation interne de la DGARH. Son intitulé et sa publication sont "
-      + "établis ; son texte intégral n'a pas pu être consulté, si bien que le détail des services "
-      + "et bureaux retenu par l'outil reste à confronter à l'original.",
+      "Texte qui fonde l'organisation interne de la DGARH, et qui a été dépouillé article par "
+      + "article : direction du personnel, de la condition enseignante et de la formation ; "
+      + "direction de l'orientation, des bourses et des aides scolaires ; direction de "
+      + "l'administration, des finances et du matériel ; secrétariat de direction. L'arborescence "
+      + "de l'outil en est la transcription.",
     motsCles: ["DGARH", "organisation", "services", "bureaux"],
     entiteId: "ENT-DGARH", provenance: "TEXTE",
   },
@@ -111,7 +117,7 @@ export const TEXTES_CORPUS: TexteReglementaire[] = [
       + "nomme encore « antennes départementales d'appui et de contrôle », dénomination à corriger "
       + "sur le texte original.",
     motsCles: ["inspection", "déconcentration", "supervision", "contrôle"],
-    entiteId: "ENT-INTERDEP", provenance: "TEXTE",
+    entiteId: "ENT-IID-CENTRE", provenance: "TEXTE",
   },
   {
     id: "TXT-0006",
@@ -128,15 +134,64 @@ export const TEXTES_CORPUS: TexteReglementaire[] = [
   },
   {
     id: "TXT-0009",
-    reference: "Décret d'organisation du ministère",
+    reference: "Décret n° 2022-118 du 22 mars 2022",
     titre: "Portant attributions et organisation du ministère de l'enseignement technique et professionnel",
-    nature: "DECRET", dateSignature: "2022-10-17",
+    nature: "DECRET", dateSignature: "2022-03-22",
     resume:
-      "Décret d'attributions dont procèdent les arrêtés d'organisation d'octobre 2022. Ni son "
-      + "numéro ni sa date n'ont pu être vérifiés : il est cité ici comme chaînon manquant, non "
-      + "comme référence établie.",
+      "Décret d'attributions dont procèdent les neuf arrêtés d'organisation du 17 octobre 2022 : "
+      + "chacun d'eux le vise en tête, ce qui établit sa référence. Son dispositif, lui, n'a pas "
+      + "été consulté — c'est ce qui donnerait les attributions de l'échelon ministériel lui-même.",
     motsCles: ["organisation", "ministère", "attributions"],
     entiteId: "ENT-METP", provenance: "A_VERIFIER",
+  },
+  {
+    id: "TXT-0012",
+    reference: "Arrêté n° 25564 du 17 octobre 2022",
+    titre:
+      "Fixant les attributions et l'organisation des services et des bureaux du cabinet du "
+      + "ministre de l'enseignement technique et professionnel",
+    nature: "ARRETE", dateSignature: "2022-10-17",
+    journalOfficiel: "Journal officiel n° 44-2022",
+    resume:
+      "Organise le cabinet : direction des études et de la planification, direction des "
+      + "examens, concours et tests professionnels, direction des systèmes d'information et de "
+      + "la communication, direction de la coopération et des partenariats, direction des "
+      + "équipements pédagogiques et de l'entretien technico-professionnel, direction de la "
+      + "législation et des affaires juridiques, cellule de gestion des marchés publics et "
+      + "unité de coordination des projets.",
+    motsCles: ["cabinet", "organisation", "ministre"],
+    entiteId: "ENT-CAB", provenance: "TEXTE",
+  },
+  {
+    id: "TXT-0013",
+    reference: "Arrêté n° 25568 du 17 octobre 2022",
+    titre:
+      "Fixant les attributions et l'organisation des services et des bureaux de la direction "
+      + "générale de l'équipement et du patrimoine",
+    nature: "ARRETE", dateSignature: "2022-10-17",
+    journalOfficiel: "Journal officiel n° 44-2022",
+    resume:
+      "Organise la quatrième direction générale du ministère. Le texte se contredit : son "
+      + "article 2 énumère une « direction des finances et du matériel » là où son chapitre 3 "
+      + "décrit une « direction de l'administration, des finances et du matériel ». L'outil "
+      + "retient la seconde, qui est celle que les articles 21 et 22 développent.",
+    motsCles: ["équipement", "patrimoine", "organisation"],
+    entiteId: "ENT-DGEQP", provenance: "TEXTE",
+  },
+  {
+    id: "TXT-0014",
+    reference: "Arrêté n° 25572 du 17 octobre 2022",
+    titre:
+      "Fixant les attributions et l'organisation des directions départementales de "
+      + "l'enseignement professionnel",
+    nature: "ARRETE", dateSignature: "2022-10-17",
+    journalOfficiel: "Journal officiel n° 45-2022",
+    resume:
+      "Le pendant de l'arrêté n° 25571 pour l'enseignement professionnel. Il établit qu'il "
+      + "existe **deux** séries de directions départementales, l'une par direction générale — "
+      + "ce que l'outil ignorait : il n'en portait qu'une, rattachée au ministère.",
+    motsCles: ["direction départementale", "enseignement professionnel", "déconcentration"],
+    provenance: "TEXTE",
   },
   {
     id: "TXT-0007",

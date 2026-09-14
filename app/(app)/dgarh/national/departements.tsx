@@ -33,20 +33,36 @@ export function useDepartements(
 ): LigneDepartement[] {
   return useMemo(() => {
     const total = effectifNational || 1;
-    return DEPARTEMENTS.map((d, i) => {
-      const id = `ENT-DD-${String(i + 1).padStart(2, "0")}`;
+    return DEPARTEMENTS.map((d) => {
+      /* Les directions départementales se **cherchent**, elles ne se
+         reconstruisent pas.
+
+         Cette ligne fabriquait l'identifiant : `ENT-DD-01`, `ENT-DD-02`… La
+         lecture des arrêtés n° 25571 et 25572 a montré qu'il en existe deux
+         séries — une par direction générale — et les a renommées `ENT-DDET-01`
+         et `ENT-DDEP-01`. L'identifiant fabriqué ne désignait alors plus rien :
+         `situationDe` rendait zéro pour les quinze départements, la vue
+         nationale annonçait 355 agents déployés au lieu de près de deux mille,
+         et rien n'échouait — une chaîne de caractères ne se type pas. */
+      const directions = implantations.filter(
+        (p) => p.niveau === "DIRECTION_DEPARTEMENTALE" && p.ville === d.chefLieu);
       const surPlace = implantations.filter((p) => p.ville === d.chefLieu);
-      // La direction départementale et sa branche, plus les antennes de
-      // contrôle installées au chef-lieu : elles relèvent de l'inspection
-      // interdépartementale, mais leur personnel est bien déployé là.
-      const effectif = situationDe(id).effectif
+      // Les deux directions départementales et leurs branches, plus les
+      // antennes d'encadrement installées au chef-lieu : elles relèvent de
+      // l'inspection interdépartementale, mais leur personnel est déployé là.
+      const effectif = directions.reduce((s, p) => s + situationDe(p.id).effectif, 0)
         + surPlace.filter((p) => p.niveau === "ANTENNE_DEPARTEMENTALE")
             .reduce((s, p) => s + p.situation.effectif, 0);
+      /* La ligne porte l'identifiant de la direction de l'enseignement
+         technique : c'est elle qui tient les établissements, donc les états de
+         besoins remontés du département. */
+      const id = directions.find((p) => p.sigle.startsWith("DDET"))?.id
+        ?? directions[0]?.id ?? "";
       return {
         id, nom: d.nom, chefLieu: d.chefLieu, effectif,
         implantations: surPlace.length,
         etablissements: surPlace.filter((p) => p.niveau === "ETABLISSEMENT").length,
-        besoins: besoinsParDepartement.get(id) ?? 0,
+        besoins: directions.reduce((s, p) => s + (besoinsParDepartement.get(p.id) ?? 0), 0),
         part: (effectif / total) * 100,
       };
     }).sort((a, b) => b.effectif - a.effectif);

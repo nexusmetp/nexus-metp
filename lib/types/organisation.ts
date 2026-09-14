@@ -27,7 +27,15 @@ export type NiveauEntite =
   | "SECRETARIAT"
   | "DIRECTION"
   | "SERVICE"
+  /* L'inspection générale et ses relais déconcentrés descendent deux crans
+     plus bas que les directions : l'arrêté n° 25569 s'intitule lui-même
+     « fixant les attributions des services, des **divisions**, des bureaux et
+     des **sections** ». Ces deux niveaux manquaient, et leur absence forçait à
+     écrire une division comme un service — ce qui faussait le rang de son
+     chef, le profil proposé à sa tête et le périmètre qu'il commande. */
+  | "DIVISION"
   | "BUREAU"
+  | "SECTION"
   | "INSPECTION_INTERDEPARTEMENTALE"
   | "ANTENNE_DEPARTEMENTALE"
   | "DIRECTION_DEPARTEMENTALE"

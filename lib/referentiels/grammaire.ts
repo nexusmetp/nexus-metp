@@ -31,30 +31,52 @@ import { NIVEAU_LABELS, descendantsDe, entiteById } from "./entites";
 export const ENFANTS_AUTORISES: Record<NiveauEntite, NiveauEntite[]> = {
   /* Le ministère porte les grandes structures, et rien d'autre : un bureau
      accroché directement au ministère n'aurait au-dessus de lui personne
-     pour l'administrer. */
-  MINISTERE: [
-    "CABINET", "INSPECTION_GENERALE", "DIRECTION_GENERALE",
-    "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE", "SECRETARIAT",
-  ],
+     pour l'administrer.
+
+     Les directions départementales n'y figurent plus. Elles relèvent des deux
+     directions générales d'enseignement — l'arrêté n° 25565 range « les
+     directions départementales » parmi les composantes de la direction
+     générale de l'enseignement technique, et le n° 25566 fait de même pour
+     l'enseignement professionnel. Les accrocher au ministère en faisait des
+     structures sans tutelle, et le directeur général de l'enseignement
+     technique n'avait alors aucun périmètre sur son propre réseau. */
+  MINISTERE: ["CABINET", "INSPECTION_GENERALE", "DIRECTION_GENERALE", "SECRETARIAT"],
+  /* Les structures rattachées au cabinet sont des directions, plus une
+     cellule et une unité que l'arrêté n° 25564 place au même rang. */
   CABINET: ["DIRECTION", "SERVICE", "SECRETARIAT"],
-  /* L'inspection générale tient ses inspections de terrain, ses services et
-     son secrétariat. */
-  INSPECTION_GENERALE: ["SERVICE", "SECRETARIAT", "INSPECTION_INTERDEPARTEMENTALE"],
-  DIRECTION_GENERALE: ["DIRECTION", "SERVICE", "SECRETARIAT"],
+  /* L'inspection générale porte son secrétariat, sa direction des affaires
+     administratives et financières, ses quatre inspections spécialisées, et
+     ses relais déconcentrés. */
+  INSPECTION_GENERALE: [
+    "DIRECTION", "SERVICE", "SECRETARIAT",
+    "INSPECTION_INTERDEPARTEMENTALE", "ANTENNE_DEPARTEMENTALE",
+  ],
+  DIRECTION_GENERALE: [
+    "DIRECTION", "SERVICE", "SECRETARIAT", "DIRECTION_DEPARTEMENTALE",
+  ],
   DIRECTION: ["SERVICE", "SECRETARIAT"],
-  SERVICE: ["BUREAU"],
+  /* Un service porte des bureaux dans l'administration centrale, et des
+     divisions dans l'inspection : les deux existent, et le texte les nomme
+     côte à côte. */
+  SERVICE: ["BUREAU", "DIVISION"],
+  /* La division est la maille propre au contrôle : elle porte des sections. */
+  DIVISION: ["SECTION", "BUREAU"],
   SECRETARIAT: ["BUREAU"],
   /* Le bureau est la maille terminale de l'administration centrale : il porte
      des agents, pas des entités. */
   BUREAU: [],
+  /* La section ferme la chaîne du côté de l'inspection. */
+  SECTION: [],
   DIRECTION_DEPARTEMENTALE: ["SERVICE", "SECRETARIAT", "ETABLISSEMENT"],
-  /* Une inspection interdépartementale en contient d'autres : le ministère
-     en groupe cinq sous une entité de tête, et c'est l'organisation réelle,
-     non un artefact. */
+  /* Une inspection interdépartementale tient son secrétariat, ses deux
+     services, ses quatre divisions et ses antennes départementales. */
   INSPECTION_INTERDEPARTEMENTALE: [
-    "INSPECTION_INTERDEPARTEMENTALE", "ANTENNE_DEPARTEMENTALE", "SECRETARIAT",
+    "SERVICE", "DIVISION", "SECRETARIAT", "ANTENNE_DEPARTEMENTALE",
   ],
-  ANTENNE_DEPARTEMENTALE: ["BUREAU"],
+  /* L'antenne départementale reprend la même organisation que l'inspection
+     dont elle relève : l'arrêté n° 25570 lui donne les mêmes quatre
+     divisions. */
+  ANTENNE_DEPARTEMENTALE: ["SERVICE", "DIVISION", "SECRETARIAT"],
   /* Un établissement scolaire porte du personnel, pas des directions. */
   ETABLISSEMENT: [],
 };
@@ -76,8 +98,8 @@ export const ENFANTS_AUTORISES: Record<NiveauEntite, NiveauEntite[]> = {
  */
 export const NIVEAUX_DE_COMMANDEMENT: NiveauEntite[] = [
   "DIRECTION_GENERALE", "DIRECTION", "DIRECTION_DEPARTEMENTALE",
-  "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE", "CABINET",
-  "SERVICE", "ETABLISSEMENT",
+  "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE",
+  "ANTENNE_DEPARTEMENTALE", "CABINET", "SERVICE", "DIVISION", "ETABLISSEMENT",
 ];
 
 /**
@@ -102,7 +124,15 @@ export const ROLE_ATTENDU: Partial<Record<NiveauEntite, string>> = {
   SECRETARIAT: "CHEF_SERVICE",
   DIRECTION: "DIRECTEUR_CENTRAL",
   SERVICE: "CHEF_SERVICE",
+  /* Le chef de division n'a pas de profil à lui : l'arrêté n° 25570 donne
+     aux inspecteurs coordonnateurs interdépartementaux « rang de chef de
+     division », entre le chef de service et le chef de bureau. Faute d'un
+     profil livré à ce rang, on propose celui du chef de service — c'est une
+     proposition, elle se corrige d'un clic, et le ministère peut créer le
+     profil manquant depuis l'écran Système. */
+  DIVISION: "CHEF_SERVICE",
   BUREAU: "CHEF_BUREAU",
+  SECTION: "CHEF_BUREAU",
   DIRECTION_DEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
   INSPECTION_INTERDEPARTEMENTALE: "DIRECTEUR_DEPARTEMENTAL",
   ANTENNE_DEPARTEMENTALE: "CHEF_SERVICE",
@@ -116,8 +146,10 @@ export const TITRE_DU_CHEF: Partial<Record<NiveauEntite, string>> = {
   INSPECTION_GENERALE: "Inspecteur général",
   DIRECTION: "Directeur",
   SERVICE: "Chef de service",
+  DIVISION: "Chef de division",
   SECRETARIAT: "Chef du secrétariat",
   BUREAU: "Chef de bureau",
+  SECTION: "Chef de section",
   DIRECTION_DEPARTEMENTALE: "Directeur départemental",
   INSPECTION_INTERDEPARTEMENTALE: "Inspecteur interdépartemental",
   ANTENNE_DEPARTEMENTALE: "Chef d'antenne",

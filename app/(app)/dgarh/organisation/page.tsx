@@ -188,9 +188,9 @@ export default function OrganisationPage() {
             <Link href="/dgarh/pilotage">Pilotage</Link>
           </Button>
         )}
-        {redacteur && (
+        {redacteur && gestion.creationPossible && (
           <Button size="sm" onClick={() => gestion.ouvrirCreation()}>
-            <Plus className="mr-1.5 h-4 w-4" /> Créer une entité
+            <Plus className="mr-1.5 h-4 w-4" /> {gestion.libelleCreation}
           </Button>
         )}
       </PageHeader>

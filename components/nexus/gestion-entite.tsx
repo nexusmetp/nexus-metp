@@ -407,5 +407,29 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     </>
   );
 
-  return { ouvrirCreation, ouvrirEdition, ouvrirNomination, basculerActivite, dialogues };
+  /**
+   * Ce que ce compte peut réellement créer, en toutes lettres.
+   *
+   * Le bouton disait « Créer une entité » à tout le monde. C'est vrai de
+   * l'administrateur système et du directeur général ; c'est trompeur pour un
+   * chef de service, à qui la grammaire de l'organigramme et son périmètre ne
+   * laissent qu'une seule possibilité — un **bureau**, sous son propre
+   * service. Le geste était borné, la promesse ne l'était pas : on lisait
+   * qu'un chef de service pouvait créer une direction, ce que la plateforme
+   * a toujours refusé à l'écriture. Un libellé qui promet plus que le geste
+   * n'est pas une imprécision, c'est un défaut de contrôle apparent.
+   */
+  const niveauxOuverts = [...new Set(
+    rattachables.flatMap((e) => niveauxCreablesSous(e.id))
+  )];
+  const libelleCreation = niveauxOuverts.length === 0
+    ? "Aucune création possible"
+    : niveauxOuverts.length === 1
+      ? `Créer un ${NIVEAU_LABELS[niveauxOuverts[0]].toLowerCase()}`
+      : perimetreAdmin === null ? "Créer une entité" : "Créer une sous-entité";
+
+  return {
+    ouvrirCreation, ouvrirEdition, ouvrirNomination, basculerActivite, dialogues,
+    libelleCreation, creationPossible: niveauxOuverts.length > 0,
+  };
 }

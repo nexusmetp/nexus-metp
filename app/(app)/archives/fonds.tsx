@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/store";
 import {
   COMMUNICABILITE_LABELS, SORT_FINAL_LABELS, STATUT_ARTICLE_LABELS, communicable,
   duaEchue, entiteById, peut, peutDans, serieParCode,
-} from "@/lib/referentiels";
+ perimetreVisible, visible,} from "@/lib/referentiels";
 import { fmtDate } from "@/lib/format";
 import { LigneInfo, PanneauDetail, Section, TableauModule, type Colonne } from "@/components/nexus/module";
 import { Badge } from "@/components/ui/badge";
@@ -45,14 +45,22 @@ export function FondsArchives() {
     return (id?: string | null) => (id ? m.get(id) ?? "—" : "—");
   }, [agents]);
 
+  /* Le rayonnage montrait le fonds entier. Un article d'archives porte un
+     dossier d'agent : son versement dit de quelle entité il vient, et c'est
+     cette entité qui décide de qui peut le voir. Sans cette borne, le service
+     des archives d'une direction générale lisait les cotes de toutes les
+     autres. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user]);
+
   const lignes = useMemo(() => {
     const { serie, statut, sort } = filtres;
     return articles
+      .filter((a) => visible(perimetreDroit, versementDe.get(a.versementId)?.entiteId))
       .filter((a) => !serie || serie === "all" || a.serieCode === serie)
       .filter((a) => !statut || statut === "all" || a.statut === statut)
       .filter((a) => !sort || sort === "all" || a.sortFinal === sort)
       .sort((a, b) => a.cote.localeCompare(b.cote));
-  }, [articles, filtres]);
+  }, [articles, filtres, perimetreDroit, versementDe]);
 
   const colonnes: Colonne<ArticleArchive>[] = [
     {

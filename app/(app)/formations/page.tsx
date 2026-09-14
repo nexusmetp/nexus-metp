@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   entiteById, peut, peutDans,
-} from "@/lib/referentiels";
+ perimetreVisible, visible,} from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import { ListeActes } from "@/components/nexus/liste-actes";
@@ -59,7 +59,13 @@ export default function FormationPage() {
   const user = useAuth((s) => s.user)!;
   const { data: offres = [], isLoading } = useOffresFormation();
   const { data: inscriptions = [] } = useInscriptions();
-  const { data: agents, pret } = useAgentsProjetes();
+  const { data: tousAgents, pret } = useAgentsProjetes();
+  /* Borné au périmètre : la présence, la formation et le versement aux
+     archives sont des faits de dossier, pas des informations de couloir. */
+  const agents = useMemo(() => {
+    const p = perimetreVisible(user);
+    return tousAgents.filter((a) => visible(p, a.entiteId));
+  }, [tousAgents, user]);
   const enregistrer = useEnregistrerOffre();
 
   const [selection, setSelection] = useState<OffreFormation | null>(null);

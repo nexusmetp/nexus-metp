@@ -9,7 +9,7 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   COULEUR_PRISE, NIVEAU_LABELS, SEUIL_ARRIVEE_A_VERIFIER, STATUT_PRISE_LABELS, peut,
-} from "@/lib/referentiels";
+ perimetreVisible, visible,} from "@/lib/referentiels";
 import { fmtNum } from "@/lib/format";
 import {
   Badge, Colonne, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule,
@@ -41,7 +41,13 @@ export function PrisesDeService() {
   const user = useAuth((s) => s.user)!;
   const { toast } = useToast();
   const redacteur = peut(user.role, "presences", "W");
-  const { data: agents, pret } = useAgentsProjetes();
+  const { data: tousAgents, pret } = useAgentsProjetes();
+  /* Borné au périmètre : la présence, la formation et le versement aux
+     archives sont des faits de dossier, pas des informations de couloir. */
+  const agents = useMemo(() => {
+    const p = perimetreVisible(user);
+    return tousAgents.filter((a) => visible(p, a.entiteId));
+  }, [tousAgents, user]);
   const { data: entites = [], isLoading: chargeEntites } = useEntites();
   const { data: points = [] } = usePointsAccueil();
   const { data: prises = [], isLoading: chargePrises } = usePrisesService();

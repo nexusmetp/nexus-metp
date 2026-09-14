@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/store";
 import {
-  CIRCUIT_ACTE, DROITS, MODULE_LABELS, ROLE_LABELS, cheminDe, descendantsDe,
-  entiteById, type ModuleKey,
+  CIRCUIT_ACTE, DROITS, MODULE_LABELS, ROLE_LABELS, cheminDe, entiteById,
+  perimetreVisible, type ModuleKey,
 } from "@/lib/referentiels";
 import { fmtNum } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -203,6 +203,7 @@ const QUESTIONS = [
 
 export default function AidePage() {
   const user = useAuth((s) => s.user)!;
+  const monPerimetre = useMemo(() => perimetreVisible(user), [user]);
   const [ouvert, setOuvert] = useState<string | undefined>(REGLES[0].id);
 
   const mesModules = useMemo(
@@ -225,7 +226,7 @@ export default function AidePage() {
 
       <RangeeKpi tuiles={[
         { ton: "cyan", titre: "Modules ouverts", valeur: mesModules.length, sousTitre: `dont ${fmtNum(enEcriture.length)} en écriture`, icon: CheckCircle2 },
-        { ton: "bleu", titre: "Votre périmètre", valeur: descendantsDe(user.entiteId).length, sousTitre: "entités que vous couvrez", icon: Lock, href: "/dgarh/organigramme" },
+        { ton: "bleu", titre: "Votre périmètre", valeur: monPerimetre === null ? "Tout le ministère" : monPerimetre.size, sousTitre: "entités que vous couvrez", icon: Lock, href: "/dgarh/organigramme" },
         { ton: "indigo", titre: "Étapes du circuit", valeur: CIRCUIT_ACTE.length, sousTitre: "de l'ouverture à la notification", icon: FileCheck2, href: "/dgarh/actes" },
         { ton: "emeraude", titre: "Assistance", valeur: "24 h", sousTitre: "délai de réponse d'une demande normale", icon: LifeBuoy, href: "/tickets" },
       ]} />

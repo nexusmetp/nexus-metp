@@ -8,7 +8,8 @@ import type { Acte } from "@/lib/types";
 import { useAuth } from "@/lib/store";
 import { etapeCourante, transitionsPour } from "@/lib/actes";
 import {
-  STATUTS_EN_COURS, cheminDe, descendantsDe, entiteById, typeActeById,
+  STATUTS_EN_COURS, cheminDe, entiteById, typeActeById,
+ perimetreVisible, visible,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, KpiCard, PageHeader } from "@/components/nexus/ui-kit";
@@ -32,7 +33,8 @@ export default function BannettePage() {
   const { data: agents = [] } = useAgents();
   const [selection, setSelection] = useState<Acte | null>(null);
 
-  const perimetre = useMemo(() => new Set(descendantsDe(user.entiteId).map((e) => e.id)), [user.entiteId]);
+  /* Le droit, pas l'arbre : voir le commentaire de l'écran des réclamations. */
+  const perimetre = useMemo(() => perimetreVisible(user), [user]);
 
   const nomAgent = useMemo(() => {
     const m = new Map(agents.map((a) => [a.id, `${a.prenom} ${a.nom}`]));
@@ -44,7 +46,7 @@ export default function BannettePage() {
     const mien = ouverts.filter((a) => a.assigneA === user.id);
     const perimetreOuvert = ouverts.filter((a) => {
       const etape = a.etapes[etapeCourante(a.statut)];
-      return etape && perimetre.has(etape.entiteId) && a.assigneA !== user.id;
+      return etape && visible(perimetre, etape.entiteId) && a.assigneA !== user.id;
     });
     // Ce sur quoi je peux agir maintenant, séparation instruction/validation comprise.
     const actionnable = ouverts.filter((a) =>

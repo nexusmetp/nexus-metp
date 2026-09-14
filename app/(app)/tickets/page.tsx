@@ -11,7 +11,9 @@ import {
   useTickets, useUtilisateurs,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
-import { ENTITES, cheminDe, descendantsDe, entiteById, peut } from "@/lib/referentiels";
+import {
+  ENTITES, cheminDe, descendantsDe, entiteById, peut, perimetreVisible, visible,
+} from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import {
@@ -98,11 +100,16 @@ export default function TicketsPage() {
   const [interne, setInterne] = useState(false);
 
   const instructeur = peut(user.role, "tickets", "W") && user.role !== "AGENT";
-  const perimetre = useMemo(() => new Set(descendantsDe(user.entiteId).map((e) => e.id)), [user.entiteId]);
+  /* Le périmètre se lit dans le **droit**, pas dans l'arbre : l'écrire
+     `descendantsDe(mon entité)` le calculait juste pour la plupart et faux
+     aux deux bouts — le directeur général de la DGARH, qui répond du
+     ministère entier, n'y voyait que les réclamations de sa propre direction
+     générale. `perimetreVisible` est la seule réponse à cette question. */
+  const perimetre = useMemo(() => perimetreVisible(user), [user]);
 
   /* Un agent ne voit que ce qu'il a ouvert ; un instructeur voit son périmètre. */
   const visibles = useMemo(() => tickets.filter((t) =>
-    t.ouvertPar === user.id || (instructeur && perimetre.has(t.entiteId))
+    t.ouvertPar === user.id || (instructeur && visible(perimetre, t.entiteId))
   ), [tickets, user.id, instructeur, perimetre]);
 
   const nomAgent = useMemo(() => {

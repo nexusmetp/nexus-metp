@@ -18,7 +18,7 @@ import { EffectifsParCategorie } from "./categories";
 import {
   CABINET_ID, DGARH_ID, ENTITES, LACUNES, METP_ID, NIVEAU_LABELS, POSITION_LABELS,
   REGLES_CATEGORIE, ROLE_LABELS, STATUTS_EN_COURS, cheminDe, descendantsDe,
-  entiteById, enfantsDe, typeActeById,
+  entiteById, enfantsDe, typeActeById, visible,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct, joursDepuis } from "@/lib/format";
 import { BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
@@ -54,6 +54,7 @@ export default function TableauDeBordPage() {
     pret, agents, actes, tickets, comptes,
     effectif, stats, structure, parDirection, parDepartement,
     parCategorie, parPosition, pyramide, parTypeActe, departsProches,
+    racine, ministeriel, perimetre,
   } = useTableauDeBord();
 
   if (!pret) {
@@ -66,7 +67,11 @@ export default function TableauDeBordPage() {
     );
   }
 
-  const aVerifier = ENTITES.filter((e) => e.provenance !== "TEXTE").length;
+  /* Compté sur le périmètre, comme tout le reste de la page : annoncer
+     cinquante et une entités douteuses à un directeur dont les dix sont
+     toutes fondées sur un arrêté, c'est lui donner une alerte qui ne le
+     regarde pas. */
+  const aVerifier = ENTITES.filter((e) => e.provenance !== "TEXTE" && visible(perimetre, e.id)).length;
 
   return (
     <>
@@ -74,7 +79,9 @@ export default function TableauDeBordPage() {
         titre="Tableau de bord"
         description={
           user
-            ? `${user.nomComplet} — ${ROLE_LABELS[user.role]}. La direction générale gère le personnel de tout le ministère, cabinet compris : c'est ce périmètre que projette cette page.`
+            ? ministeriel
+              ? `${user.nomComplet} — ${ROLE_LABELS[user.role]}. La direction générale gère le personnel de tout le ministère, cabinet compris : c'est ce périmètre que projette cette page.`
+              : `${user.nomComplet} — ${ROLE_LABELS[user.role]}, ${entiteById(racine)?.nom ?? "votre structure"}. Cette page ne projette que votre périmètre : le personnel des autres structures est tenu par elles.`
             : "Vue d'ensemble des ressources humaines du ministère."
         }
       >
@@ -89,19 +96,30 @@ export default function TableauDeBordPage() {
         </Button>
       </PageHeader>
 
-      {/* ── La population ── */}
-      <RangeeKpi tuiles={[
+      {/* ── La population ──
+          Les trois premiers cartons changent de sens selon qui lit : « le
+          ministère, la DGARH, le cabinet » pour les six comptes qui portent la
+          vue ministérielle, « ma structure » pour tous les autres. Laisser les
+          libellés ministériels à un chef de service lui faisait lire un chiffre
+          qui n'était pas le sien — ou, avant que la borne existe, un chiffre
+          qu'il n'avait pas à connaître. */}
+      <RangeeKpi tuiles={ministeriel ? [
         { ton: "bleu", titre: "Effectif du ministère", valeur: stats.ministere, sousTitre: "toutes catégories, tous départements", icon: Users, href: "/dgarh/agents" },
         { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/agents?entite=${DGARH_ID}` },
         { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/agents?entite=${CABINET_ID}` },
         { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
+      ] : [
+        { ton: "bleu", titre: `Effectif de ${entiteById(racine)?.sigle ?? "ma structure"}`, valeur: stats.ministere, sousTitre: "ma structure et tout ce qui en dépend", icon: Users, href: `/dgarh/agents?entite=${racine}` },
+        { ton: "cyan", titre: "Rattachés en propre", valeur: stats.dgarh, sousTitre: "affectés à l'entité elle-même, hors sous-entités", icon: Building2, href: `/dgarh/agents?entite=${racine}` },
+        { ton: "violet", titre: "Entités sous ma main", valeur: stats.cabinet, sousTitre: "services, bureaux et implantations", icon: Network, href: "/dgarh/organisation" },
+        { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: `/dgarh/agents?entite=${racine}` },
       ]} />
 
       {/* ── Sous quel régime ils servent ──
           Placé juste après les effectifs globaux, parce que c'est la question
           qui suit immédiatement « combien sommes-nous » : combien d'entre eux
           sont des agents de l'État, et combien servent hors statut. */}
-      <EffectifsParCategorie agents={agents} perimetreBorne={false} />
+      <EffectifsParCategorie agents={agents} perimetreBorne={!ministeriel} />
 
       {/* ── L'activité ── */}
       <RangeeKpi tuiles={[
@@ -116,10 +134,13 @@ export default function TableauDeBordPage() {
         <Card>
           <CardHeader className="flex flex-row items-start justify-between gap-3 pb-3">
             <div>
-              <CardTitle className="text-base">La structure du ministère</CardTitle>
+              <CardTitle className="text-base">
+                {ministeriel ? "La structure du ministère" : `Ce qui relève de ${entiteById(racine)?.sigle ?? "ma structure"}`}
+              </CardTitle>
               <CardDescription>
-                Ce qui relève directement du ministre. Le personnel de chacune de ces entités est géré
-                par la direction générale.
+                {ministeriel
+                  ? "Ce qui relève directement du ministre. Le personnel de chacune de ces entités est géré par la direction générale."
+                  : "Les entités immédiatement sous la mienne. Leur personnel est le mien, et c'est le périmètre où je désigne et j'inscris."}
               </CardDescription>
             </div>
             <Button variant="ghost" size="sm" asChild>
@@ -178,8 +199,12 @@ export default function TableauDeBordPage() {
         <Bloc i={1}>
           <Card className="h-full">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Effectifs par direction</CardTitle>
-              <CardDescription>Administration centrale et cabinet, périmètre compris.</CardDescription>
+              <CardTitle className="text-base">{ministeriel ? "Effectifs par direction" : "Effectifs par entité"}</CardTitle>
+              <CardDescription>
+                {ministeriel
+                  ? "Administration centrale et cabinet, périmètre compris."
+                  : "Les entités immédiatement sous la vôtre, chacune avec ce qui en dépend."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="h-[320px] pt-2">
               <ResponsiveContainer width="100%" height="100%">
@@ -204,7 +229,11 @@ export default function TableauDeBordPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
               <div>
                 <CardTitle className="text-base">Effectifs par département</CardTitle>
-                <CardDescription>Les douze directions départementales et leurs établissements.</CardDescription>
+                <CardDescription>
+                  {ministeriel
+                    ? "Les directions départementales et leurs établissements."
+                    : "Les directions départementales de votre périmètre."}
+                </CardDescription>
               </div>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dgarh/pilotage">Détail</Link>
@@ -354,7 +383,11 @@ export default function TableauDeBordPage() {
             <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
               <div>
                 <CardTitle className="text-base">Dossiers en circulation, par nature</CardTitle>
-                <CardDescription>Ce que la direction générale instruit en ce moment.</CardDescription>
+                <CardDescription>
+                  {ministeriel
+                    ? "Ce que la direction générale instruit en ce moment."
+                    : "Ce que votre structure instruit en ce moment."}
+                </CardDescription>
               </div>
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/dgarh/actes">Registre <ChevronRight className="ml-1 h-3.5 w-3.5" /></Link>
@@ -398,7 +431,7 @@ export default function TableauDeBordPage() {
                 },
                 {
                   titre: `${fmtNum(aVerifier)} entités de provenance non établie`,
-                  texte: "L'organigramme repose en partie sur des hypothèses. Le Journal officiel n° 44 de 2022 les trancherait.",
+                  texte: "Les arrêtés d'organisation sont dépouillés : ce qu'il reste est la carte scolaire — les lycées et collèges — et le découpage des inspections interdépartementales.",
                   href: "/referentiels",
                   icon: Network,
                   grave: false,

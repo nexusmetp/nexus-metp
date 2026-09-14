@@ -7,7 +7,7 @@ import { useAgentsProjetes, useEntites, useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
   ENTITES, POSITION_LABELS, REGLES_CATEGORIE, ROLE_LABELS,
-  cheminDe, descendantsDe, entiteById, gradeById, peut,
+  cheminDe, descendantsDe, entiteById, gradeById, peut, perimetreVisible, visible,
 } from "@/lib/referentiels";
 import { fmtNum, initiales } from "@/lib/format";
 import { BadgeCategorie, BadgePosition, PageHeader } from "@/components/nexus/ui-kit";
@@ -46,10 +46,16 @@ export default function AnnuairePage() {
      C'est le répertoire téléphonique du ministère : son objet est justement de
      joindre quelqu'un qu'on ne connaît pas et dont on ne dépend pas. Le borner
      reviendrait à le vider de son sens — un agent de Pointe-Noire ne pourrait
-     plus appeler le bureau du courrier à Brazzaville. Il n'expose que ce qu'un
-     annuaire expose : nom, fonction, service, ligne professionnelle — jamais
-     le dossier, jamais la carrière, jamais la rémunération, qui sont, eux,
-     bornés au périmètre. */
+     plus appeler le bureau du courrier à Brazzaville.
+
+     Ce qui l'est, en revanche : **ce que la fiche montre**. La promesse
+     ci-dessus — « nom, fonction, service, ligne professionnelle, jamais la
+     carrière » — n'était pas tenue. La fiche affichait le grade, la position
+     administrative et l'identifiant de connexion de n'importe qui : « en
+     suspension » est un fait disciplinaire, pas une ligne d'annuaire, et il
+     était lisible par les trois mille huit cents agents du ministère. Hors
+     périmètre, la fiche s'arrête donc à ce qu'un annuaire dit. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user]);
   const perimetre = useMemo(
     () => (filtres.entite === "all" ? null : new Set(descendantsDe(filtres.entite).map((e) => e.id))),
     [filtres.entite, entitesDb]
@@ -119,6 +125,7 @@ export default function AnnuairePage() {
   if (!pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
   const compteSel = selection ? compteDe.get(selection.id) : undefined;
+  const dansMonPerimetre = !!selection && visible(perimetreDroit, selection.entiteId);
   const collegues = selection
     ? agents.filter((a) => a.entiteId === selection.entiteId && a.id !== selection.id).slice(0, 8)
     : [];
@@ -181,7 +188,7 @@ export default function AnnuairePage() {
                 <Link href="/messagerie">Écrire</Link>
               </Button>
             )}
-            {peut(user.role, "agents") && (
+            {peut(user.role, "agents") && dansMonPerimetre && (
               <Button size="sm" asChild>
                 <Link href={`/dgarh/agents/${selection.id}`}>Ouvrir le dossier</Link>
               </Button>
@@ -208,7 +215,9 @@ export default function AnnuairePage() {
               <LigneInfo k="Adresse électronique" v={selection.email
                 ? <span className="inline-flex items-center gap-1.5 text-xs"><Mail className="h-3 w-3" />{selection.email}</span>
                 : undefined} />
-              {compteSel && <LigneInfo k="Identifiant de connexion" v={<span className="text-xs">{compteSel.email}</span>} />}
+              {compteSel && dansMonPerimetre && (
+                <LigneInfo k="Identifiant de connexion" v={<span className="text-xs">{compteSel.email}</span>} />
+              )}
             </Section>
 
             <Section titre="Position dans le ministère">
@@ -217,8 +226,18 @@ export default function AnnuairePage() {
                 {selection.entiteId ? cheminDe(selection.entiteId).map((e) => e.sigle).join(" › ") : "—"}
               </span>} />
               <LigneInfo k="Fonction" v={selection.fonction ?? "—"} />
-              <LigneInfo k="Grade" v={gradeById(selection.gradeId)?.libelle ?? "hors carrière statutaire"} />
-              <LigneInfo k="Position" v={POSITION_LABELS[selection.nature]} />
+              {/* Grade et position sont de la carrière, pas de l'annuaire. */}
+              {dansMonPerimetre ? (
+                <>
+                  <LigneInfo k="Grade" v={gradeById(selection.gradeId)?.libelle ?? "hors carrière statutaire"} />
+                  <LigneInfo k="Position" v={POSITION_LABELS[selection.nature]} />
+                </>
+              ) : (
+                <p className="px-1 pt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Grade et position administrative relèvent du dossier, et ce dossier
+                  est tenu par une autre structure. L'annuaire s'arrête ici.
+                </p>
+              )}
             </Section>
 
             {collegues.length > 0 && (

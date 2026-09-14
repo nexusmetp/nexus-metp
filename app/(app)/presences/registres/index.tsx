@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/store";
 import {
   COULEUR_CAHIER, ETAT_CAHIER_LABELS, MODE_RELEVE_LABELS, NIVEAU_LABELS,
   idRegistre, peut,
-} from "@/lib/referentiels";
+ perimetreVisible, visible,} from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
 import {
   Badge, Colonne, LigneInfo, PanneauDetail, RangeeKpi, Section, TableauModule,
@@ -46,7 +46,13 @@ const infobulle = {
 export function RegistresEntite() {
   const user = useAuth((s) => s.user)!;
   const redacteur = peut(user.role, "presences", "W");
-  const { data: agents, pret } = useAgentsProjetes();
+  const { data: tousAgents, pret } = useAgentsProjetes();
+  /* Borné au périmètre : la présence, la formation et le versement aux
+     archives sont des faits de dossier, pas des informations de couloir. */
+  const agents = useMemo(() => {
+    const p = perimetreVisible(user);
+    return tousAgents.filter((a) => visible(p, a.entiteId));
+  }, [tousAgents, user]);
   const { data: entites = [], isLoading: chargeEntites } = useEntites();
   const { data: points = [], isLoading: chargePoints } = usePointsAccueil();
   const { data: registres = [] } = useRegistres();

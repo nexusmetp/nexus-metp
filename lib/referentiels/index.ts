@@ -16,6 +16,7 @@ export * from "./statut";
 export * from "./actes";
 export * from "./droits";
 export * from "./attributions";
+export * from "./portees";
 export * from "./habilitations";
 export * from "./profils";
 export * from "./presence";

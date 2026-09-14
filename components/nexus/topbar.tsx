@@ -9,12 +9,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/store";
-import { ROLE_LABELS, STATUTS_EN_COURS, cheminDe, entiteById } from "@/lib/referentiels";
 import {
-  useActes, useAgents, useAnnonces, useResetData, useTickets,
+  ROLE_LABELS, STATUTS_EN_COURS, cheminDe, entiteById, perimetreVisible, visible,
+} from "@/lib/referentiels";
+import {
+  useActes, useAgentsProjetes, useAnnonces, useResetData, useTickets,
 } from "@/lib/queries";
 import { Armoiries } from "@/components/nexus/logo";
 import { DialogueMotDePasse } from "@/components/nexus/mot-de-passe";
+import { Rattachement } from "@/components/nexus/rattachement";
 import { FilAssistance } from "@/components/ia/fil-assistance";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,17 +31,25 @@ import {
 } from "@/components/ui/command";
 import { fmtDate, initiales, joursDepuis } from "@/lib/format";
 
+/* Assez pour choisir, assez peu pour que la liste reste lisible. */
+const LIMITE_RECHERCHE = 50;
+
 export function Topbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [motDePasse, setMotDePasse] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { data: agents = [] } = useAgents();
+  /* Projetés, et non bruts : l'affectation d'un agent est un fait d'acte,
+     et c'est elle qui dit s'il est dans mon périmètre. La requête est
+     partagée avec les écrans qui l'appellent déjà — elle ne coûte rien de
+     plus ici. */
+  const { data: agents = [] } = useAgentsProjetes();
   const { data: actes = [] } = useActes();
   const { data: tickets = [] } = useTickets();
   const { data: annonces = [] } = useAnnonces();
   const reset = useResetData();
   const [open, setOpen] = useState(false);
+  const [requete, setRequete] = useState("");
   const [vues, setVues] = useState<string[]>([]);
 
   // Ctrl K : le raccourci était affiché sans être branché.
@@ -100,8 +111,23 @@ export function Topbar() {
     return out;
   }, [user, actes, tickets, annonces]);
 
+  /* Cherchée dans tout le périmètre, pas dans les deux cents premières
+     lignes du fichier : c'est la requête qui borne la liste, pas l'ordre
+     d'arrivée. */
+  const trouves = useMemo(() => {
+    const t = requete.trim().toLowerCase();
+    if (!user || t.length < 2) return [];
+    const perimetre = perimetreVisible(user);
+    return agents
+      .filter((a) => visible(perimetre, a.entiteId))
+      .filter((a) =>
+        a.nom.toLowerCase().includes(t)
+        || a.prenom.toLowerCase().includes(t)
+        || a.matricule.toLowerCase().includes(t))
+      .slice(0, LIMITE_RECHERCHE);
+  }, [agents, requete, user]);
+
   if (!user) return null;
-  const ent = entiteById(user.entiteId);
   const nonLus = alertes.filter((a) => !vues.includes(a.id)).length;
 
   return (
@@ -121,9 +147,9 @@ export function Topbar() {
       </button>
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
-        <Badge variant="outline" className="hidden border-primary/30 bg-primary/5 text-[10px] text-primary md:inline-flex">
-          {ent?.sigle ?? "METP"}
-        </Badge>
+        {/* Le sigle seul ne situait personne : il ouvre désormais la chaîne
+            complète, la fonction, et jusqu'où porte le regard. */}
+        <Rattachement utilisateur={user} />
 
         {/* L'assistant ne s'affiche que si l'administrateur l'a ouvert :
             un bouton qui échoue vaut moins qu'un bouton absent. */}
@@ -243,25 +269,44 @@ export function Topbar() {
         surFermeture={() => setMotDePasse(false)}
       />
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Nom, prénom ou matricule…" />
+      {/* La recherche globale cherchait dans le fichier entier, et n'en
+          affichait que les deux cents premiers — deux défauts d'un coup : elle
+          ouvrait le dossier de n'importe quel agent du ministère à qui savait
+          son nom, et elle ne trouvait pas le trois millième. Elle est
+          désormais bornée au périmètre et cherche dans tout ce périmètre. */}
+      <CommandDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setRequete(""); }}>
+        <CommandInput
+          placeholder="Nom, prénom ou matricule…"
+          value={requete}
+          onValueChange={setRequete}
+        />
         <CommandList>
-          <CommandEmpty>Aucun résultat.</CommandEmpty>
-          <CommandGroup heading="Agents">
-            {agents.slice(0, 200).map((a) => (
-              <CommandItem
-                key={a.id}
-                value={`${a.prenom} ${a.nom} ${a.matricule}`}
-                onSelect={() => {
-                  setOpen(false);
-                  router.push(`/dgarh/agents/${a.id}`);
-                }}
-              >
-                <span className="font-medium">{a.prenom} {a.nom}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{a.matricule}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandEmpty>
+            {requete.trim().length < 2
+              ? "Tapez au moins deux caractères."
+              : "Aucun résultat dans votre périmètre."}
+          </CommandEmpty>
+          {trouves.length > 0 && (
+            <CommandGroup heading={`Agents — ${trouves.length}${trouves.length === LIMITE_RECHERCHE ? " premiers" : ""}`}>
+              {trouves.map((a) => (
+                <CommandItem
+                  key={a.id}
+                  value={`${a.prenom} ${a.nom} ${a.matricule}`}
+                  onSelect={() => {
+                    setOpen(false);
+                    setRequete("");
+                    router.push(`/dgarh/agents/${a.id}`);
+                  }}
+                >
+                  <span className="font-medium">{a.prenom} {a.nom}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{a.matricule}</span>
+                  <span className="ml-auto pl-3 text-[10px] text-muted-foreground">
+                    {entiteById(a.entiteId)?.sigle ?? "—"}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
 

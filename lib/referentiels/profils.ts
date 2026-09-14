@@ -2,6 +2,7 @@ import type { CodeProfil, ProfilAcces, Role } from "@/lib/types";
 import {
   CODES_LIVRES, DROITS, MODULE_LABELS, ROLE_LABELS, droitsLivres, type ModuleKey,
 } from "./droits";
+import { porteeDe } from "./portees";
 import {
   ADMINISTRATION_MINISTERIELLE, PORTEE_MINISTERIELLE, PROFILS_TECHNIQUES,
   PROFIL_DESCRIPTIONS,
@@ -323,7 +324,15 @@ export function perimetreVisible(
 ): Set<string> | null {
   const profil = parCode.get(utilisateur.role);
   if (!profil) return new Set([utilisateur.entiteId]);
-  if (profil.technique || profil.portee === "MINISTERE") return null;
+  if (profil.technique) return null;
+  /* Le profil **et** l'entité. Le profil dit qu'une fonction peut porter une
+     vue ministérielle ; l'entité dit si celle-ci en porte une. Sans cette
+     seconde condition, les trois directions générales ajoutées par la lecture
+     des arrêtés — enseignement technique, professionnel, équipement — lisaient
+     le fichier de la DGARH, faute d'avoir une ligne de profil à elles. */
+  if (profil.portee === "MINISTERE" && porteeDe(utilisateur.entiteId).voit === "MINISTERE") {
+    return null;
+  }
   return new Set(descendantsDe(utilisateur.entiteId).map((e) => e.id));
 }
 
@@ -347,7 +356,13 @@ export function perimetreAdministrable(
 ): Set<string> | null {
   const profil = parCode.get(utilisateur.role);
   if (!profil) return new Set([utilisateur.entiteId]);
-  if (profil.technique || profil.administre === "MINISTERE") return null;
+  if (profil.technique) return null;
+  /* Même règle qu'à la lecture, et elle compte davantage ici : administrer
+     hors de sa branche, c'est créer des directions chez le voisin et en
+     désigner les chefs. */
+  if (profil.administre === "MINISTERE" && porteeDe(utilisateur.entiteId).administre === "MINISTERE") {
+    return null;
+  }
   return new Set(descendantsDe(utilisateur.entiteId).map((e) => e.id));
 }
 

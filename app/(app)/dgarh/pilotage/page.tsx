@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/lib/store";
 import {
   DROITS, ENTITES, MODULE_LABELS, NIVEAU_LABELS, ROLE_LABELS, STATUTS_EN_COURS,
-  cheminDe, descendantsDe, entiteById, type ModuleKey,
+  cheminDe, descendantsDe, entiteById, perimetreVisible, visible, type ModuleKey,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct, joursDepuis } from "@/lib/format";
 import { BadgeStatutActe, PageHeader } from "@/components/nexus/ui-kit";
@@ -71,13 +71,27 @@ export default function PilotagePage() {
   const gestion = useGestionEntite(() => setSelection(null));
   const [filtres, setFiltres] = useState<Record<string, string>>({ niveau: "all", sante: "all" });
 
+  /* Le pilotage montrait les soixante structures du ministère à quiconque a
+     la lecture du module — directeur central, et non seulement directeur
+     général. Effectif, dossiers en retard, complétude des dossiers de chaque
+     direction : c'est précisément ce qu'une direction n'a pas à savoir d'une
+     autre. On borne donc au périmètre, et hors vue ministérielle on descend
+     d'un cran : piloter, pour un directeur, c'est piloter ses services. */
+  const perimetreDroit = useMemo(() => perimetreVisible(user), [user]);
+  const ministeriel = perimetreDroit === null;
+
   const directions = useMemo<LigneDirection[]>(() => {
     const responsableDe = new Map<string, string>();
     comptes.forEach((c) => { if (!responsableDe.has(c.entiteId)) responsableDe.set(c.entiteId, c.nomComplet); });
 
+    const pilotees = ministeriel
+      ? ENTITES.filter((e) => NIVEAUX_PILOTES.has(e.niveau))
+      : ENTITES.filter((e) =>
+          visible(perimetreDroit, e.id)
+          && (e.id === user.entiteId || e.parentId === user.entiteId));
 
-    return ENTITES
-      .filter((e) => NIVEAUX_PILOTES.has(e.niveau) && e.actif !== false)
+    return pilotees
+      .filter((e) => e.actif !== false)
       .map((e) => {
         const perimetre = new Set(descendantsDe(e.id).map((x) => x.id));
         const pop = agents.filter((a) => a.entiteId && perimetre.has(a.entiteId));
@@ -108,7 +122,7 @@ export default function PilotagePage() {
       })
       .filter((d) => d.effectif > 0 || d.actesOuverts > 0)
       .sort((a, b) => b.effectif - a.effectif);
-  }, [agents, actes, tickets, besoins, comptes, entitesDb]);
+  }, [agents, actes, tickets, besoins, comptes, entitesDb, perimetreDroit, ministeriel, user.entiteId]);
 
   /* Une direction est « sous tension » dès qu'un dossier y dort plus de
      quinze jours ou qu'une réclamation y traîne. */
@@ -119,12 +133,37 @@ export default function PilotagePage() {
     .filter((d) => filtres.sante === "all" || (filtres.sante === "tension" ? sousTension(d) : !sousTension(d))),
     [directions, filtres]);
 
-  const total = useMemo(() => ({
-    effectif: directions.reduce((s, d) => s + d.effectif, 0),
-    retard: directions.reduce((s, d) => s + d.actesRetard, 0),
-    tickets: directions.reduce((s, d) => s + d.ticketsOuverts, 0),
-    tension: directions.filter(sousTension).length,
-  }), [directions]);
+  /* Compté par agent, jamais en additionnant les lignes.
+     Chaque ligne porte l'effectif de sa **branche** : une direction
+     départementale est comptée chez elle et de nouveau chez sa direction
+     générale. Tant que les directions départementales pendaient au ministère,
+     l'imbrication était faible et la somme passait ; la lecture des arrêtés
+     les a rattachées à leur direction générale, et le total annonçait alors
+     sept mille deux cent soixante-huit agents pour un ministère qui en compte
+     trois mille huit cent trente. Un tableau de bord qui additionne des
+     ensembles qui se recouvrent ne se corrige pas, il se refait. */
+  const total = useMemo(() => {
+    const vus = new Set<string>();
+    const dossiers = new Set<string>();
+    const reclamations = new Set<string>();
+    directions.forEach((d) => {
+      const branche = new Set(descendantsDe(d.id).map((x) => x.id));
+      agents.forEach((a) => { if (a.entiteId && branche.has(a.entiteId)) vus.add(a.id); });
+      actes.forEach((a) => {
+        if (branche.has(a.entiteInstructriceId) && STATUTS_EN_COURS.includes(a.statut)
+            && joursDepuis(a.dateCreation) > 15) dossiers.add(a.id);
+      });
+      tickets.forEach((t) => {
+        if (branche.has(t.entiteId) && !["RESOLU", "CLOS"].includes(t.statut)) reclamations.add(t.id);
+      });
+    });
+    return {
+      effectif: vus.size,
+      retard: dossiers.size,
+      tickets: reclamations.size,
+      tension: directions.filter(sousTension).length,
+    };
+  }, [directions, agents, actes, tickets]);
 
   const graphe = useMemo(() => directions.slice(0, 9).map((d) => ({
     nom: d.sigle,
@@ -186,9 +225,15 @@ export default function PilotagePage() {
 
   if (!pret) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
 
-  const detailActes = selection
+  /* La branche se déplie une fois, pas une fois par acte : sur six cents
+     entités et six mille actes, la seconde écriture coûte des milliards de
+     comparaisons pour une liste de huit lignes. */
+  const brancheSelection = selection
+    ? new Set(descendantsDe(selection.id).map((e) => e.id))
+    : null;
+  const detailActes = brancheSelection
     ? actes
-        .filter((a) => descendantsDe(selection.id).some((e) => e.id === a.entiteInstructriceId))
+        .filter((a) => !!a.entiteInstructriceId && brancheSelection.has(a.entiteInstructriceId))
         .filter((a) => STATUTS_EN_COURS.includes(a.statut))
         .sort((a, b) => joursDepuis(b.dateCreation) - joursDepuis(a.dateCreation))
         .slice(0, 8)

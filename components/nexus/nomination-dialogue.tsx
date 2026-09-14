@@ -1,11 +1,13 @@
 "use client";
 
-import { Landmark, UserCheck, UserPlus } from "lucide-react";
+import { Landmark, Repeat2, UserCheck, UserPlus } from "lucide-react";
 import { mentionApprobation } from "@/lib/referentiels";
 import {
   ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
 } from "@/components/nexus/module";
-import { CATEGORIES, LIBELLES_CATEGORIE, type ChampsResponsable } from "./entite-constantes";
+import {
+  CATEGORIES, LIBELLES_CATEGORIE, type ChampsResponsable, type Sortant,
+} from "./entite-constantes";
 import type { Agent, AgentProjete, Entite, ProfilAcces } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -35,7 +37,7 @@ export function DialogueNomination({
   nomination, surChamps, surFermeture, surValidation, valide,
   profilsDesignables, candidats, soumisAuMinistre,
 }: {
-  nomination: { entite: Entite; champs: ChampsResponsable } | null;
+  nomination: { entite: Entite; champs: ChampsResponsable; sortant?: Sortant } | null;
   surChamps: (c: Partial<ChampsResponsable>) => void;
   surFermeture: () => void;
   surValidation: () => void;
@@ -46,7 +48,7 @@ export function DialogueNomination({
   soumisAuMinistre: boolean;
 }) {
   if (!nomination) return null;
-  const { champs } = nomination;
+  const { champs, sortant } = nomination;
   const enPoste = champs.source === "EN_POSTE";
   const choisi = candidats.find((a) => a.id === champs.agentId);
 
@@ -54,16 +56,18 @@ export function DialogueNomination({
     <DialogueFormulaire
       ouvert
       surFermeture={surFermeture}
-      titre={`Désigner le responsable — ${nomination.entite.sigle}`}
-      description={
-        "Une seule personne, celle qui dirige. C'est elle qui inscrira ensuite son secrétariat "
-        + "et son personnel, et leur attribuera les profils — vous n'aurez plus à intervenir."
-      }
+      titre={`${sortant ? "Remplacer le responsable" : "Désigner le responsable"} — ${nomination.entite.sigle}`}
+      description={sortant
+        ? "La relève se fait à une date : l'habilitation du sortant se ferme ce jour-là, celle du "
+          + "successeur s'ouvre. Rien ne s'efface — l'historique dira toujours qui tenait cette "
+          + "entité et de qui il le tenait."
+        : "Une seule personne, celle qui dirige. C'est elle qui inscrira ensuite son secrétariat "
+          + "et son personnel, et leur attribuera les profils — vous n'aurez plus à intervenir."}
       surValidation={surValidation}
       validationPossible={valide}
       libelleValidation={soumisAuMinistre
         ? "Soumettre au ministre"
-        : enPoste ? "Désigner" : "Désigner et ouvrir l'accès"}
+        : sortant ? "Remplacer" : enPoste ? "Désigner" : "Désigner et ouvrir l'accès"}
       large
     >
       {/* Dit avant le geste, jamais après : un bouton qui promet d'ouvrir un
@@ -72,6 +76,20 @@ export function DialogueNomination({
         <p className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-500">
           {mentionApprobation(nomination.entite.niveau)}
         </p>
+      )}
+
+      {sortant && (
+        <div className="flex items-start gap-3 rounded-lg border bg-muted/40 p-3">
+          <Repeat2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            <strong className="font-medium">{sortant.nom}</strong> dirige aujourd&apos;hui cette
+            entité, au profil {sortant.profil.toLowerCase()}. À la date d&apos;effet, son
+            habilitation est close avec son motif, et{" "}
+            <strong className="font-medium">son compte reste ouvert au profil d&apos;agent</strong>{" "}
+            — il demeure agent du ministère, et son dossier ne bouge pas. Il n&apos;est pas
+            candidat à sa propre succession : la liste ci-dessous ne le propose pas.
+          </p>
+        </div>
       )}
 
       <ChampSelect
@@ -156,7 +174,9 @@ export function DialogueNomination({
       </div>
       <ChampTexte label="Fonction" valeur={champs.fonction}
         surChangement={(v) => surChamps({ fonction: v })} />
-      <ChampZone label="Acte qui le nomme" obligatoire lignes={2} valeur={champs.motif}
+      <ChampZone
+        label={sortant ? "Acte qui opère la relève" : "Acte qui le nomme"}
+        obligatoire lignes={2} valeur={champs.motif}
         surChangement={(v) => surChamps({ motif: v })}
         placeholder="Décret n° … du … portant nomination de …"
         aide="Obligatoire. Un responsable désigné sans acte cité ne se justifie devant personne — et c'est ce texte que porteront l'acte d'affectation et l'habilitation." />

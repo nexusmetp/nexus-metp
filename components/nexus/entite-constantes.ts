@@ -57,6 +57,18 @@ export const videEntite = {
  * dans l'entité — le cas ordinaire — ou inscrire une personne au fichier, ce
  * qui ne se justifie que pour une entité qui vient de naître.
  */
+/**
+ * Le responsable en fonction, quand la désignation est une relève.
+ *
+ * Il vit ici et non dans le crochet : le dialogue le lit, le crochet le pose,
+ * et les faire s'importer l'un l'autre fermerait le cercle.
+ */
+export interface Sortant {
+  nom: string;
+  profil: string;
+  agentId?: string | null;
+}
+
 export interface ChampsResponsable {
   source: "EN_POSTE" | "A_INSCRIRE";
   /** Renseigné en mode « en poste » : l'agent choisi dans l'entité. */

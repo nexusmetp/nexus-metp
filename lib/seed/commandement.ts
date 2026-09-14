@@ -1,5 +1,6 @@
 import {
-  NIVEAUX_DE_COMMANDEMENT, RANG_HIERARCHIQUE, ROLE_ATTENDU, TITRE_DU_CHEF, entiteById,
+  NIVEAUX_DE_COMMANDEMENT, RANG_COMMANDEMENT, RANG_HIERARCHIQUE, ROLE_ATTENDU,
+  TITRE_DU_CHEF, entiteById,
 } from "@/lib/referentiels";
 import type { Affectation, Agent, Entite, Habilitation, Utilisateur } from "@/lib/types";
 import { AUJOURDHUI, pad, plusJours } from "./aleatoire";
@@ -34,16 +35,6 @@ import { AUJOURDHUI, pad, plusJours } from "./aleatoire";
  * chaîne se lit donc de bout en bout à l'écran « Qui dirige quoi », au lieu
  * de remonter toute entière à l'installation.
  */
-
-/**
- * Le rang à partir duquel on tient une structure.
- *
- * Le chef de bureau est la plus petite maille qui en dirige une. En dessous —
- * secrétaire, instructeur, agent — on sert dans l'entité sans la commander :
- * confondre les deux faisait passer pour pourvus quatorze services dont seul
- * le secrétariat était tenu, et laissait donc ces services sans chef réel.
- */
-const RANG_COMMANDEMENT = RANG_HIERARCHIQUE.CHEF_BUREAU ?? 40;
 
 /** Profondeur d'une entité dans l'arbre — pour pourvoir les parents d'abord. */
 function profondeur(entite: Entite): number {

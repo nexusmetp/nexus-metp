@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Building2, ChevronRight, Network, Pencil, Plus, ShieldCheck, UserPlus,
+  Building2, ChevronRight, Network, Pencil, Plus, Repeat2, ShieldCheck, UserPlus,
 } from "lucide-react";
 import {
   useAgentsProjetes, useEntites, useHabilitations, useUtilisateurs,
@@ -224,7 +224,9 @@ export default function OrganisationPage() {
         <TabsContent value="responsables">
           <Responsables
             lignes={responsables}
-            surDesignation={redacteur ? (e) => gestion.ouvrirNomination(e) : undefined}
+            surDesignation={redacteur
+              ? (e, sortant) => gestion.ouvrirNomination(e, sortant)
+              : undefined}
           />
         </TabsContent>
 
@@ -277,11 +279,24 @@ export default function OrganisationPage() {
             <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirEdition(c); }}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
             </Button>
-            {!chef && (
-              <Button size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirNomination(c); }}>
-                <UserPlus className="mr-1.5 h-3.5 w-3.5" /> Désigner le responsable
-              </Button>
-            )}
+            {/* Désigner quand la place est vide, remplacer quand elle est
+                tenue : sans le second cas, la relève n'avait plus d'entrée
+                nulle part une fois toutes les têtes pourvues. */}
+            <Button
+              size="sm" variant={chef ? "outline" : "default"}
+              onClick={() => {
+                const c = selection;
+                const sortant = chef
+                  ? { nom: chef.nomComplet, profil: ROLE_LABELS[chef.role] ?? chef.role, agentId: chef.agentId }
+                  : undefined;
+                setSelection(null);
+                gestion.ouvrirNomination(c, sortant);
+              }}
+            >
+              {chef
+                ? <><Repeat2 className="mr-1.5 h-3.5 w-3.5" /> Remplacer le responsable</>
+                : <><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Désigner le responsable</>}
+            </Button>
           </>
         )}
       >

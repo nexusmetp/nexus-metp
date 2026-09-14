@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShieldCheck, UserPlus } from "lucide-react";
+import { Repeat2, ShieldCheck, UserPlus } from "lucide-react";
 import type { Entite, Habilitation, Utilisateur } from "@/lib/types";
 import {
-  NIVEAU_LABELS, RANG_HIERARCHIQUE, cheminDe, habilitationsEnVigueur, libelleProfil,
+  NIVEAUX_DE_COMMANDEMENT as NIVEAUX_COMMANDES, NIVEAU_LABELS, RANG_COMMANDEMENT,
+  RANG_HIERARCHIQUE, cheminDe, habilitationsEnVigueur, libelleProfil,
 } from "@/lib/referentiels";
+import type { Sortant } from "@/components/nexus/entite-constantes";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { Badge, type Colonne, TableauModule } from "@/components/nexus/module";
 import { Button } from "@/components/ui/button";
@@ -37,11 +39,17 @@ export interface LigneResponsable {
   effectif: number;
 }
 
-/** Les niveaux qui portent un chef, et pour lesquels l'absence est une anomalie. */
+/**
+ * Les niveaux que ce registre montre.
+ *
+ * Ceux qui portent un chef — la table du référentiel, celle que lisent aussi
+ * le semis et le tableau de bord — plus le **ministère** lui-même. Il ne se
+ * crée pas et ne se désigne pas depuis la plateforme, mais il a une tête, et
+ * un registre qui prétend dire qui dirige quoi ne peut pas commencer en
+ * dessous d'elle.
+ */
 export const NIVEAUX_DE_COMMANDEMENT: Entite["niveau"][] = [
-  "MINISTERE", "CABINET", "DIRECTION_GENERALE", "INSPECTION_GENERALE",
-  "DIRECTION", "DIRECTION_DEPARTEMENTALE", "SERVICE", "ETABLISSEMENT",
-  "INSPECTION_INTERDEPARTEMENTALE",
+  "MINISTERE", ...NIVEAUX_COMMANDES,
 ];
 
 export function lignesResponsables({ entites, comptes, habilitations, effectifs, aujourdhui }: {
@@ -51,15 +59,15 @@ export function lignesResponsables({ entites, comptes, habilitations, effectifs,
   effectifs: Map<string, number>;
   aujourdhui: string;
 }): LigneResponsable[] {
-  const socle = RANG_HIERARCHIQUE.AGENT ?? 10;
-
-  /* Le responsable d'une entité est celui dont le profil commande — rang
-     supérieur à celui d'un agent — et dont l'habilitation est en vigueur. À
-     plusieurs, le rang le plus élevé l'emporte : c'est le cas normal d'une
-     direction où servent aussi un chef de service et un chef de bureau. */
+  /* Le responsable d'une entité est celui dont le profil **commande** — un
+     secrétaire sert dans l'entité sans la diriger, et l'afficher comme
+     responsable faisait passer pour pourvus des services qui ne l'étaient
+     pas — et dont l'habilitation est en vigueur. À plusieurs, le rang le plus
+     élevé l'emporte : c'est le cas normal d'une direction où servent aussi un
+     chef de service et un chef de bureau. */
   const tete = new Map<string, { compte: Utilisateur; habilitation: Habilitation | null }>();
   comptes
-    .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) > socle)
+    .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) >= RANG_COMMANDEMENT)
     .forEach((c) => {
       const [courante] = habilitationsEnVigueur(habilitations, c.id, aujourdhui);
       if (!courante) return;
@@ -92,7 +100,7 @@ export function lignesResponsables({ entites, comptes, habilitations, effectifs,
 export function Responsables({ lignes, surDesignation }: {
   lignes: LigneResponsable[];
   /** Absent = ce profil lit le registre sans y désigner personne. */
-  surDesignation?: (e: Entite) => void;
+  surDesignation?: (e: Entite, sortant?: Sortant) => void;
 }) {
   const [filtres, setFiltres] = useState<Record<string, string>>({ etat: "all", niveau: "all" });
 
@@ -126,9 +134,24 @@ export function Responsables({ lignes, surDesignation }: {
       cle: "responsable", entete: "Responsable",
       rendu: (l) => (l.compte
         ? (
-          <div className="min-w-0">
+          <div className="min-w-0 space-y-1">
             <div className="truncate text-sm font-medium">{l.compte.nomComplet}</div>
             <div className="truncate text-[11px] text-muted-foreground">{l.compte.email}</div>
+            {/* La relève se déclenche d'ici : c'est la ligne où l'on constate
+                qu'un chef est parti, pas trois écrans plus loin. */}
+            {surDesignation && (
+              <Button
+                size="sm" variant="ghost"
+                className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+                onClick={() => surDesignation(l.entite, {
+                  nom: l.compte!.nomComplet,
+                  profil: libelleProfil(l.compte!.role),
+                  agentId: l.compte!.agentId,
+                })}
+              >
+                <Repeat2 className="mr-1 h-3 w-3" /> Remplacer
+              </Button>
+            )}
           </div>
         )
         : surDesignation

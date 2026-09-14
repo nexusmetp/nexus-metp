@@ -85,6 +85,21 @@ const RANGS_LIVRES: Record<Role, number> = {
 export const RANG_HIERARCHIQUE: Record<string, number> = { ...RANGS_LIVRES };
 
 /**
+ * Le rang à partir duquel on **tient** une structure.
+ *
+ * Le chef de bureau est la plus petite maille qui en dirige une. En dessous —
+ * secrétaire, instructeur, agent — on sert dans l'entité sans la commander.
+ * La distinction n'était écrite nulle part et se payait deux fois : quatorze
+ * services dont seul le secrétariat était tenu passaient pour pourvus, et une
+ * nomination relevait de ses fonctions le secrétaire de l'entité en même
+ * temps que le chef qu'elle remplaçait.
+ *
+ * Ce seuil est lu par le semis, par la projection « qui dirige quoi » et par
+ * les effets d'une nomination : ils doivent répondre la même chose.
+ */
+export const RANG_COMMANDEMENT = RANGS_LIVRES.CHEF_BUREAU;
+
+/**
  * Les profils que seul l'administrateur système ouvre.
  *
  * Ces fonctions-là ne se délèguent pas depuis un service : elles procèdent
@@ -328,10 +343,9 @@ export function chefsParEntite(
   habilitations: Habilitation[],
   date: string
 ): Map<string, Utilisateur> {
-  const socle = RANG_HIERARCHIQUE.AGENT ?? 10;
   const m = new Map<string, Utilisateur>();
   comptes
-    .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) > socle)
+    .filter((c) => c.actif && (RANG_HIERARCHIQUE[c.role] ?? 0) >= RANG_COMMANDEMENT)
     .filter((c) => habilitationsEnVigueur(habilitations, c.id, date).length > 0)
     .forEach((c) => {
       const tenant = m.get(c.entiteId);

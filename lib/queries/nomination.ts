@@ -1,7 +1,9 @@
 "use client";
 
 import { all, save } from "@/lib/db";
-import { habilitationsEnVigueur, hydraterEntites } from "@/lib/referentiels";
+import {
+  RANG_COMMANDEMENT, RANG_HIERARCHIQUE, habilitationsEnVigueur, hydraterEntites,
+} from "@/lib/referentiels";
 import { motDePasseProvisoire } from "@/lib/acces/motdepasse";
 import type {
   Affectation, Agent, Entite, Habilitation, Position, Utilisateur,
@@ -133,8 +135,13 @@ export async function appliquerNomination({
 
   /* ---------- La relève, s'il y en a une ---------- */
   const aujourdhui = new Date().toISOString().slice(0, 10);
+  /* On ne relève que ceux qui **commandaient** l'entité. Le filtre portait sur
+     « autre chose que le profil d'agent » : nommer un chef de service faisait
+     donc tomber au profil d'agent le secrétaire du même service, qui n'avait
+     rien à voir avec la relève et perdait son point d'accueil au passage. */
   const sortants = comptes.filter(
-    (c) => c.actif && c.id !== compte.id && c.entiteId === entite.id && c.role !== "AGENT"
+    (c) => c.actif && c.id !== compte.id && c.entiteId === entite.id
+      && (RANG_HIERARCHIQUE[c.role] ?? 0) >= RANG_COMMANDEMENT
       && habilitationsEnVigueur(habilitations, c.id, aujourdhui).length > 0
   );
   for (const sortant of sortants) {

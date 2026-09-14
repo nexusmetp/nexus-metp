@@ -28,10 +28,11 @@ import type { Agent, Entite, NiveauEntite, Role } from "@/lib/types";
  */
 
 import {
-  NIVEAUX_CREABLES, ROLE_ATTENDU, coordonneeValide, videEntite, videResponsable,
+  NIVEAUX_CREABLES, ROLE_ATTENDU, type Sortant, coordonneeValide, videEntite, videResponsable,
 } from "./entite-constantes";
 
 export { NIVEAUX_CREABLES, ROLE_ATTENDU, coordonneeValide };
+export type { Sortant };
 
 export function useGestionEntite(surChangement?: (e: Entite) => void) {
   const user = useAuth((s) => s.user)!;
@@ -42,7 +43,8 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
 
   const [formulaire, setFormulaire] = useState<typeof videEntite | null>(null);
   const [edition, setEdition] = useState<Entite | null>(null);
-  const [nomination, setNomination] = useState<{ entite: Entite; champs: typeof videResponsable } | null>(null);
+  const [nomination, setNomination] = useState<
+    { entite: Entite; champs: typeof videResponsable; sortant?: Sortant } | null>(null);
   const [acces, setAcces] = useState<AccesOuvert | null>(null);
 
   /* Les profils qu'on peut poser à la tête d'une entité : tous ceux du
@@ -87,13 +89,24 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
     });
   };
 
-  const ouvrirNomination = (e: Entite) => {
+  /**
+   * Désigner, ou remplacer.
+   *
+   * Le geste était offert **seulement** quand l'entité n'avait personne, ce
+   * qui suffisait tant que les trois quarts du ministère étaient acéphales.
+   * Une fois toutes les têtes pourvues, il ne restait plus un seul endroit
+   * d'où l'ouvrir : la relève — un départ, une mutation, une fin de
+   * fonctions — devenait impossible à enregistrer alors que le dépôt savait
+   * déjà la traiter. On passe donc le sortant, quand il y en a un.
+   */
+  const ouvrirNomination = (e: Entite, sortant?: Sortant) => {
     /* Le mode proposé suit la situation : s'il y a du monde dans l'entité, on
        nomme parmi eux ; si elle vient de naître, il faut bien inscrire
        quelqu'un. */
     const surPlace = agents.some((a) => a.entiteId === e.id);
     setNomination({
       entite: e,
+      sortant,
       champs: {
         ...videResponsable,
         source: surPlace ? "EN_POSTE" : "A_INSCRIRE",
@@ -178,7 +191,12 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
      d'ordinaire, et les proposer évite d'inventer une identité à côté de la
      leur. */
   const candidats = useMemo(
-    () => (nomination ? agents.filter((a) => a.entiteId === nomination.entite.id) : []),
+    () => (nomination
+      /* Le sortant n'est pas candidat à sa propre succession : le proposer
+         ferait une relève qui ne relève de rien. */
+      ? agents.filter((a) => a.entiteId === nomination.entite.id
+        && a.id !== nomination.sortant?.agentId)
+      : []),
     [agents, nomination]
   );
 

@@ -9,13 +9,16 @@ import { toast } from "sonner";
 import { Award, ClipboardList, Plus, Users2, UserPlus } from "lucide-react";
 import { useBesoins, useCampagnes, useCandidatures, useEnregistrerCampagne } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
-import { CATEGORIES, ENTITES, REGLES_CATEGORIE, entiteById, peut } from "@/lib/referentiels";
+import {
+  CATEGORIES, ENTITES, REGLES_CATEGORIE, entiteById, peut, peutDans,
+} from "@/lib/referentiels";
 import { CHART_COLORS, fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, PageHeader } from "@/components/nexus/ui-kit";
 import {
   ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail,
   RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { MentionAttribution } from "@/components/nexus/mention-attribution";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -146,7 +149,7 @@ export default function RecrutementPage() {
     },
   ];
 
-  const redacteur = peut(user.role, "recrutement", "W");
+  const redacteur = peutDans(user, "recrutement", "W");
   const valide = !!formulaire && formulaire.intitule.trim().length > 10
     && Number(formulaire.postesOuverts) > 0 && !!formulaire.dateCloture;
 
@@ -205,6 +208,8 @@ export default function RecrutementPage() {
           </Button>
         )}
       </PageHeader>
+
+      <MentionAttribution utilisateur={user} module="recrutement" />
 
       <RangeeKpi tuiles={[
         { ton: "cyan", titre: "Campagnes ouvertes", valeur: stats.ouvertes, sousTitre: `${fmtNum(campagnes.length)} au total`, icon: ClipboardList },

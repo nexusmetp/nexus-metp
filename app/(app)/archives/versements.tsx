@@ -8,7 +8,8 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, PLAN_CLASSEMENT, STATUT_VERSEMENT_LABELS, cheminDe, echeanceDua, entiteById, peut,
+  ENTITES, PLAN_CLASSEMENT, STATUT_VERSEMENT_LABELS, cheminDe, echeanceDua, entiteById,
+  peut, peutDans,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import {
@@ -41,7 +42,7 @@ export function Versements() {
   const enregistrer = useEnregistrerVersement();
   const [selection, setSelection] = useState<Versement | null>(null);
   const [formulaire, setFormulaire] = useState<typeof vide | null>(null);
-  const archiviste = peut(user.role, "archives", "W");
+  const archiviste = peutDans(user, "archives", "W");
 
   const nomDe = useMemo(() => {
     const m = new Map(utilisateurs.map((u) => [u.id, u.nomComplet]));

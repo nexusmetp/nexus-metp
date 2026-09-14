@@ -11,11 +11,12 @@ import { useAuth } from "@/lib/store";
 import {
   CATEGORIES_CONTRACTUELLES, DEVISE, NATURE_REMUNERATION_LABELS, REGLES_CATEGORIE,
   VALEUR_DU_POINT, entiteById, estComplet, horsGrille, montantOuMention,
-  perimetreVisible, peut,
+  perimetreVisible, peut, peutDans,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { BadgeCategorie, BadgeProvenance, PageHeader } from "@/components/nexus/ui-kit";
 import { RangeeKpi, TableauModule, type Colonne } from "@/components/nexus/module";
+import { MentionAttribution } from "@/components/nexus/mention-attribution";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +51,7 @@ const videRemu: SaisieRemu = {
 
 export default function RemunerationPage() {
   const user = useAuth((s) => s.user)!;
-  const redacteur = peut(user.role, "remuneration", "W");
+  const redacteur = peutDans(user, "remuneration", "W");
   const { data: tousAgents, pret } = useAgentsProjetes();
   const { data: remunerations = [], isLoading } = useRemunerations();
   const { data: parametres } = useParametres();
@@ -243,6 +244,8 @@ export default function RemunerationPage() {
           </Button>
         )}
       </PageHeader>
+
+      <MentionAttribution utilisateur={user} module="remuneration" />
 
       {valeurPoint === null ? (
         <Card className="border-amber-500/40 bg-amber-500/[0.05]">

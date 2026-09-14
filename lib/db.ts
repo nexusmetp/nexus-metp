@@ -33,7 +33,7 @@ const DB_NAME = "nexus-metp";
  * v7 : inspections détaillées. v6 : cabinet du ministre. v5 : collaboration.
  * v4 : dossier personnel pour tous les rôles. v3 : niveau établissement (§10).
  */
-const DB_VERSION = 28;
+const DB_VERSION = 29;
 
 const STORES = [
   "entites", "corps", "grades", "postes", "agents",
@@ -174,6 +174,27 @@ const RAFRAICHIR: { version: number; tiroirs: StoreName[] }[] = [
      agents déjà affectés là, et une entité sans personne en poste reste sans
      chef. */
   { version: 28, tiroirs: ["entites", "utilisateurs", "habilitations", "affectations"] },
+  /* v29 : quatre comptes, et l'un d'eux était assis au mauvais étage.
+     La DOBAS — troisième direction de la DGARH — n'avait aucune porte
+     d'entrée, non plus que les deux services de la DAFM par lesquels passent
+     la dépense et les archives : on ne pouvait donc pas vérifier ce que fait
+     une sous-direction, seulement le lire dans l'organigramme. Et le compte
+     « chef d'établissement » était rattaché à la direction départementale,
+     c'est-à-dire au-dessus de l'établissement qu'il dirige : son périmètre
+     couvrait tout le département.
+
+     Les mêmes quatre tiroirs qu'en v28, pour la même raison : un compte
+     déplacé emporte son affectation, son habilitation et la tête de son
+     entité.
+
+     Et **les profils**, sans quoi rien de tout cela ne se verrait. La matrice
+     du directeur central s'élargit à la rémunération, aux archives et aux
+     carrières — c'est désormais l'attribution de sa direction qui choisit,
+     parmi ces droits, ceux qu'il exerce. Les profils vivent en base depuis
+     qu'on peut les régler à l'écran : sans réécriture, une base déjà montée
+     garderait l'ancienne ligne et le directeur des finances resterait en
+     lecture seule sur les finances, l'axe des attributions installé ou non. */
+  { version: 29, tiroirs: ["entites", "utilisateurs", "habilitations", "affectations", "profils"] },
 ];
 
 let dbp: Promise<IDBPDatabase> | null = null;

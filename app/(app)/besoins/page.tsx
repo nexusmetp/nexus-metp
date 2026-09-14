@@ -6,13 +6,15 @@ import { ArrowUp, Building2, ClipboardList, Gavel, Plus, School } from "lucide-r
 import { useBesoins, useEnregistrerBesoin } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  CATEGORIES, REGLES_CATEGORIE, ETABLISSEMENTS, cheminDe, departementDe, entiteById, peut,
+  CATEGORIES, ETABLISSEMENTS, REGLES_CATEGORIE, cheminDe, departementDe, entiteById,
+  peut, peutDans,
 } from "@/lib/referentiels";
 import { fmtNum } from "@/lib/format";
 import { BadgeCategorie, KpiCard, PageHeader } from "@/components/nexus/ui-kit";
 import {
   ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail, Section,
 } from "@/components/nexus/module";
+import { MentionAttribution } from "@/components/nexus/mention-attribution";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +57,7 @@ export default function BesoinsPage() {
   const enregistrer = useEnregistrerBesoin();
   const [formulaire, setFormulaire] = useState<typeof videBesoin | null>(null);
   const [arbitrage, setArbitrage] = useState<{ besoin: BesoinPersonnel; retenu: string } | null>(null);
-  const redacteur = peut(user.role, "besoins", "W");
+  const redacteur = peutDans(user, "besoins", "W");
 
   const departements = useMemo(
     () => Array.from(new Set(besoins.map((b) => b.departementId))).map((id) => entiteById(id)!).filter(Boolean),
@@ -145,6 +147,8 @@ export default function BesoinsPage() {
           </Button>
         )}
       </PageHeader>
+
+      <MentionAttribution utilisateur={user} module="besoins" />
 
       {/* La chaîne, montrée telle qu'elle circule. */}
       <Card>

@@ -9,8 +9,8 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  COMMUNICABILITE_LABELS, SORT_FINAL_LABELS, STATUT_ARTICLE_LABELS,
-  communicable, duaEchue, entiteById, peut, serieParCode,
+  COMMUNICABILITE_LABELS, SORT_FINAL_LABELS, STATUT_ARTICLE_LABELS, communicable,
+  duaEchue, entiteById, peut, peutDans, serieParCode,
 } from "@/lib/referentiels";
 import { fmtDate } from "@/lib/format";
 import { LigneInfo, PanneauDetail, Section, TableauModule, type Colonne } from "@/components/nexus/module";
@@ -35,7 +35,7 @@ export function FondsArchives() {
   const communiquer = useCommuniquerArticle();
   const [selection, setSelection] = useState<ArticleArchive | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({});
-  const archiviste = peut(user.role, "archives", "W");
+  const archiviste = peutDans(user, "archives", "W");
 
   const versementDe = useMemo(
     () => new Map(versements.map((v) => [v.id, v])), [versements]

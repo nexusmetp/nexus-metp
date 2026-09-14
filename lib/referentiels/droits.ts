@@ -192,16 +192,25 @@ const DROITS_LIVRES: Record<Role, Partial<Record<ModuleKey, "R" | "W">>> = {
     annuaire: "R", retraite: "W", aide: "R",
     cartes: "W",
   },
+  /* Une ligne, trois métiers — et c'est pourquoi elle est large.
+     Les directeurs de la DPCEF, de la DOBAS et de la DAFM portent le même
+     profil et n'exercent pas le même métier. Cette ligne dit ce qu'un
+     directeur central **peut** faire ; ce qu'il fait **réellement** est
+     découpé par les attributions de sa direction (`attributions.ts`) : le
+     directeur des finances écrit sur la rémunération et les archives, celui
+     du personnel sur les actes et les carrières, et aucun des deux sur le
+     registre de l'autre. Élargir ici sans l'axe des attributions donnerait
+     tout à tout le monde : les deux vont ensemble. */
   DIRECTEUR_CENTRAL: {
     profils: "R", organisation: "W", 
-    presences: "W", sorties: "W", remuneration: "R",
+    presences: "W", sorties: "W", remuneration: "W",
     dgarh: "R", organigramme: "R", pilotage: "R", agents: "W", actes: "W",
     national: "R",
-    carrieres: "R", conges: "R", formations: "R", contentieux: "R", besoins: "R",
-    referentiels: "R", documents: "R", redaction: "W", archives: "R", rapports: "R",
+    carrieres: "W", conges: "R", formations: "W", contentieux: "W", besoins: "W",
+    referentiels: "R", documents: "R", redaction: "W", archives: "W", rapports: "R",
     messagerie: "W", tickets: "W", annonces: "W", "mon-dossier": "W",
-    postes: "W", recrutement: "W", delegations: "R", textes: "R",
-    annuaire: "R", retraite: "R", aide: "R",
+    postes: "W", recrutement: "W", delegations: "W", textes: "R",
+    annuaire: "R", retraite: "W", aide: "R",
     cartes: "W",
   },
   CHEF_SERVICE: {

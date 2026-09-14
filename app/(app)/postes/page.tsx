@@ -10,8 +10,8 @@ import { toast } from "sonner";
 import { useAgentsProjetes, useEnregistrerPoste, useEntites, usePostes } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, GRADES, NIVEAU_LABELS, cheminDe, descendantsDe, entiteById, gradeById, peut,
-  bornerPerimetre, perimetreVisible,
+  ENTITES, GRADES, NIVEAU_LABELS, bornerPerimetre, cheminDe, descendantsDe, entiteById,
+  gradeById, perimetreVisible, peut, peutDans,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
@@ -19,6 +19,7 @@ import {
   ChampSelect, ChampTexte, DialogueFormulaire, Jauge, LigneInfo, PanneauDetail,
   RangeeKpi, Section, TableauModule, type Colonne,
 } from "@/components/nexus/module";
+import { MentionAttribution } from "@/components/nexus/mention-attribution";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ export default function TableauDesEmploisPage() {
   const { data: entitesDb = [] } = useEntites();
   const enregistrer = useEnregistrerPoste();
 
-  const redacteur = peut(user.role, "postes", "W");
+  const redacteur = peutDans(user, "postes", "W");
   const [selection, setSelection] = useState<Poste | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videPoste | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ statut: "all", entite: "all", budget: "all" });
@@ -244,6 +245,8 @@ export default function TableauDesEmploisPage() {
           </Button>
         )}
       </PageHeader>
+
+      <MentionAttribution utilisateur={user} module="postes" />
 
       <RangeeKpi tuiles={[
         { ton: "bleu", titre: "Emplois", valeur: stats.total, sousTitre: `${fmtNum(stats.budgetises)} budgétisés`, icon: Briefcase },

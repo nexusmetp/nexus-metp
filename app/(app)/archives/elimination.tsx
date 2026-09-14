@@ -6,7 +6,8 @@ import { ShieldAlert, Trash2 } from "lucide-react";
 import { useArticlesArchives, useEliminerArticles } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  PLAN_CLASSEMENT, SORT_FINAL_LABELS, duaEchue, peut, peutEliminer, serieParCode,
+  PLAN_CLASSEMENT, SORT_FINAL_LABELS, duaEchue, peut, peutDans, peutEliminer,
+  serieParCode,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum } from "@/lib/format";
 import { ChampTexte, DialogueFormulaire, Section } from "@/components/nexus/module";
@@ -32,7 +33,7 @@ export function SortFinalArchives() {
   const [coches, setCoches] = useState<Set<string>>(new Set());
   const [visa, setVisa] = useState<string | null>(null);
   // Deux droits distincts : verser se rattrape, éliminer non.
-  const archiviste = peut(user.role, "archives", "W");
+  const archiviste = peutDans(user, "archives", "W");
   const habiliteAEliminer = archiviste && peutEliminer(user.role);
 
   const echus = useMemo(

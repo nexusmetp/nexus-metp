@@ -10,7 +10,9 @@ import {
   useAgentsProjetes, useEnregistrerOffre, useInscriptions, useOffresFormation,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
-import { entiteById, peut } from "@/lib/referentiels";
+import {
+  entiteById, peut, peutDans,
+} from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
 import { PageHeader } from "@/components/nexus/ui-kit";
 import { ListeActes } from "@/components/nexus/liste-actes";
@@ -64,7 +66,7 @@ export default function FormationPage() {
   const [formulaire, setFormulaire] = useState<typeof vide | null>(null);
   const [filtres, setFiltres] = useState<Record<string, string>>({ nature: "all", statut: "all" });
 
-  const redacteur = peut(user.role, "formations", "W") || peut(user.role, "carrieres", "W");
+  const redacteur = peutDans(user, "formations", "W") || peutDans(user, "carrieres", "W");
   const agentDe = useMemo(() => new Map(agents.map((a) => [a.id, a])), [agents]);
 
   const parOffre = useMemo(() => {

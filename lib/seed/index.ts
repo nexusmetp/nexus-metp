@@ -282,11 +282,25 @@ export function buildDataset(): Dataset {
     { id: "USR-002", email: "dgarh@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Alphonse NGATSE", role: "DIRECTEUR_GENERAL", entiteId: "ENT-DGARH", fonction: "Directeur général de l'administration et des ressources humaines", actif: true },
     { id: "USR-003", email: "dpcef@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Berthe MOUKALA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DPCEF", fonction: "Directrice du personnel, de la condition enseignante et de la formation", actif: true },
     { id: "USR-004", email: "dafm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ulrich TSIBA", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DAFM", fonction: "Directeur de l'administration, des finances et du matériel", actif: true },
+    /* La troisième direction de la DGARH n'avait pas de porte d'entrée : on
+       parlait d'elle dans l'organigramme sans pouvoir s'y asseoir. Ses
+       attributions — orientation, bourses, aides scolaires — sont reconnues
+       par son intitulé et ne sont pas encore outillées ; l'écran le dit. */
+    { id: "USR-0DB", email: "dobas@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Delphine KIMBEMBE", role: "DIRECTEUR_CENTRAL", entiteId: "ENT-DOBAS", fonction: "Directrice de l'orientation, des bourses et des aides scolaires", actif: true },
+    /* Les deux services de la DAFM par lesquels passent la dépense et la
+       mémoire : sans eux, « les directions et les sous-directions » restait
+       une phrase de l'organigramme qu'aucun compte ne permettait de vérifier. */
+    { id: "USR-0FM", email: "sfm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Clarisse NDINGA", role: "CHEF_SERVICE", entiteId: "ENT-DAFM-SFM", fonction: "Chef du service des finances et du matériel", actif: true },
+    { id: "USR-0AD", email: "sad@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Aristide MOUYABI", role: "CHEF_SERVICE", entiteId: "ENT-DAFM-SAD", fonction: "Chef du service des archives et de la documentation", actif: true },
     { id: "USR-005", email: "spc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Rodrigue OKEMBA", role: "CHEF_SERVICE", entiteId: "ENT-DPCEF-SPC", fonction: "Chef du service du personnel et du contentieux", actif: true },
     { id: "USR-006", email: "brm@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Ghislain MABIALA", role: "CHEF_BUREAU", entiteId: "ENT-SPC-BRM", fonction: "Chef du bureau du recrutement et des mouvements", actif: true },
     { id: "USR-007", email: "bgc@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Nadège BIKINDOU", role: "AGENT_INSTRUCTEUR", entiteId: "ENT-SPC-BGC", fonction: "Instructrice — bureau de la gestion de carrière", actif: true },
     { id: "USR-008", email: "dd.brazzaville@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Sylvie LOEMBA", role: "DIRECTEUR_DEPARTEMENTAL", entiteId: "ENT-DD-02", fonction: "Directrice départementale — Brazzaville", actif: true },
-    { id: "USR-009", email: "etablissement@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Prosper BANZOUZI", role: "CHEF_ETABLISSEMENT", entiteId: "ENT-DD-02", fonction: "Proviseur — lycée technique", actif: true },
+    /* Il était rattaché à la direction départementale, c'est-à-dire au-dessus
+       de l'établissement qu'il est censé diriger : son périmètre couvrait
+       alors tout le département, et « chef d'établissement » ne voulait plus
+       rien dire. Il siège désormais dans son lycée. */
+    { id: "USR-009", email: "etablissement@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: "Prosper BANZOUZI", role: "CHEF_ETABLISSEMENT", entiteId: "ENT-ETB-02-1", fonction: "Proviseur — Lycée technique de Brazzaville", actif: true },
     { id: "USR-010", email: "agent@metp.gouv.cg", motDePasse: "Nexus2026", nomComplet: `${agents[0].prenom} ${agents[0].nom}`, role: "AGENT", entiteId: "ENT-SPC-BRM", agentId: agents[0].id, fonction: "Agent — portail libre-service", actif: true },
   ];
 

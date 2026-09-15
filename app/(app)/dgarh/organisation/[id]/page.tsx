@@ -198,12 +198,17 @@ export default function FicheStructurePage() {
             ? "aucun agent rattaché à cette branche"
             : "pièces attendues effectivement au dossier",
         },
-        { ton: "rose", titre: "Départs à préparer", valeur: fiche.departsProches, sousTitre: "agents de 58 ans et plus", icon: Users },
+        {
+          ton: "rose", titre: "Départs à préparer", valeur: fiche.departsProches,
+          sousTitre: "agents de 58 ans et plus", icon: Users,
+          href: `/dgarh/agents?entite=${entite.id}&age=departs`,
+        },
         {
           ton: "cyan", titre: "Personnel enseignant", valeur: fiche.enseignants, icon: GraduationCap,
           sousTitre: fiche.ageMoyen === null
             ? "aucun agent rattaché à cette branche"
             : `âge moyen ${fiche.ageMoyen} ans · ${fmtPct((fiche.femmes / fiche.effectif) * 100)} de femmes`,
+          href: `/dgarh/agents?entite=${entite.id}&profil=enseignant`,
         },
       ]} />
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,14 +32,20 @@ export interface SelectionMultiple {
   surChangement: (s: Set<string>) => void;
   /** Ce qu'on peut faire de la sélection — rendu dans la barre d'actions. */
   actions?: (ids: string[]) => React.ReactNode;
-  /** Au-delà, cocher l'en-tête demande confirmation : un geste qui prend deux
-   *  mille lignes ne doit pas être aussi facile qu'un geste qui en prend dix. */
-  seuilConfirmation?: number;
 }
 
 export interface Colonne<T> {
   cle: string;
   entete: string;
+  /**
+   * Ce sur quoi la colonne se trie, quand elle se trie.
+   *
+   * `rendu` produit du JSX : on ne peut pas comparer deux cartouches. La
+   * colonne dit donc séparément la **valeur** qu'elle montre — un nom, un
+   * nombre, une date en ISO. Sans cette fonction, l'en-tête ne se clique pas :
+   * une colonne qui n'a pas d'ordre naturel n'en invente pas un.
+   */
+  valeurTri?: (ligne: T) => string | number | undefined;
   /** Masquage progressif : la colonne disparaît sous ce point de rupture. */
   visible?: "toujours" | "md" | "lg" | "xl";
   aligne?: "gauche" | "droite";
@@ -90,6 +96,10 @@ export function TableauModule<T extends { id: string }>({
 }) {
   const [interne, setInterne] = useState("");
   const [page, setPage] = useState(1);
+  /* L'ordre demandé par le lecteur. `null` veut dire « celui de la source » —
+     les écrans trient déjà leurs lignes à dessein, et repartir de zéro à
+     l'ouverture effacerait ce choix. */
+  const [tri, setTri] = useState<{ cle: string; sens: "asc" | "desc" } | null>(null);
   const terme = rechercheTexte ?? interne;
   const majTerme = (v: string) => {
     setPage(1);
@@ -102,9 +112,34 @@ export function TableauModule<T extends { id: string }>({
     return lignes.filter((l) => recherche(l, t));
   }, [lignes, terme, recherche]);
 
-  const pages = Math.max(1, Math.ceil(filtrees.length / parPage));
+  const triees = useMemo(() => {
+    if (!tri) return filtrees;
+    const colonne = colonnes.find((c) => c.cle === tri.cle);
+    if (!colonne?.valeurTri) return filtrees;
+    const signe = tri.sens === "asc" ? 1 : -1;
+    /* Une valeur absente va toujours à la fin, dans les deux sens : ce qu'on
+       cherche en triant, c'est ce qui est renseigné. */
+    return [...filtrees].sort((a, b) => {
+      const x = colonne.valeurTri!(a);
+      const y = colonne.valeurTri!(b);
+      if (x === undefined || x === "") return 1;
+      if (y === undefined || y === "") return -1;
+      return typeof x === "number" && typeof y === "number"
+        ? (x - y) * signe
+        : String(x).localeCompare(String(y), "fr", { numeric: true }) * signe;
+    });
+  }, [filtrees, tri, colonnes]);
+
+  const basculerTri = (cle: string) => {
+    setPage(1);
+    setTri((t) => (t?.cle !== cle
+      ? { cle, sens: "asc" }
+      : t.sens === "asc" ? { cle, sens: "desc" } : null));
+  };
+
+  const pages = Math.max(1, Math.ceil(triees.length / parPage));
   const courante = Math.min(page, pages);
-  const visibles = filtrees.slice((courante - 1) * parPage, courante * parPage);
+  const visibles = triees.slice((courante - 1) * parPage, courante * parPage);
   const filtreActif = Object.values(valeursFiltres ?? {}).some((v) => v && v !== "all");
 
   /* La sélection ne suit pas la pagination : on coche à la page 3, on agit à
@@ -121,10 +156,12 @@ export function TableauModule<T extends { id: string }>({
       multiple.surChangement(reste);
       return;
     }
-    const seuil = multiple.seuilConfirmation ?? 200;
-    if (filtrees.length > seuil
-      && !window.confirm(
-        `Cocher ${filtrees.length} lignes d'un coup. Les actions groupées porteront sur toutes. Continuer ?`)) return;
+    /* Pas de confirmation ici, et c'est délibéré : cocher ne fait rien. Ce
+       qui pouvait mal tourner — nommer trois mille agents dans une note,
+       ouvrir un fil avec deux cents personnes — est arrêté par les plafonds
+       des actions elles-mêmes, où la question se pose vraiment. Une boîte
+       native de plus n'aurait protégé de rien, et elle parle la langue du
+       navigateur, pas celle du ministère. */
     multiple.surChangement(new Set([...cochees, ...filtrees.map((l) => l.id)]));
   };
   const basculerUne = (id: string) => {
@@ -182,6 +219,11 @@ export function TableauModule<T extends { id: string }>({
                 variant="ghost" size="sm"
                 onClick={() => {
                   majTerme("");
+                  /* Toutes les clés de l'état, et pas seulement les menus
+                     déroulants : le sélecteur d'entité est un contrôle à part,
+                     et « Réinitialiser » le laissait en place — on croyait
+                     avoir tout remis à zéro avec un filtre encore posé. */
+                  Object.keys(valeursFiltres ?? {}).forEach((cle) => surChangementFiltre?.(cle, "all"));
                   filtres?.forEach((f) => surChangementFiltre?.(f.cle, "all"));
                 }}
               >
@@ -227,7 +269,24 @@ export function TableauModule<T extends { id: string }>({
                     key={c.cle}
                     className={cn(CLASSE_VISIBILITE[c.visible ?? "toujours"], c.aligne === "droite" && "text-right")}
                   >
-                    {c.entete}
+                    {c.valeurTri ? (
+                      <button
+                        type="button"
+                        onClick={() => basculerTri(c.cle)}
+                        className={cn(
+                          "-mx-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:text-foreground",
+                          tri?.cle === c.cle ? "text-foreground" : "text-muted-foreground",
+                          c.aligne === "droite" && "flex-row-reverse"
+                        )}
+                      >
+                        {c.entete}
+                        {tri?.cle !== c.cle
+                          ? <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                          : tri.sens === "asc"
+                            ? <ArrowUp className="h-3 w-3" />
+                            : <ArrowDown className="h-3 w-3" />}
+                      </button>
+                    ) : c.entete}
                   </TableHead>
                 ))}
               </TableRow>
@@ -279,7 +338,7 @@ export function TableauModule<T extends { id: string }>({
         {pages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
             <span>
-              {(courante - 1) * parPage + 1}–{Math.min(courante * parPage, filtrees.length)} sur {filtrees.length}
+              {(courante - 1) * parPage + 1}–{Math.min(courante * parPage, triees.length)} sur {triees.length}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={courante === 1} onClick={() => setPage(courante - 1)}>

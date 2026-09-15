@@ -21,6 +21,10 @@ import type { AgentProjete } from "@/lib/types";
 export const COLONNES_AGENTS: Colonne<AgentProjete>[] = [
   {
     cle: "agent", entete: "Agent",
+    /* On trie sur le nom puis le prénom, comme un fichier de personnel se
+       range depuis toujours — et non sur « prénom nom », qui est l'ordre de
+       l'affichage. */
+    valeurTri: (a) => `${a.nom} ${a.prenom}`,
     rendu: (a) => (
       <div className="flex min-w-0 items-center gap-2.5">
         <Portrait photo={a.photo} prenom={a.prenom} nom={a.nom} cle={a.matricule} taille="sm" />
@@ -31,9 +35,16 @@ export const COLONNES_AGENTS: Colonne<AgentProjete>[] = [
       </div>
     ),
   },
-  { cle: "categorie", entete: "Catégorie", visible: "md", rendu: (a) => <BadgeCategorie v={a.categorie} /> },
+  {
+    cle: "categorie", entete: "Régime", visible: "md",
+    valeurTri: (a) => a.categorie,
+    rendu: (a) => <BadgeCategorie v={a.categorie} />,
+  },
   {
     cle: "grade", entete: "Grade et échelon", visible: "lg",
+    /* L'indice, et non le libellé : un tri par grade sert à voir qui est le
+       plus haut placé, ce que l'alphabet ne dit pas. */
+    valeurTri: (a) => a.indice ?? 0,
     rendu: (a) => a.gradeId
       ? (
         <div>
@@ -47,15 +58,21 @@ export const COLONNES_AGENTS: Colonne<AgentProjete>[] = [
   },
   {
     cle: "entite", entete: "Affectation", visible: "lg",
+    valeurTri: (a) => entiteById(a.entiteId)?.sigle ?? "",
     rendu: (a) => (
       <span className="text-xs text-muted-foreground" title={entiteById(a.entiteId)?.nom}>
         {entiteById(a.entiteId)?.sigle ?? "—"}
       </span>
     ),
   },
-  { cle: "position", entete: "Position", visible: "xl", rendu: (a) => <BadgePosition v={a.nature} /> },
+  {
+    cle: "position", entete: "Position", visible: "xl",
+    valeurTri: (a) => a.nature,
+    rendu: (a) => <BadgePosition v={a.nature} />,
+  },
   {
     cle: "completude", entete: "Dossier", aligne: "droite",
+    valeurTri: (a) => a.tauxCompletude,
     rendu: (a) => (
       <div className="ml-auto w-20">
         <div className="mb-1 text-right text-[11px] tabular-nums">{fmtPct(a.tauxCompletude)}</div>

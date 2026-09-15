@@ -143,7 +143,9 @@ export function useFicheStructure(entite: Entite | null) {
       cle: "dossiers", gravite: "veille",
       titre: `${incomplets.length} dossier${incomplets.length > 1 ? "s" : ""} sous 60 % de pièces`,
       detail: "Un dossier sans pièce se bloque au premier contrôle.",
-      lien: `/dgarh/agents?entite=${entite.id}`,
+      /* Le lien porte le filtre qu'il annonce : « 12 dossiers sous 60 % »
+         doit ouvrir ces douze-là, pas le fichier entier de la branche. */
+      lien: `/dgarh/agents?entite=${entite.id}&dossier=incomplet`,
     });
 
     return {

@@ -23,6 +23,9 @@ import { Portrait } from "@/components/nexus/portrait";
 import { ActionsAgents } from "@/components/nexus/actions-agents";
 import { DialogueAccesOuvert, type AccesOuvert } from "@/components/nexus/acces-ouvert";
 import { COLONNES_AGENTS } from "./colonnes";
+import {
+  FILTRES_AGENTS, filtresDeLUrl, retenu, type Filtres,
+} from "./filtres";
 import { GraphiquesAgents } from "./graphiques";
 import { verdictInscription } from "./inscription";
 import { Badge } from "@/components/ui/badge";
@@ -54,11 +57,7 @@ export default function AgentsPage() {
   const [coches, setCoches] = useState<Set<string>>(new Set());
   const [formulaire, setFormulaire] = useState<typeof videAgent | null>(null);
   const parametres = useSearchParams();
-  const [filtres, setFiltres] = useState<Record<string, string>>({
-    entite: parametres?.get("entite") ?? "all",
-    categorie: parametres?.get("categorie") ?? "all",
-    position: "all",
-  });
+  const [filtres, setFiltres] = useState<Filtres>(() => filtresDeLUrl(parametres));
 
   const redacteur = peut(user.role, "agents", "W");
 
@@ -111,9 +110,7 @@ export default function AgentsPage() {
        après le filtre laisserait passer une adresse forgée à la main. */
     if (!visible(perimetreDroit, a.entiteId)) return false;
     if (perimetreFiltre && !(a.entiteId && perimetreFiltre.has(a.entiteId))) return false;
-    if (filtres.categorie !== "all" && a.categorie !== filtres.categorie) return false;
-    if (filtres.position !== "all" && a.nature !== filtres.position) return false;
-    return true;
+    return retenu(a, filtres);
   }), [agents, perimetreDroit, perimetreFiltre, filtres]);
 
   const stats = useMemo(() => ({
@@ -254,10 +251,7 @@ export default function AgentsPage() {
             effectifDe={effectifBranche}
           />
         )}
-        filtres={[
-          { cle: "categorie", libelle: "Toutes catégories", options: CATEGORIES.map((c) => ({ valeur: c, libelle: REGLES_CATEGORIE[c].libelle })) },
-          { cle: "position", libelle: "Toutes positions", options: Object.entries(POSITION_LABELS).map(([k, v]) => ({ valeur: k, libelle: v as string })) },
-        ]}
+        filtres={FILTRES_AGENTS}
         valeursFiltres={filtres}
         surChangementFiltre={(c, v) => setFiltres((f) => ({ ...f, [c]: v }))}
         surSelection={setSelection}

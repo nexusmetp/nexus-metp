@@ -14,6 +14,12 @@ export interface LigneEffectif {
 export interface ContexteDocument {
   acte?: Acte;
   agent?: AgentProjete;
+  /**
+   * Les agents que la pièce vise, quand elle en vise plusieurs — une note de
+   * service adressée nommément à un lot. `agent` reste le sujet unique : un
+   * modèle individuel ne doit pas se mettre à parler d'une liste.
+   */
+  agents?: AgentProjete[];
   entite?: Entite;
   conge?: Conge;
   effectifs?: LigneEffectif[];

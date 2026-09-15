@@ -8,7 +8,9 @@
 export { Fragment } from "react";
 export { Badge } from "@/components/ui/badge";
 export { RangeeKpi, type Tuile } from "./kpi";
-export { TableauModule, type Colonne, type Filtre } from "./tableau";
+export {
+  TableauModule, type Colonne, type Filtre, type SelectionMultiple,
+} from "./tableau";
 export { PanneauDetail, Section, LigneInfo } from "./panneau";
 export {
   DialogueFormulaire, Champ, ChampTexte, ChampZone, ChampSelect, ChampPhoto,

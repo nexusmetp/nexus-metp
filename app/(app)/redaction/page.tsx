@@ -65,6 +65,10 @@ function EspaceRedaction() {
      fiche d'un agent et d'écrire pour lui, pas pour un exemple. */
   const contexte = useContexteDocument({
     agentId: params?.get("agent"),
+    /* `?agents=` vient du fichier du personnel, où l'on coche un lot avant
+       d'écrire : la note nomme alors ses destinataires au lieu d'un « tous
+       services » que personne ne sait vérifier. */
+    agentIds: params?.get("agents")?.split(",").filter(Boolean),
     acteId: params?.get("acte"),
     entiteId: params?.get("entite"),
   });

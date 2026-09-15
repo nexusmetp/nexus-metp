@@ -9,6 +9,8 @@ import type { ContexteDocument } from "@/lib/documents";
 /** Le dossier sur lequel la pièce se compose, quand il est désigné. */
 export interface Sujet {
   agentId?: string | null;
+  /** Une sélection d'agents, quand la pièce en vise plusieurs. */
+  agentIds?: string[] | null;
   acteId?: string | null;
   entiteId?: string | null;
 }
@@ -29,12 +31,27 @@ export function useContexteDocument(sujet: Sujet = {}): ContexteDocument {
 
   return useMemo<ContexteDocument>(() => {
     const agent = (sujet.agentId && agents.find((a) => a.id === sujet.agentId))
+      || (sujet.agentIds?.length ? agents.find((a) => a.id === sujet.agentIds![0]) : undefined)
       || agents.find((a) => a.id === user?.agentId)
       || agents[0];
+    /* La sélection dans l'ordre où elle a été faite, et sans les identifiants
+       qui ne désignent plus personne : une note nommant un agent absent du
+       fichier serait invérifiable. */
+    const vises = sujet.agentIds?.length
+      ? sujet.agentIds.map((id) => agents.find((a) => a.id === id)).filter(Boolean) as typeof agents
+      : undefined;
     const acte = (sujet.acteId && actes.find((a) => a.id === sujet.acteId))
       || actes.find((a) => a.statut === "SIGNE" || a.statut === "NOTIFIE")
       || actes[0];
-    const entite = entiteById(sujet.entiteId ?? agent?.entiteId ?? user?.entiteId ?? DGARH_ID)
+    /* Le timbre est celui de la structure qui écrit, et l'agent le porte
+       seulement quand la pièce est faite *pour lui* — une attestation, une
+       notification. Une note adressée à un lot n'appartient pas au service du
+       premier de la liste : elle part de chez le rédacteur, et la qualité du
+       signataire s'en déduit. */
+    const entite = entiteById(
+      sujet.entiteId
+      ?? (vises ? user?.entiteId : agent?.entiteId ?? user?.entiteId)
+      ?? DGARH_ID)
       ?? entiteById(DGARH_ID) ?? undefined;
     const conge = (agent && conges.find((c) => c.agentId === agent.id && c.statut === "ACCORDE"))
       || conges.find((c) => c.statut === "ACCORDE")
@@ -50,7 +67,7 @@ export function useContexteDocument(sujet: Sujet = {}): ContexteDocument {
         })
       : [];
     return {
-      agent, acte, entite, conge, effectifs,
+      agent, agents: vises, acte, entite, conge, effectifs,
       saisie: {
         objet: "Objet à préciser",
         corps: "Corps de la note à rédiger.",
@@ -58,7 +75,8 @@ export function useContexteDocument(sujet: Sujet = {}): ContexteDocument {
       },
       signataire: { nom: user?.nomComplet },
     };
-  }, [agents, actes, conges, user, sujet.agentId, sujet.acteId, sujet.entiteId]);
+  }, [agents, actes, conges, user, sujet.agentId, sujet.acteId, sujet.entiteId,
+    sujet.agentIds?.join(",")]);
 }
 
 /** Le cas sans dossier désigné — la bibliothèque, l'éditeur ouvert à vide. */

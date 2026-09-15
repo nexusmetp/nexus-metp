@@ -11,6 +11,7 @@ import {
   creeUnCycle, entiteById, exigeApprobation, libelleProfil, niveauxApprobation,
   niveauxCreablesSous, optionsNiveaux, perimetreAdministrable, verdictRattachement,
 } from "@/lib/referentiels";
+import { AvertissementIntitule } from "@/components/nexus/renommer-entite";
 import {
   Champ, ChampSelect, ChampTexte, ChampZone, DialogueFormulaire,
 } from "@/components/nexus/module";
@@ -317,6 +318,12 @@ export function useGestionEntite(surChangement?: (e: Entite) => void) {
             <ChampTexte label="Intitulé complet" obligatoire valeur={formulaire.nom}
               surChangement={(v) => setFormulaire({ ...formulaire, nom: v })}
               placeholder="Direction générale de l'administration et des ressources humaines" />
+            {/* Renommer est permis ; le faire sans savoir ce qu'on détache ne
+                l'est pas. Le sigle est à nous, l'intitulé est au texte. */}
+            {edition && (
+              <AvertissementIntitule
+                entite={edition} sigle={formulaire.sigle} nom={formulaire.nom} />
+            )}
             {/* Le rattachement d'abord : c'est lui qui décide des niveaux
                 possibles. L'ordre inverse obligeait à choisir un niveau, puis
                 à découvrir qu'il ne tenait pas sous le parent retenu. */}

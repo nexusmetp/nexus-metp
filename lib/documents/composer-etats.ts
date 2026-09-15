@@ -193,9 +193,19 @@ export function composerEtatEffectifs(c: ContexteDocument): DocumentAdministrati
   };
 }
 
+/**
+ * La note de service, adressée à un service ou à des agents nommés.
+ *
+ * « À l'attention de : tous services » ne se vérifie pas : personne ne peut
+ * dire, un an après, qui était censé l'appliquer. Quand la note part d'une
+ * sélection du fichier du personnel, elle nomme donc ses destinataires —
+ * matricule compris, parce que deux agents portent parfois le même nom — et
+ * la liste elle-même fait la preuve de diffusion.
+ */
 export function composerNoteService(c: ContexteDocument): DocumentAdministratif {
   const s = c.saisie ?? {};
   const corps = (s.corps ?? "").split(/\n{2,}/).filter(Boolean);
+  const vises = c.agents ?? [];
   return {
     cle: "NOTE_SERVICE",
     intitule: "Note de service",
@@ -204,17 +214,29 @@ export function composerNoteService(c: ContexteDocument): DocumentAdministratif 
     timbre: timbreDe(c.entite?.id),
     visas: [],
     paragraphes: [
-      `À l'attention de : ${s.destinataire || "l'ensemble des services"}.`,
+      vises.length
+        ? `À l'attention des agents désignés ci-après — ${vises.length} agent${vises.length > 1 ? "s" : ""} :`
+        : `À l'attention de : ${s.destinataire || "l'ensemble des services"}.`,
       ...(corps.length ? corps : ["……………"]),
     ],
-    articles: [],
+    /* Les destinataires sont posés en articles numérotés : c'est la forme sous
+       laquelle un état nominatif se relit et se coche. */
+    articles: vises.map((a) => ({
+      texte: `${a.prenom} ${a.nom.toUpperCase()}, matricule ${a.matricule}`
+        + `${a.fonction ? `, ${a.fonction}` : ""}`
+        + ` — ${entiteById(a.entiteId ?? "")?.nom ?? "structure non renseignée"}.`,
+    })),
     signature: {
       qualite: c.signataire?.qualite ?? qualiteSignataire(c.entite?.id),
       nom: c.signataire?.nom,
       lieu: entiteById(c.entite?.id ?? "")?.ville ?? "Brazzaville",
       date: dateLongue(aujourdHui()),
     },
-    ampliations: ["Tous services", "Affichage", "Chrono"],
+    /* Une note nominative ne s'affiche pas au tableau : elle se remet, et sa
+       trace va au dossier de chacun. */
+    ampliations: vises.length
+      ? ["Les intéressés", "Dossiers individuels", "Chrono"]
+      : ["Tous services", "Affichage", "Chrono"],
     avertissement: AVERTISSEMENT,
   };
 }

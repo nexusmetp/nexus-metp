@@ -68,6 +68,10 @@ function EspaceMessagerie() {
   const [brouillon, setBrouillon] = useState("");
   const [recherche, setRecherche] = useState("");
   const [formulaire, setFormulaire] = useState<typeof videFil | null>(null);
+  /* Les participants imposés par l'URL. Sans eux, « groupe de travail » ouvre
+     un fil avec tout le ministère — ce qui convient à une annonce, jamais à
+     un lot de quarante agents qu'on vient de cocher. */
+  const [imposes, setImposes] = useState<string[] | null>(null);
   const bas = useRef<HTMLDivElement>(null);
 
   /* Un fil de service appartient à l'entité, pas à une liste figée : un compte
@@ -121,6 +125,27 @@ function EspaceMessagerie() {
     }
   }, [demande, isLoading, conversations, comptes, user.id]);
 
+  /* Un lot coché dans le fichier du personnel : `?groupe=` porte les comptes,
+     et non les agents — on n'écrit qu'à qui a de quoi lire. */
+  const lot = params?.get("groupe") ?? null;
+  const amorceLot = useRef(false);
+  useEffect(() => {
+    if (!lot || amorceLot.current || isLoading) return;
+    amorceLot.current = true;
+    const retenus = lot.split(",")
+      .filter((id) => comptes.some((c) => c.id === id && c.actif !== false));
+    if (!retenus.length) {
+      toast.error("Aucun compte joignable dans cette sélection");
+      return;
+    }
+    setImposes([...new Set([user.id, ...retenus])]);
+    setFormulaire({
+      ...videFil,
+      type: "GROUPE",
+      titre: `Échange — ${retenus.length} agent${retenus.length > 1 ? "s" : ""}`,
+    });
+  }, [lot, isLoading, comptes, user.id]);
+
   const expedier = async () => {
     if (!courante || !brouillon.trim()) return;
     // Écrire dans un fil de service vaut adhésion : on y figure ensuite.
@@ -144,7 +169,9 @@ function EspaceMessagerie() {
       titre: formulaire.type === "DIRECT" ? destinataire?.nomComplet ?? "Échange" : formulaire.titre.trim(),
       participants: formulaire.type === "DIRECT" && destinataire
         ? [user.id, destinataire.id]
-        : comptes.filter((c) => c.actif).map((c) => c.id),
+        /* Trois cas et non deux : le lot désigné, sinon tout le ministère —
+           c'est ce que veut dire « groupe de travail » ouvert depuis le menu. */
+        : imposes ?? comptes.filter((c) => c.actif).map((c) => c.id),
       entiteId: formulaire.type === "ENTITE" ? user.entiteId : null,
       dateCreation: new Date().toISOString(),
       dernierMessage: "",
@@ -153,6 +180,7 @@ function EspaceMessagerie() {
     await creer.mutateAsync(conversation);
     setActif(conversation.id);
     setFormulaire(null);
+    setImposes(null);
     toast.success("Fil ouvert", { description: TYPE_LABELS[conversation.type] });
   };
 
@@ -303,7 +331,7 @@ function EspaceMessagerie() {
 
       <DialogueFormulaire
         ouvert={!!formulaire}
-        surFermeture={() => setFormulaire(null)}
+        surFermeture={() => { setFormulaire(null); setImposes(null); }}
         titre="Ouvrir un fil"
         description="Un échange direct, un groupe de travail, ou le fil de votre service."
         surValidation={ouvrirFil}
@@ -317,6 +345,22 @@ function EspaceMessagerie() {
               surChangement={(v) => setFormulaire({ ...formulaire, type: v as TypeConversation })}
               options={(Object.keys(TYPE_LABELS) as TypeConversation[]).map((t) => ({ valeur: t, libelle: TYPE_LABELS[t] }))}
             />
+            {/* Qui sera dans le fil, quand la sélection l'a fixé : ouvrir un
+                fil sans savoir à qui l'on parle est le meilleur moyen d'écrire
+                à quarante personnes en croyant en toucher quatre. */}
+            {imposes && (
+              <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-xs">
+                <div className="mb-1 font-medium">
+                  {imposes.length} participant{imposes.length > 1 ? "s" : ""}, vous compris
+                </div>
+                <div className="leading-relaxed text-muted-foreground">
+                  {imposes
+                    .filter((id) => id !== user.id)
+                    .map((id) => comptes.find((c) => c.id === id)?.nomComplet ?? id)
+                    .join(", ")}
+                </div>
+              </div>
+            )}
             {formulaire.type === "DIRECT" ? (
               <ChampSelect
                 label="Destinataire" obligatoire valeur={formulaire.destinataire}

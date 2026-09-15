@@ -11,11 +11,30 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface Filtre {
   cle: string;
   libelle: string;
   options: { valeur: string; libelle: string }[];
+}
+
+/**
+ * La sélection multiple, quand l'écran l'ouvre.
+ *
+ * Elle porte sur les lignes **filtrées**, pas sur la page affichée : cocher
+ * l'en-tête d'un fichier de deux mille agents réduit à quarante par un filtre
+ * doit prendre les quarante, et non les vingt qu'on voit. Le compte est
+ * toujours dit à l'écran, sans quoi personne ne sait sur quoi il agit.
+ */
+export interface SelectionMultiple {
+  selection: Set<string>;
+  surChangement: (s: Set<string>) => void;
+  /** Ce qu'on peut faire de la sélection — rendu dans la barre d'actions. */
+  actions?: (ids: string[]) => React.ReactNode;
+  /** Au-delà, cocher l'en-tête demande confirmation : un geste qui prend deux
+   *  mille lignes ne doit pas être aussi facile qu'un geste qui en prend dix. */
+  seuilConfirmation?: number;
 }
 
 export interface Colonne<T> {
@@ -42,7 +61,7 @@ const CLASSE_VISIBILITE: Record<string, string> = {
 export function TableauModule<T extends { id: string }>({
   titre, description, lignes, colonnes, recherche, filtres, controles, valeursFiltres,
   surChangementFiltre, surSelection, ligneActive, vide, actions, parPage = 12,
-  rechercheTexte, surRecherche, placeholderRecherche = "Rechercher…",
+  rechercheTexte, surRecherche, placeholderRecherche = "Rechercher…", multiple,
 }: {
   titre: string;
   description?: string;
@@ -67,6 +86,7 @@ export function TableauModule<T extends { id: string }>({
   rechercheTexte?: string;
   surRecherche?: (v: string) => void;
   placeholderRecherche?: string;
+  multiple?: SelectionMultiple;
 }) {
   const [interne, setInterne] = useState("");
   const [page, setPage] = useState(1);
@@ -86,6 +106,33 @@ export function TableauModule<T extends { id: string }>({
   const courante = Math.min(page, pages);
   const visibles = filtrees.slice((courante - 1) * parPage, courante * parPage);
   const filtreActif = Object.values(valeursFiltres ?? {}).some((v) => v && v !== "all");
+
+  /* La sélection ne suit pas la pagination : on coche à la page 3, on agit à
+     la page 1. Ce qui sort du filtre reste coché tant qu'on ne vide pas —
+     sans quoi un filtre effleuré ferait perdre un quart d'heure de pointage. */
+  const cochees = multiple?.selection ?? new Set<string>();
+  const surLaPage = visibles.filter((l) => cochees.has(l.id)).length;
+  const toutesCochees = filtrees.length > 0 && filtrees.every((l) => cochees.has(l.id));
+  const basculerToutes = () => {
+    if (!multiple) return;
+    if (toutesCochees) {
+      const reste = new Set(cochees);
+      filtrees.forEach((l) => reste.delete(l.id));
+      multiple.surChangement(reste);
+      return;
+    }
+    const seuil = multiple.seuilConfirmation ?? 200;
+    if (filtrees.length > seuil
+      && !window.confirm(
+        `Cocher ${filtrees.length} lignes d'un coup. Les actions groupées porteront sur toutes. Continuer ?`)) return;
+    multiple.surChangement(new Set([...cochees, ...filtrees.map((l) => l.id)]));
+  };
+  const basculerUne = (id: string) => {
+    if (!multiple) return;
+    const suite = new Set(cochees);
+    suite.has(id) ? suite.delete(id) : suite.add(id);
+    multiple.surChangement(suite);
+  };
 
   return (
     <Card>
@@ -146,10 +193,35 @@ export function TableauModule<T extends { id: string }>({
       </CardHeader>
 
       <CardContent className="p-0">
+        {multiple && cochees.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-y bg-primary/[0.04] px-4 py-2.5">
+            <span className="text-sm font-medium">
+              {cochees.size} ligne{cochees.size > 1 ? "s" : ""} cochée{cochees.size > 1 ? "s" : ""}
+            </span>
+            <Button
+              variant="ghost" size="sm" className="h-7 px-2 text-xs"
+              onClick={() => multiple.surChangement(new Set())}
+            >
+              <X className="mr-1 h-3 w-3" /> Vider
+            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {multiple.actions?.([...cochees])}
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                {multiple && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={toutesCochees ? true : surLaPage > 0 ? "indeterminate" : false}
+                      onCheckedChange={basculerToutes}
+                      aria-label="Tout cocher"
+                    />
+                  </TableHead>
+                )}
                 {colonnes.map((c) => (
                   <TableHead
                     key={c.cle}
@@ -174,6 +246,15 @@ export function TableauModule<T extends { id: string }>({
                     ligneActive === l.id && "bg-primary/5"
                   )}
                 >
+                  {multiple && (
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={cochees.has(l.id)}
+                        onCheckedChange={() => basculerUne(l.id)}
+                        aria-label="Cocher la ligne"
+                      />
+                    </TableCell>
+                  )}
                   {colonnes.map((c) => (
                     <TableCell
                       key={c.cle}
@@ -186,7 +267,7 @@ export function TableauModule<T extends { id: string }>({
               ))}
               {visibles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={colonnes.length} className="py-12 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={colonnes.length + (multiple ? 1 : 0)} className="py-12 text-center text-sm text-muted-foreground">
                     {vide ?? "Aucun élément ne correspond."}
                   </TableCell>
                 </TableRow>

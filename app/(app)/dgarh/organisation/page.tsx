@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Building2, ChevronRight, Network, Pencil, Plus, Repeat2, ShieldCheck, UserPlus,
+  Building2, ChevronRight, FileText, Network, Pencil, Plus, Repeat2, ShieldCheck,
+  UserPlus,
 } from "lucide-react";
 import {
   useAgentsProjetes, useEntites, useHabilitations, useUtilisateurs,
@@ -272,39 +273,52 @@ export default function OrganisationPage() {
             {selection.actif === false && <Badge variant="outline" className="text-[10px]">désactivée</Badge>}
           </>
         )}
-        actions={selection && redacteur && (
+        actions={selection && (
           <>
-            <Button variant="outline" size="sm" onClick={() => gestion.basculerActivite(selection)}>
-              {selection.actif === false ? "Réactiver" : "Désactiver"}
+            {/* La fiche avant les gestes d'administration : un panneau donne un
+                aperçu, la fiche donne les attributions, les chiffres et ce qui
+                appelle une décision — et elle s'ouvre à tout lecteur, pas au
+                seul rédacteur. */}
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/dgarh/organisation/${selection.id}`}>
+                <FileText className="mr-1.5 h-3.5 w-3.5" /> Ouvrir la fiche
+              </Link>
             </Button>
-            {/* « Sous-entité » n'a de sens que si le niveau en admet une :
-                un bureau et un établissement sont des mailles terminales. */}
-            {niveauxCreablesSous(selection.id).length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirCreation(c.id); }}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> Sous-entité
-              </Button>
+            {redacteur && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => gestion.basculerActivite(selection)}>
+                  {selection.actif === false ? "Réactiver" : "Désactiver"}
+                </Button>
+                {/* « Sous-entité » n'a de sens que si le niveau en admet une :
+                    un bureau et un établissement sont des mailles terminales. */}
+                {niveauxCreablesSous(selection.id).length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirCreation(c.id); }}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" /> Sous-entité
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirEdition(c); }}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
+                </Button>
+                {/* Désigner quand la place est vide, remplacer quand elle est
+                    tenue : sans le second cas, la relève n'avait plus d'entrée
+                    nulle part une fois toutes les têtes pourvues. */}
+                <Button
+                  size="sm" variant={chef ? "outline" : "default"}
+                  onClick={() => {
+                    const c = selection;
+                    const sortant = chef
+                      ? { nom: chef.nomComplet, profil: ROLE_LABELS[chef.role] ?? chef.role, agentId: chef.agentId }
+                      : undefined;
+                    setSelection(null);
+                    gestion.ouvrirNomination(c, sortant);
+                  }}
+                >
+                  {chef
+                    ? <><Repeat2 className="mr-1.5 h-3.5 w-3.5" /> Remplacer le responsable</>
+                    : <><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Désigner le responsable</>}
+                </Button>
+              </>
             )}
-            <Button variant="outline" size="sm" onClick={() => { const c = selection; setSelection(null); gestion.ouvrirEdition(c); }}>
-              <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
-            </Button>
-            {/* Désigner quand la place est vide, remplacer quand elle est
-                tenue : sans le second cas, la relève n'avait plus d'entrée
-                nulle part une fois toutes les têtes pourvues. */}
-            <Button
-              size="sm" variant={chef ? "outline" : "default"}
-              onClick={() => {
-                const c = selection;
-                const sortant = chef
-                  ? { nom: chef.nomComplet, profil: ROLE_LABELS[chef.role] ?? chef.role, agentId: chef.agentId }
-                  : undefined;
-                setSelection(null);
-                gestion.ouvrirNomination(c, sortant);
-              }}
-            >
-              {chef
-                ? <><Repeat2 className="mr-1.5 h-3.5 w-3.5" /> Remplacer le responsable</>
-                : <><UserPlus className="mr-1.5 h-3.5 w-3.5" /> Désigner le responsable</>}
-            </Button>
           </>
         )}
       >

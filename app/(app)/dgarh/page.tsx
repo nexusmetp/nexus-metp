@@ -105,11 +105,11 @@ export default function TableauDeBordPage() {
           qu'il n'avait pas à connaître. */}
       <RangeeKpi tuiles={ministeriel ? [
         { ton: "bleu", titre: "Effectif du ministère", valeur: stats.ministere, sousTitre: "toutes catégories, tous départements", icon: Users, href: "/dgarh/agents" },
-        { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/agents?entite=${DGARH_ID}` },
-        { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/agents?entite=${CABINET_ID}` },
+        { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/organisation/${DGARH_ID}` },
+        { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/organisation/${CABINET_ID}` },
         { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
       ] : [
-        { ton: "bleu", titre: `Effectif de ${entiteById(racine)?.sigle ?? "ma structure"}`, valeur: stats.ministere, sousTitre: "ma structure et tout ce qui en dépend", icon: Users, href: `/dgarh/agents?entite=${racine}` },
+        { ton: "bleu", titre: `Effectif de ${entiteById(racine)?.sigle ?? "ma structure"}`, valeur: stats.ministere, sousTitre: "ma structure et tout ce qui en dépend", icon: Users, href: `/dgarh/organisation/${racine}` },
         { ton: "cyan", titre: "Rattachés en propre", valeur: stats.dgarh, sousTitre: "affectés à l'entité elle-même, hors sous-entités", icon: Building2, href: `/dgarh/agents?entite=${racine}` },
         { ton: "violet", titre: "Entités sous ma main", valeur: stats.cabinet, sousTitre: "services, bureaux et implantations", icon: Network, href: "/dgarh/organisation" },
         { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: `/dgarh/agents?entite=${racine}` },
@@ -156,7 +156,7 @@ export default function TableauDeBordPage() {
                 transition={{ duration: 0.26, delay: 0.18 + i * 0.05 }}
               >
                 <Link
-                  href={`/dgarh/agents?entite=${s.entite.id}`}
+                  href={`/dgarh/organisation/${s.entite.id}`}
                   className="flex h-full flex-col justify-between gap-3 rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -245,7 +245,7 @@ export default function TableauDeBordPage() {
                 return (
                   <Link
                     key={d.id}
-                    href={`/dgarh/agents?entite=${d.id}`}
+                    href={`/dgarh/organisation/${d.id}`}
                     className="block rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/60"
                   >
                     <div className="mb-1 flex items-baseline justify-between gap-3">

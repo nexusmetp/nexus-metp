@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Building2, Users } from "lucide-react";
+import { Building2, FileText, Users } from "lucide-react";
 import { useActes, useAgentsProjetes, usePostes, useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
@@ -103,6 +103,14 @@ export function PanneauEntite({
               signataire: { nom: user.nomComplet },
             }}
           />
+          {/* Deux questions, deux destinations : « de quoi cette structure
+              est-elle chargée, et qu'est-ce qui y cloche ? » mène à la fiche,
+              « qui y sert ? » mène au fichier nominatif. */}
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dgarh/organisation/${entite.id}`}>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /> Sa fiche
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dgarh/agents?entite=${entite.id}`}>
               <Users className="mr-1.5 h-3.5 w-3.5" /> Ses agents

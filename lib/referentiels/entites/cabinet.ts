@@ -55,7 +55,7 @@ const structures: Noeud[] = [
     ]],
     ["SERVICE", "SDIP", "Service des diplômes", [
       ["BUREAU", "BCVD", "Bureau contrôle, vérification et délivrance"],
-      ["BUREAU", "BCTX-DIP", "Bureau contentieux"],
+      ["BUREAU", "BCTX-DIP", "Bureau du contentieux"],
     ]],
     ["SERVICE", "SINFO", "Service de l'informatique", [
       ["BUREAU", "BIM", "Bureau de l'informatique et de la maintenance"],
@@ -102,35 +102,35 @@ const structures: Noeud[] = [
       ["BUREAU", "BOIF", "Bureau de l'Organisation internationale de la francophonie"],
     ]],
     ["SERVICE", "SPART", "Service du partenariat", [
-      ["BUREAU", "BPPUB", "Bureau du partenariat avec le secteur public"],
-      ["BUREAU", "BPPRI", "Bureau du partenariat avec le secteur privé"],
+      ["BUREAU", "BPPP", "Bureau du partenariat public-privé"],
+      ["BUREAU", "BPOSONG", "Bureau du partenariat avec les organismes spécialisés et les organisations non gouvernementales"],
     ]],
   ]],
 
   ["DIRECTION", "DEPETP", "Direction des établissements privés de l'enseignement technique et professionnel", [
-    ["SERVICE", "SCEP", "Service du contrôle des établissements privés", [
-      ["BUREAU", "BCONT-EP", "Bureau du contrôle"],
-      ["BUREAU", "BREF", "Bureau des réformes des établissements privés"],
+    ["SERVICE", "SCEP", "Service du contrôle des établissements privés de l'enseignement technique et professionnel", [
+      ["BUREAU", "BCONT-EP", "Bureau du contrôle et de l'orientation"],
+      ["BUREAU", "BREF", "Bureau des réformes des établissements privés de l'enseignement technique et professionnel"],
       ["BUREAU", "BCTX-EP", "Bureau du contentieux"],
     ]],
     ["SERVICE", "SAGR", "Service des agréments", [
-      ["BUREAU", "BAGR", "Bureau des agréments"],
-      ["BUREAU", "BDOC-EP", "Bureau de la documentation"],
+      ["BUREAU", "BAGR", "Bureau de l'analyse et de l'agrément"],
+      ["BUREAU", "BDOC-EP", "Bureau de la documentation et de la diffusion de l'information"],
     ]],
   ]],
 
   ["DIRECTION", "DLFC", "Direction de la lutte contre la fraude, la corruption, la violence et autres pratiques répréhensibles en milieu scolaire", [
-    ["SERVICE", "SSTRAT", "Service des stratégies et du suivi", [
+    ["SERVICE", "SSTRAT", "Service des stratégies, du suivi et du contrôle", [
       ["BUREAU", "BSTRAT", "Bureau des stratégies"],
-      ["BUREAU", "BSUIVI", "Bureau du suivi"],
+      ["BUREAU", "BSUIVI", "Bureau du suivi et du contrôle"],
     ]],
-    ["SERVICE", "SLFC", "Service de la lutte contre la fraude et la corruption", [
+    ["SERVICE", "SLFC", "Service de la lutte contre la fraude et la corruption en milieu scolaire", [
       ["BUREAU", "BLFRA", "Bureau de la lutte contre la fraude"],
       ["BUREAU", "BLCOR", "Bureau de la lutte contre la corruption"],
     ]],
-    ["SERVICE", "SLVIOL", "Service de la lutte contre la violence et les autres pratiques répréhensibles", [
-      ["BUREAU", "BLVIOL", "Bureau de la lutte contre la violence"],
-      ["BUREAU", "BLPRAT", "Bureau de la lutte contre les autres pratiques répréhensibles"],
+    ["SERVICE", "SLVIOL", "Service de la lutte contre la violence et autres pratiques répréhensibles en milieu scolaire", [
+      ["BUREAU", "BLVIOL", "Bureau de la lutte contre les violences en milieu scolaire"],
+      ["BUREAU", "BLPRAT", "Bureau de la lutte contre les pratiques répréhensibles en milieu scolaire"],
     ]],
   ]],
 

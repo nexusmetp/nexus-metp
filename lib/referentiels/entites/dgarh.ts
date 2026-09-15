@@ -41,14 +41,14 @@ const dpcef: E[] = [
     "DIRECTION", "ENT-DGARH", "TEXTE", TEXTES.ARR_25567),
 
   e("ENT-DPCEF-SPC", "SPC", "Service du personnel et du contentieux", "SERVICE", "ENT-DPCEF", "TEXTE", TEXTES.ARR_25567),
-  e("ENT-SPC-BRM", "BRM", "Bureau du recrutement et des mouvements", "BUREAU", "ENT-DPCEF-SPC", "TEXTE", TEXTES.ARR_25567),
-  e("ENT-SPC-BGC", "BGC", "Bureau de la gestion de carrière", "BUREAU", "ENT-DPCEF-SPC", "TEXTE", TEXTES.ARR_25567),
+  e("ENT-SPC-BRM", "BRM", "Bureau du recrutement et du mouvement du personnel", "BUREAU", "ENT-DPCEF-SPC", "TEXTE", TEXTES.ARR_25567),
+  e("ENT-SPC-BGC", "BGC", "Bureau de la gestion de la carrière administrative", "BUREAU", "ENT-DPCEF-SPC", "TEXTE", TEXTES.ARR_25567),
   e("ENT-SPC-BCX", "BCX", "Bureau du contentieux", "BUREAU", "ENT-DPCEF-SPC", "TEXTE", TEXTES.ARR_25567),
 
   e("ENT-DPCEF-SCE", "SCE", "Service de la condition enseignante", "SERVICE", "ENT-DPCEF", "TEXTE", TEXTES.ARR_25567),
-  e("ENT-SCE-BSCE", "BSCE", "Bureau du suivi et de l'évaluation de la condition enseignante",
+  e("ENT-SCE-BSCE", "BSCE", "Bureau du suivi et évaluation de la condition enseignante",
     "BUREAU", "ENT-DPCEF-SCE", "TEXTE", TEXTES.ARR_25567),
-  e("ENT-SCE-BPVV", "BPVV", "Bureau du suivi et de l'évaluation des prestataires, volontaires et vacataires",
+  e("ENT-SCE-BPVV", "BPVV", "Bureau du suivi et évaluation des enseignants prestataires, volontaires et vacataires",
     "BUREAU", "ENT-DPCEF-SCE", "TEXTE", TEXTES.ARR_25567),
 
   e("ENT-DPCEF-SF", "SF", "Service de la formation", "SERVICE", "ENT-DPCEF", "TEXTE", TEXTES.ARR_25567),
@@ -57,10 +57,12 @@ const dpcef: E[] = [
     "BUREAU", "ENT-DPCEF-SF", "TEXTE", TEXTES.ARR_25567),
 ];
 
-/* — DOBAS : attestée sur le site du ministère ; son détail reste à confirmer — */
+/* — DOBAS : l'article 22 de l'arrêté la fonde et l'article 23 l'organise.
+     Elle portait encore « site officiel du METP » pour référence, hérité de
+     l'époque où le texte n'avait pas été lu. — */
 const dobas: E[] = [
   e("ENT-DOBAS", "DOBAS", "Direction de l'orientation, des bourses et des aides scolaires",
-    "DIRECTION", "ENT-DGARH", "TEXTE", "Site officiel du METP"),
+    "DIRECTION", "ENT-DGARH", "TEXTE", TEXTES.ARR_25567),
 
   e("ENT-DOBAS-SO", "SO", "Service de l'orientation", "SERVICE", "ENT-DOBAS", "TEXTE", TEXTES.ARR_25567),
   e("ENT-SO-BI", "BI", "Bureau de l'information", "BUREAU", "ENT-DOBAS-SO", "TEXTE", TEXTES.ARR_25567),
@@ -82,7 +84,7 @@ const dafm: E[] = [
 
   e("ENT-DAFM-SAA", "SAA", "Service des affaires administratives", "SERVICE", "ENT-DAFM", "TEXTE", TEXTES.ARR_25567),
   e("ENT-SAA-BPDG", "BPDG", "Bureau du personnel de la direction générale", "BUREAU", "ENT-DAFM-SAA", "TEXTE", TEXTES.ARR_25567),
-  e("ENT-SAA-BICA", "BICA", "Bureau des indemnités et charges administratives", "BUREAU", "ENT-DAFM-SAA", "TEXTE", TEXTES.ARR_25567),
+  e("ENT-SAA-BICA", "BICA", "Bureau des indemnités et des charges administratives", "BUREAU", "ENT-DAFM-SAA", "TEXTE", TEXTES.ARR_25567),
 
   e("ENT-DAFM-SFM", "SFM", "Service des finances et du matériel", "SERVICE", "ENT-DAFM", "TEXTE", TEXTES.ARR_25567),
   e("ENT-SFM-BF", "BF", "Bureau des finances", "BUREAU", "ENT-DAFM-SFM", "TEXTE", TEXTES.ARR_25567),

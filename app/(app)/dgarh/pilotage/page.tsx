@@ -326,6 +326,9 @@ export default function PilotagePage() {
               </Button>
             )}
             <Button variant="outline" size="sm" asChild>
+              <Link href={`/dgarh/organisation/${selection.id}`}>Fiche de la structure</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
               <Link href={`/dgarh/agents?entite=${selection.id}`}>Voir les agents</Link>
             </Button>
             <Button size="sm" asChild>

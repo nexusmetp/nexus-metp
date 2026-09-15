@@ -268,3 +268,49 @@
     radial-gradient(ellipse 70% 62% at 50% 46%, rgba(2, 6, 23, 0.80) 0%, rgba(2, 6, 23, 0.62) 55%, rgba(2, 6, 23, 0.55) 100%),
     linear-gradient(to bottom, rgba(2, 6, 23, 0.45) 0%, rgba(2, 6, 23, 0.25) 40%, rgba(2, 6, 23, 0.70) 100%);
 }
+
+/* ------------------------------------------------------------------ */
+/* L'impression — une fiche se porte en réunion                        */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Une page qu'on ne peut pas poser sur une table ne sert qu'à celui qui a
+ * l'écran. La fiche d'une structure, elle, s'annote, se joint à un rapport et
+ * se remet à un directeur qui n'ouvrira pas la plateforme.
+ *
+ * On retire donc ce qui n'a de sens que devant un écran — barre latérale,
+ * barre du haut, boutons, outils de développement — et on rend au papier ce
+ * qui lui revient : du noir sur blanc et des cadres qui ne se coupent pas au
+ * milieu. Ce qui doit figurer sur la feuille — d'où elle sort, quand elle a
+ * été tirée — est écrit dans la page elle-même, en `hidden print:block`, et
+ * non ici : une feuille de style ne sait pas de quelle structure il s'agit.
+ */
+@media print {
+  @page { margin: 14mm 12mm; }
+
+  aside, header, nav,
+  [data-radix-popper-content-wrapper],
+  .print\:hidden { display: none !important; }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10.5pt;
+  }
+
+  main { padding: 0 !important; }
+
+  /* Les fonds et les ombres coûtent de l'encre et n'apportent rien. */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Un cadre coupé entre deux feuilles se relit deux fois. */
+  .rounded-xl, .rounded-lg, table, li { break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+
+  /* Les grilles restent des grilles : à la largeur d'une feuille A4, les
+     paliers `md:` s'appliquent et les tuiles tombent d'elles-mêmes sur deux
+     colonnes. Les aplatir donnait huit blocs empilés sur une page et demie. */
+}

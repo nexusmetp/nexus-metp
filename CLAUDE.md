@@ -39,6 +39,7 @@ continuent de fonctionner, aucun site d'appel ne bouge.
 lib/types.ts   ->  lib/types/{organisation,agent,acte,archives,…}.ts + index.ts
 lib/queries.ts ->  lib/queries/{base,actes,audit,organisation,archives,…}.ts + index.ts
 lib/seed.ts    ->  lib/seed/{aleatoire,collaboration,gestion,archives}.ts + index.ts
+lib/db.ts      ->  lib/db/{schema,migrations,connexion,semis,acces}.ts + index.ts
 ```
 
 Les dérogations sont déclarées **avec leur motif** dans
@@ -304,7 +305,7 @@ liste des comptes de démonstration — s'ouvre en panneau flottant.
 `/redaction` est le traitement de texte de la maison : une feuille A4 au
 format administratif, un ruban rangé comme les suites bureautiques que les
 agents connaissent (Accueil, Insertion, Mise en page, Révision), et les
-brouillons conservés dans `lib/db.ts`.
+brouillons conservés dans `lib/db/`.
 
 **Trois étages de modèles, et l'ordre compte :**
 
@@ -362,7 +363,7 @@ le reste de la base est un décor qu'on refait à volonté, un brouillon a été
 ## Ce qui reste à faire
 
 Le **serveur** : la plateforme est aujourd'hui une maquette complète qui garde
-son état dans IndexedDB (`lib/db.ts`). Le passage à une base et une API reste le
+son état dans IndexedDB (`lib/db/`). Le passage à une base et une API reste le
 seul chantier structurel, différé volontairement. C'est lui, et non l'éditeur,
 qui borne le passage à l'échelle : deux postes valent aujourd'hui deux jeux de
 brouillons.

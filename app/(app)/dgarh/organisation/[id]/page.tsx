@@ -3,8 +3,8 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Briefcase, Building2, FileCheck2, GraduationCap, Percent,
-  PenLine, Printer, Timer, UserCog, Users,
+  ArrowLeft, Briefcase, Building2, FileCheck2, GraduationCap, MessageSquare,
+  Percent, PenLine, Printer, Timer, UserCog, Users,
 } from "lucide-react";
 import {
   NIVEAU_LABELS, ROLE_LABELS, entiteById, perimetreVisible, visible,
@@ -159,6 +159,16 @@ export default function FicheStructurePage() {
                 </div>
               )}
             </div>
+            {/* Constater ne suffit pas : depuis la fiche, on écrit à celui qui
+                tient la structure, sans avoir à le retrouver dans une liste de
+                comptes. */}
+            {fiche.chef && fiche.chef.id !== user.id && (
+              <Button variant="ghost" size="sm" className="print:hidden" asChild>
+                <Link href={`/messagerie?direct=${fiche.chef.id}`}>
+                  <MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Lui écrire
+                </Link>
+              </Button>
+            )}
           </div>
           <div className="text-right text-xs text-muted-foreground">
             <div>{entite.reference ?? "Fondement non renseigné"}</div>

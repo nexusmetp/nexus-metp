@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Hash, MessageSquare, Plus, Search, Send, Users2 } from "lucide-react";
 import {
@@ -38,7 +39,24 @@ const heure = (iso?: string) => {
 
 const videFil = { titre: "", type: "GROUPE" as TypeConversation, destinataire: "" };
 
+/**
+ * On arrive ici depuis une fiche, pas seulement depuis le menu.
+ *
+ * « Écrire au responsable » porte son identifiant dans l'URL : si le fil
+ * existe déjà, on l'ouvre — rouvrir un second fil avec la même personne
+ * disperse la conversation —, sinon on présente le formulaire déjà rempli.
+ * `useSearchParams` exige une frontière de suspension : la page est cliente,
+ * mais Next la pré-rend, et la lecture de l'URL n'a lieu qu'au navigateur.
+ */
 export default function MessageriePage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+      <EspaceMessagerie />
+    </Suspense>
+  );
+}
+
+function EspaceMessagerie() {
   const user = useAuth((s) => s.user)!;
   const { data: conversations = [], isLoading } = useConversations();
   const { data: messages = [] } = useMessages();
@@ -84,6 +102,24 @@ export default function MessageriePage() {
   }, [messages, user.id]);
 
   useEffect(() => { bas.current?.scrollIntoView({ behavior: "smooth" }); }, [fil.length, courante?.id]);
+
+  /* Le destinataire demandé par l'URL. Une seule fois : l'agent doit pouvoir
+     fermer le formulaire ou changer de fil sans que la page le ramène. */
+  const params = useSearchParams();
+  const demande = params?.get("direct") ?? null;
+  const amorce = useRef(false);
+  useEffect(() => {
+    if (!demande || amorce.current || isLoading) return;
+    amorce.current = true;
+    if (demande === user.id) return;
+    const existant = conversations.find((c) =>
+      c.type === "DIRECT" && c.participants.length === 2
+      && c.participants.includes(user.id) && c.participants.includes(demande));
+    if (existant) setActif(existant.id);
+    else if (comptes.some((c) => c.id === demande && c.actif !== false)) {
+      setFormulaire({ ...videFil, type: "DIRECT", destinataire: demande });
+    }
+  }, [demande, isLoading, conversations, comptes, user.id]);
 
   const expedier = async () => {
     if (!courante || !brouillon.trim()) return;

@@ -71,7 +71,7 @@ export default function ActesPage() {
 
   const colonnes: Colonne<Acte>[] = [
     {
-      cle: "ref", entete: "Référence",
+      cle: "ref", entete: "Référence", valeurTri: (a) => a.reference,
       rendu: (a) => (
         <div className="min-w-0">
           <div className="font-mono text-[11px]">{a.reference}</div>
@@ -80,17 +80,18 @@ export default function ActesPage() {
       ),
     },
     {
-      cle: "type", entete: "Type", visible: "md",
+      cle: "type", entete: "Type", visible: "md", valeurTri: (a) => typeActeById(a.type)?.libelle ?? a.type,
       rendu: (a) => <Badge variant="secondary" className="text-[10px]">{typeActeById(a.type)?.libelle ?? a.type}</Badge>,
     },
-    { cle: "agent", entete: "Agent", visible: "lg", rendu: (a) => <span className="text-sm">{nomAgent(a.agentId)}</span> },
+    { cle: "agent", entete: "Agent", visible: "lg", valeurTri: (a) => nomAgent(a.agentId), rendu: (a) => <span className="text-sm">{nomAgent(a.agentId)}</span> },
     {
       cle: "bureau", entete: "Bureau instructeur", visible: "xl",
+      valeurTri: (a) => entiteById(a.entiteInstructriceId)?.sigle ?? "",
       rendu: (a) => <span className="text-xs text-muted-foreground">{entiteById(a.entiteInstructriceId)?.sigle ?? "—"}</span>,
     },
-    { cle: "cree", entete: "Créé le", visible: "xl", rendu: (a) => <span className="text-xs tabular-nums text-muted-foreground">{fmtDate(a.dateCreation)}</span> },
+    { cle: "cree", entete: "Créé le", visible: "xl", valeurTri: (a) => a.dateCreation, rendu: (a) => <span className="text-xs tabular-nums text-muted-foreground">{fmtDate(a.dateCreation)}</span> },
     {
-      cle: "age", entete: "Âge",
+      cle: "age", entete: "Âge", valeurTri: (a) => joursDepuis(a.dateCreation),
       rendu: (a) => {
         const age = joursDepuis(a.dateCreation);
         const ouvert = STATUTS_EN_COURS.includes(a.statut);
@@ -101,7 +102,7 @@ export default function ActesPage() {
         );
       },
     },
-    { cle: "statut", entete: "Statut", aligne: "droite", rendu: (a) => <BadgeStatutActe v={a.statut} /> },
+    { cle: "statut", entete: "Statut", aligne: "droite", valeurTri: (a) => a.statut, rendu: (a) => <BadgeStatutActe v={a.statut} /> },
   ];
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;

@@ -265,7 +265,7 @@ export function MobileNav() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur print:hidden lg:hidden">
         {items.map((i) => {
           const actif = pathname === i.href || pathname.startsWith(i.href + "/");
           return (

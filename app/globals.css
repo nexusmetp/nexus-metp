@@ -306,6 +306,12 @@
     text-shadow: none !important;
   }
 
+  /* La couleur d'une tuile dit la nature du chiffre — à l'écran. Sortie d'une
+     imprimante monochrome, elle devient un gris qui passe sous le nombre et le
+     rend moins lisible, sans plus rien dire. Le libellé suffit sur le papier. */
+  .bg-gradient-to-br { background-image: none !important; }
+  [class*="blur-"] { display: none !important; }
+
   /* Un cadre coupé entre deux feuilles se relit deux fois. */
   .rounded-xl, .rounded-lg, table, li { break-inside: avoid; }
   h1, h2, h3 { break-after: avoid; }

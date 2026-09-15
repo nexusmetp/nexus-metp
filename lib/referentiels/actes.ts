@@ -62,4 +62,20 @@ export const POSITION_LABELS: Record<NaturePosition, string> = {
   RETRAITE: "Retraité",
 };
 
+/**
+ * Les positions où l'agent compte à l'effectif sans être au poste.
+ *
+ * Le congé n'en est pas : il est borné, l'agent revient, et son poste reste
+ * le sien. La retraite non plus : le lien est rompu, l'agent sort de
+ * l'effectif. Entre les deux, ces quatre positions sont celles où une
+ * structure porte quelqu'un qu'elle ne peut pas employer — c'est le chiffre
+ * qu'un chef de service doit lire avant de répartir du travail.
+ *
+ * Elle est dans le référentiel parce que deux écrans la comptent — le tableau
+ * de bord et la fiche d'une structure — et que deux écrans qui comptent
+ * différemment se contredisent devant le même lecteur.
+ */
+export const POSITIONS_HORS_SERVICE: NaturePosition[] =
+  ["DISPONIBILITE", "DETACHEMENT", "MISE_A_DISPOSITION", "SUSPENSION"];
+
 /* ------------------------------------------------------------------ */

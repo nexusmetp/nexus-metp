@@ -15,8 +15,10 @@ import { useActes, useAgentsProjetes, useTickets, useUtilisateurs } from "@/lib/
 import { useAuth } from "@/lib/store";
 import { useTableauDeBord } from "./donnees";
 import { EffectifsParCategorie } from "./categories";
+import { RepartitionEffectifs } from "./graphiques";
+import { Bloc, infobulle } from "./bloc";
 import {
-  CABINET_ID, DGARH_ID, ENTITES, LACUNES, METP_ID, NIVEAU_LABELS, POSITION_LABELS,
+  DGARH_ID, ENTITES, LACUNES, METP_ID, NIVEAU_LABELS, POSITION_LABELS,
   REGLES_CATEGORIE, ROLE_LABELS, STATUTS_EN_COURS, cheminDe, descendantsDe,
   entiteById, enfantsDe, typeActeById, visible,
 } from "@/lib/referentiels";
@@ -28,25 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
-const infobulle = {
-  contentStyle: {
-    borderRadius: 10, border: "1px solid hsl(var(--border))",
-    background: "hsl(var(--card))", fontSize: 12,
-  },
-};
-
-/** Apparition en cascade des blocs, dans l'ordre de lecture. */
-const Bloc = ({ i = 0, children, className }: { i?: number; children: React.ReactNode; className?: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.32, delay: 0.12 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
 
 export default function TableauDeBordPage() {
   const user = useAuth((s) => s.user);
@@ -102,17 +85,31 @@ export default function TableauDeBordPage() {
           vue ministérielle, « ma structure » pour tous les autres. Laisser les
           libellés ministériels à un chef de service lui faisait lire un chiffre
           qui n'était pas le sien — ou, avant que la borne existe, un chiffre
-          qu'il n'avait pas à connaître. */}
+          qu'il n'avait pas à connaître.
+
+          Le troisième carton nommait le cabinet. C'était un choix arbitraire
+          parmi les six structures du ministre, et il en cachait une plus
+          grosse : l'inspection générale, six cent treize agents, qu'on ne
+          trouvait qu'en bas de page. Plutôt que d'ajouter une septième tuile,
+          la rangée ne porte plus que des chiffres qui valent pour le ministère
+          entier — dont « en activité », qui manquait partout et qui est la
+          question posée avant de répartir du travail. Le détail par structure
+          est juste dessous, les six classées par effectif, chacune ouvrant sa
+          fiche. */}
       <RangeeKpi tuiles={ministeriel ? [
         { ton: "bleu", titre: "Effectif du ministère", valeur: stats.ministere, sousTitre: "toutes catégories, tous départements", icon: Users, href: "/dgarh/agents" },
-        { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Building2, href: `/dgarh/organisation/${DGARH_ID}` },
-        { ton: "violet", titre: "Effectif du cabinet", valeur: stats.cabinet, sousTitre: "entourage du ministre, géré par la DGARH", icon: Briefcase, href: `/dgarh/organisation/${CABINET_ID}` },
-        { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents" },
+        {
+          ton: "emeraude", titre: "En activité", valeur: stats.enActivite, icon: Building2,
+          sousTitre: `${fmtNum(stats.horsService)} hors service — détachement, disponibilité, mise à disposition, suspension`,
+          href: "/dgarh/agents?position=ACTIVITE",
+        },
+        { ton: "cyan", titre: "Effectif de la DGARH", valeur: stats.dgarh, sousTitre: "périmètre propre de la direction générale", icon: Briefcase, href: `/dgarh/organisation/${DGARH_ID}` },
+        { ton: "violet", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: "/dgarh/agents?profil=enseignant" },
       ] : [
         { ton: "bleu", titre: `Effectif de ${entiteById(racine)?.sigle ?? "ma structure"}`, valeur: stats.ministere, sousTitre: "ma structure et tout ce qui en dépend", icon: Users, href: `/dgarh/organisation/${racine}` },
-        { ton: "cyan", titre: "Rattachés en propre", valeur: stats.dgarh, sousTitre: "affectés à l'entité elle-même, hors sous-entités", icon: Building2, href: `/dgarh/agents?entite=${racine}` },
+        { ton: "cyan", titre: "Rattachés en propre", valeur: stats.dgarh, sousTitre: "affectés à l'entité elle-même, hors sous-entités", icon: Building2, href: `/dgarh/agents?entite=${racine}&rattachement=propre` },
         { ton: "violet", titre: "Entités sous ma main", valeur: stats.cabinet, sousTitre: "services, bureaux et implantations", icon: Network, href: "/dgarh/organisation" },
-        { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: `/dgarh/agents?entite=${racine}` },
+        { ton: "emeraude", titre: "Personnel enseignant", valeur: stats.enseignants, sousTitre: `${fmtPct(stats.ministere ? (stats.enseignants / stats.ministere) * 100 : 0)} de l'effectif`, icon: GraduationCap, href: `/dgarh/agents?entite=${racine}&profil=enseignant` },
       ]} />
 
       {/* ── Sous quel régime ils servent ──
@@ -194,74 +191,9 @@ export default function TableauDeBordPage() {
         </Card>
       </Bloc>
 
-      {/* ── Effectifs par direction et par département ── */}
-      <div className="grid gap-4 xl:grid-cols-2">
-        <Bloc i={1}>
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{ministeriel ? "Effectifs par direction" : "Effectifs par entité"}</CardTitle>
-              <CardDescription>
-                {ministeriel
-                  ? "Administration centrale et cabinet, périmètre compris."
-                  : "Les entités immédiatement sous la vôtre, chacune avec ce qui en dépend."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[320px] pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={parDirection} layout="vertical" margin={{ top: 4, right: 16, left: 6, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="nom" width={72} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <Tooltip {...infobulle} formatter={(v: any) => [fmtNum(v as number), "agents"]} />
-                  <Bar dataKey="effectif" radius={[0, 5, 5, 0]} animationDuration={800}>
-                    {parDirection.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Bloc>
-
-        <Bloc i={2}>
-          <Card className="flex h-full flex-col">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2">
-              <div>
-                <CardTitle className="text-base">Effectifs par département</CardTitle>
-                <CardDescription>
-                  {ministeriel
-                    ? "Les directions départementales et leurs établissements."
-                    : "Les directions départementales de votre périmètre."}
-                </CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/dgarh/pilotage">Détail</Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-2 overflow-y-auto pt-2" style={{ maxHeight: 320 }}>
-              {parDepartement.map((d) => {
-                const part = stats.ministere ? (d.effectif / stats.ministere) * 100 : 0;
-                return (
-                  <Link
-                    key={d.id}
-                    href={`/dgarh/organisation/${d.id}`}
-                    className="block rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/60"
-                  >
-                    <div className="mb-1 flex items-baseline justify-between gap-3">
-                      <span className="truncate text-xs font-medium">{d.nom}</span>
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        {fmtNum(d.effectif)} — {fmtPct(part)}
-                      </span>
-                    </div>
-                    <Jauge valeur={part * 4} />
-                  </Link>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </Bloc>
-      </div>
+      <RepartitionEffectifs
+        ministeriel={ministeriel} parDirection={parDirection}
+        parDepartement={parDepartement} effectifTotal={stats.ministere} />
 
       {/* ── Composition de la population ── */}
       <div className="grid gap-4 xl:grid-cols-3">

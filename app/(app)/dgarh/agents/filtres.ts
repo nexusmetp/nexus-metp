@@ -37,7 +37,7 @@ export const COMPLETUDE_SATISFAISANTE = 75;
 export type Filtres = Record<string, string>;
 
 export const FILTRES_VIDES: Filtres = {
-  entite: "all", categorie: "all", position: "all",
+  entite: "all", rattachement: "all", categorie: "all", position: "all",
   corps: "all", profil: "all", sexe: "all", dossier: "all", age: "all",
 };
 
@@ -52,6 +52,15 @@ export function filtresDeLUrl(params: URLSearchParams | null): Filtres {
 }
 
 export const FILTRES_AGENTS: Filtre[] = [
+  {
+    /* « Rattachés en propre » : affectés à la structure choisie elle-même, et
+       non à l'une de celles qui en dépendent. Le tableau de bord donnait ce
+       chiffre et son lien ouvrait la branche entière — on cliquait quatre
+       agents pour en trouver cinquante-neuf. Sans entité choisie, le filtre
+       n'a pas d'objet : il ne s'applique qu'avec elle. */
+    cle: "rattachement", libelle: "Rattachement",
+    options: [{ valeur: "propre", libelle: "Rattachés en propre, hors sous-entités" }],
+  },
   {
     cle: "categorie", libelle: "Tous régimes",
     options: CATEGORIES.map((c) => ({ valeur: c, libelle: REGLES_CATEGORIE[c].libelle })),
@@ -98,6 +107,7 @@ export const FILTRES_AGENTS: Filtre[] = [
  * du périmètre est vérifiée avant, sur l'écran qui appelle.
  */
 export function retenu(a: AgentProjete, f: Filtres): boolean {
+  if (f.rattachement === "propre" && f.entite !== "all" && a.entiteId !== f.entite) return false;
   if (f.categorie !== "all" && a.categorie !== f.categorie) return false;
   if (f.position !== "all" && a.nature !== f.position) return false;
   if (f.sexe !== "all" && a.sexe !== f.sexe) return false;

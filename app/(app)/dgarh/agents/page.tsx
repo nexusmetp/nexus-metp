@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -58,6 +58,22 @@ export default function AgentsPage() {
   const [formulaire, setFormulaire] = useState<typeof videAgent | null>(null);
   const parametres = useSearchParams();
   const [filtres, setFiltres] = useState<Filtres>(() => filtresDeLUrl(parametres));
+
+  /**
+   * L'adresse change sans que la page se recharge.
+   *
+   * L'état partait de l'URL **au montage**, et c'est tout. Ouvert une fois, le
+   * fichier gardait donc les filtres de sa première adresse : depuis le
+   * tableau de bord, « en activité » puis « personnel enseignant » puis
+   * « rattachés en propre » affichaient tous les trois le même compte. Le
+   * défaut était invisible à la vérification tant qu'on rechargeait la page à
+   * chaque essai — et personne n'utilise une application en la rechargeant.
+   *
+   * On ne resynchronise que lorsque l'adresse bouge : un menu déroulant
+   * n'écrit pas dans l'URL, ses choix ne sont donc jamais écrasés.
+   */
+  const adresse = parametres?.toString() ?? "";
+  useEffect(() => { setFiltres(filtresDeLUrl(parametres)); }, [adresse]);
 
   const redacteur = peut(user.role, "agents", "W");
 

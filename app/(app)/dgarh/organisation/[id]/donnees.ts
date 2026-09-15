@@ -15,8 +15,8 @@
 
 import { useMemo } from "react";
 import {
-  NIVEAUX_DE_COMMANDEMENT, STATUTS_EN_COURS, cheminDe, descendantsDe, enfantsDe,
-  entiteById,
+  NIVEAUX_DE_COMMANDEMENT, POSITIONS_HORS_SERVICE, STATUTS_EN_COURS, cheminDe,
+  descendantsDe, enfantsDe, entiteById,
 } from "@/lib/referentiels";
 import { joursDepuis } from "@/lib/format";
 import {
@@ -32,8 +32,6 @@ export interface PointAttention {
   detail: string;
   lien?: string;
 }
-
-const HORS_SERVICE = ["DISPONIBILITE", "DETACHEMENT", "MISE_A_DISPOSITION", "SUSPENSION"];
 
 export function useFicheStructure(entite: Entite | null) {
   const { data: agents, pret } = useAgentsProjetes();
@@ -161,7 +159,7 @@ export function useFicheStructure(entite: Entite | null) {
       parCategorie: compter(population, (a: AgentProjete) => a.categorie),
       parPosition: compter(population, (a: AgentProjete) => a.nature),
       enActivite: population.filter((a) => a.nature === "ACTIVITE").length,
-      horsService: population.filter((a) => HORS_SERVICE.includes(a.nature)).length,
+      horsService: population.filter((a) => POSITIONS_HORS_SERVICE.includes(a.nature)).length,
       enConge: congesEnCours.length,
       enseignants: population.filter((a) => a.enseignant).length,
       femmes: population.filter((a) => a.sexe === "F").length,

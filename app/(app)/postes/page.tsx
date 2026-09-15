@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -82,11 +82,18 @@ function TableauDesEmplois() {
   const [selection, setSelection] = useState<Poste | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videPoste | null>(null);
   const parametres = useSearchParams();
-  const [filtres, setFiltres] = useState<Record<string, string>>({
+  const lireLUrl = () => ({
     statut: parametres?.get("statut") ?? "all",
     entite: parametres?.get("entite") ?? "all",
     budget: "all",
   });
+  const [filtres, setFiltres] = useState<Record<string, string>>(lireLUrl);
+
+  /* Même raison qu'au fichier du personnel : l'adresse change sans que la page
+     se recharge, et un état posé au seul montage garde les filtres du premier
+     lien suivi. On ne resynchronise que lorsque l'adresse bouge. */
+  const adresse = parametres?.toString() ?? "";
+  useEffect(() => { setFiltres(lireLUrl()); }, [adresse]);
 
   /* Qui occupe quoi : le poste ne porte pas l'agent, c'est l'affectation. */
   const occupantDe = useMemo(() => {

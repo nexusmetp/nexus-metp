@@ -25,7 +25,8 @@
 
 import { useMemo } from "react";
 import {
-  CABINET_ID, DGARH_ID, ENTITES, METP_ID, POSITION_LABELS, REGLES_CATEGORIE, STATUTS_EN_COURS,
+  CABINET_ID, DGARH_ID, ENTITES, METP_ID, POSITIONS_HORS_SERVICE, POSITION_LABELS,
+  REGLES_CATEGORIE, STATUTS_EN_COURS,
   cheminDe, descendantsDe, enfantsDe, entiteById, perimetreVisible, typeActeById, visible,
 } from "@/lib/referentiels";
 import { joursDepuis } from "@/lib/format";
@@ -78,6 +79,12 @@ const effectif = useMemo(() => {
       dgarh: ministeriel ? effectif.total(DGARH_ID) : effectif.direct.get(racine) ?? 0,
       cabinet: ministeriel ? effectif.total(CABINET_ID) : descendantsDe(racine).length,
       enseignants: agents.filter((a) => a.enseignant).length,
+      /* Combien sont effectivement au poste — la question qui précède toutes
+         les autres quand on répartit du travail, et que le tableau de bord ne
+         posait nulle part. Le régime dit *à quel titre* on sert, la position
+         dit *si* on sert. */
+      enActivite: agents.filter((a) => a.nature === "ACTIVITE").length,
+      horsService: agents.filter((a) => POSITIONS_HORS_SERVICE.includes(a.nature)).length,
       ouverts: ouverts.length,
       horsDelai: ouverts.filter((a) => joursDepuis(a.dateCreation) > 15).length,
       delaiMoyen: clos.length
@@ -121,16 +128,26 @@ const effectif = useMemo(() => {
       .sort((a, b) => b.effectif - a.effectif);
   }, [effectif, comptes, actes, racine]);
 
-  /* Effectifs par direction — le chiffre que le directeur général réclame.
-     Hors vue ministérielle, on descend d'un cran : les trois entités sous la
-     mienne valent mieux que les six directions générales du ministère, dont
-     cinq me sont fermées. */
+  /**
+   * Effectifs par structure — **un seul cran de l'organigramme**.
+   *
+   * Le filtre retenait les directions générales *et* les directions, pourvu
+   * qu'elles soient à trois crans du ministère. Il mettait donc côte à côte
+   * une direction générale et une direction qu'elle contient : la DAFM
+   * apparaissait à côté de la DGARH, dont elle fait partie, et les trois
+   * directions du cabinet à côté du cabinet. Les barres totalisaient
+   * **4 169 agents pour un ministère qui en compte 3 830** — un graphique
+   * dont on ne peut pas additionner les barres ne se lit pas, il s'interprète,
+   * et chacun l'interprète à sa façon.
+   *
+   * On ne garde donc qu'un cran : ce qui pend directement de la racine qu'on
+   * regarde. Six barres pour le ministère, qui font la somme exacte ; les
+   * entités de chaque structure se lisent sur sa fiche, où elles sont chez
+   * elles.
+   */
   const parDirection = useMemo(() => ENTITES
     .filter((e) => visible(perimetre, e.id) && e.id !== racine)
-    .filter((e) => ministeriel
-      ? ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE", "SECRETARIAT"].includes(e.niveau)
-        && cheminDe(e.id).length <= 3
-      : cheminDe(e.id).length <= cheminDe(racine).length + 1)
+    .filter((e) => e.parentId === racine)
     .filter((e) => e.actif !== false)
     .map((e) => ({ id: e.id, nom: e.sigle, intitule: e.nom, effectif: effectif.total(e.id) }))
     .filter((d) => d.effectif > 0)

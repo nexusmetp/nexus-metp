@@ -34,6 +34,19 @@ import type { AgentProjete } from "@/lib/types";
  * personne n'a relus. Une note de service organise, elle ne décide pas de la
  * situation d'un agent : c'est pourquoi elle, elle a sa place.
  */
+/**
+ * Deux plafonds, et ils ne sont pas techniques.
+ *
+ * Une note de service qui nommerait trois mille huit cents agents n'est pas
+ * une note nominative : c'est une note à tous les services, et elle s'adresse
+ * alors aux services. Un fil de discussion à deux cents participants n'est pas
+ * un échange : c'est une annonce, et la plateforme en a une. Au-delà, ces deux
+ * boutons se ferment en disant pourquoi — plutôt que de produire une pièce que
+ * personne ne relira et une adresse de trente-huit mille caractères.
+ */
+const NOMINATIF_MAX = 100;
+const FIL_MAX = 50;
+
 export function ActionsAgents({ agents }: { agents: AgentProjete[] }) {
   const { data: comptes = [] } = useUtilisateurs();
   const [enCours, setEnCours] = useState(false);
@@ -48,6 +61,8 @@ export function ActionsAgents({ agents }: { agents: AgentProjete[] }) {
 
   const muets = agents.length - joignables.length;
   const ids = agents.map((a) => a.id).join(",");
+  const tropPourUneNote = agents.length > NOMINATIF_MAX;
+  const tropPourUnFil = joignables.length > FIL_MAX;
 
   const exporter = async () => {
     setEnCours(true);
@@ -86,21 +101,40 @@ export function ActionsAgents({ agents }: { agents: AgentProjete[] }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Button variant="outline" size="sm" className="h-8" asChild>
-        <Link href={`/redaction?agents=${ids}&modele=NOTE_SERVICE`}>
-          <FileText className="mr-1.5 h-3.5 w-3.5" /> Note de service
-        </Link>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>
+            <Button
+              variant="outline" size="sm" className="h-8"
+              disabled={tropPourUneNote} asChild={!tropPourUneNote}
+            >
+              {tropPourUneNote ? (
+                <span><FileText className="mr-1.5 h-3.5 w-3.5" /> Note de service</span>
+              ) : (
+                <Link href={`/redaction?agents=${ids}&modele=NOTE_SERVICE`}>
+                  <FileText className="mr-1.5 h-3.5 w-3.5" /> Note de service
+                </Link>
+              )}
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          {tropPourUneNote
+            ? `Au-delà de ${NOMINATIF_MAX} destinataires, une note nominative n'en est plus une : `
+              + "adressez-la à la structure depuis sa fiche."
+            : "La note nommera chaque destinataire, matricule compris."}
+        </TooltipContent>
+      </Tooltip>
 
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
             <Button
               variant="outline" size="sm" className="h-8"
-              disabled={joignables.length === 0}
-              asChild={joignables.length > 0}
+              disabled={joignables.length === 0 || tropPourUnFil}
+              asChild={joignables.length > 0 && !tropPourUnFil}
             >
-              {joignables.length > 0 ? (
+              {joignables.length > 0 && !tropPourUnFil ? (
                 <Link href={`/messagerie?groupe=${joignables.map((c) => c.id).join(",")}`}>
                   <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
                   Écrire — {fmtNum(joignables.length)}
@@ -114,9 +148,12 @@ export function ActionsAgents({ agents }: { agents: AgentProjete[] }) {
         <TooltipContent>
           {joignables.length === 0
             ? "Aucun agent de la sélection n'a de compte ouvert."
-            : muets > 0
-              ? `${fmtNum(muets)} agent${muets > 1 ? "s" : ""} sans compte ne recevra${muets > 1 ? "ont" : ""} rien.`
-              : "Ouvre un fil avec la sélection."}
+            : tropPourUnFil
+              ? `Au-delà de ${FIL_MAX} participants, un fil n'est plus un échange mais une `
+                + "annonce : passez par une note de service."
+              : muets > 0
+                ? `${fmtNum(muets)} agent${muets > 1 ? "s" : ""} sans compte ne recevra${muets > 1 ? "ont" : ""} rien.`
+                : "Ouvre un fil avec la sélection."}
         </TooltipContent>
       </Tooltip>
 

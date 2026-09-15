@@ -19,7 +19,23 @@ préférence : elle est vérifiée par une machine.
 ```bash
 npm run taille      # échoue si un fichier est en infraction
 npm run verifier    # idem, et signale ceux qui approchent (> 450 lignes)
+npm run entites     # échoue si un identifiant d'entité écrit en dur est mort
+npm run coherence   # échoue si un invariant de comptage est rompu
 ```
+
+**Trois contrôles, trois choses gardées.** La taille garde la lisibilité.
+`entites` garde les identifiants : `"ENT-DD-02"` est une chaîne, aucun
+compilateur ne la vérifie, et une entité disparue rend un écran à zéro sans
+lever la moindre erreur. `coherence` garde les **comptes** — les invariants du
+domaine vérifiés sur le jeu de données semé : l'organigramme se tient, les
+structures du premier cran totalisent l'effectif entier, tout niveau qui porte
+des agents est proposé par les filtres. Il est né de trois défauts réels, dont
+un tableau de bord qui affichait **4 169 agents pour un ministère qui en compte
+3 830** : chaque agent du cabinet et de la DGARH compté deux fois, parce qu'un
+graphique mélangeait deux crans de l'organigramme. Un chiffre faux ne lève
+rien — ni `tsc`, ni `next build`, ni la console.
+
+Le hook de pré-commit refuse sur `taille` **et** sur `coherence`.
 
 Le hook de pré-commit refuse le commit en cas d'infraction :
 

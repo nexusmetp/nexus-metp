@@ -1,7 +1,21 @@
 #!/bin/sh
-# Refuse un commit qui laisse un fichier au-dessus de 500 lignes.
+# Deux refus, et ils ne gardent pas la même chose.
+#
+# La taille garde la lisibilité : un fichier qu'on ne lit pas d'un bout à
+# l'autre ne se relit pas, et on n'y corrige plus qu'à l'aveugle.
+#
+# La cohérence garde les chiffres. Un compte faux ne lève rien — ni `tsc`, ni
+# `next build`, ni la console : il s'affiche, il ressemble à un chiffre, et
+# personne ne le recompte. Quatre secondes par commit, contre un tableau de
+# bord qui a totalisé 4 169 agents pour un ministère qui en compte 3 830.
+#
 # Activation : git config core.hooksPath .githooks
 node scripts/verifier-taille.mjs || {
   echo "Commit refusé : découpez le ou les fichiers ci-dessus." >&2
+  exit 1
+}
+
+npx --yes tsx scripts/verifier-coherence.ts || {
+  echo "Commit refusé : un invariant du domaine est rompu." >&2
   exit 1
 }

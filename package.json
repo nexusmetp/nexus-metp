@@ -14,7 +14,8 @@
         "carte:vendorer": "node scripts/vendorer-carte.mjs",
         "taille": "node scripts/verifier-taille.mjs",
         "verifier": "node scripts/verifier-taille.mjs -v",
-        "entites": "npx --yes tsx scripts/verifier-entites.ts"
+        "entites": "npx --yes tsx scripts/verifier-entites.ts",
+    "coherence": "npx --yes tsx scripts/verifier-coherence.ts"
     },
     "dependencies": {
         "@radix-ui/react-accordion": "1.2.11",

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
-  FilePlus2, FileSignature, PenLine, Sparkles, Trash2,
+  FilePlus2, FileSignature, PenLine, ShieldOff, Sparkles, Trash2,
 } from "lucide-react";
 import type { Brouillon } from "@/lib/types";
 import type { CleModele } from "@/lib/documents";
@@ -112,7 +112,8 @@ function EspaceRedaction() {
     if (amorce.current || isLoading) return;
     const livre = params?.get("modele");
     const propre = params?.get("maison");
-    const dossier = params?.get("agent") || params?.get("acte") || params?.get("entite");
+    const dossier = params?.get("agent") || params?.get("agents")
+      || params?.get("acte") || params?.get("entite");
     // Un dossier sans modèle : on ouvre le choix du départ, déjà lié au dossier.
     if (!livre && !propre) {
       if (dossier) { amorce.current = true; setDemarrage(true); }
@@ -130,6 +131,25 @@ function EspaceRedaction() {
     const m = maison.find((x) => x.id === propre);
     if (m) void creer(fusionner(m.contenu, contexte).contenu, m.libelle, undefined, m.id);
   }, [params, maison, contexte, isLoading]);
+
+  /* Une adresse peut désigner des dossiers qu'on n'a pas le droit d'ouvrir —
+     elle a pu être transmise, ou recopiée. Ils sont retirés de la pièce, et
+     le bandeau le dit : le taire ferait croire à une note complète alors
+     qu'il y manque des noms. Un bandeau et non une notification — celle-ci
+     s'efface, et l'avertissement doit rester tant que la pièce est ouverte. */
+  const retires = contexte.horsPerimetre ?? 0;
+  const bandeau = retires > 0 ? (
+    <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/40 bg-amber-500/[0.07] px-3.5 py-2.5 text-xs leading-relaxed">
+      <ShieldOff className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+      <span>
+        <strong>
+          {retires} dossier{retires > 1 ? "s" : ""} retiré{retires > 1 ? "s" : ""} de la pièce.
+        </strong>{" "}
+        L&apos;adresse les désignait, mais ils ne relèvent pas de votre périmètre : ils n&apos;y
+        figurent pas. Demandez-les au chef de l&apos;entité concernée, ou faites-vous habiliter.
+      </span>
+    </div>
+  ) : null;
 
   const jeter = async (b: Brouillon, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -182,7 +202,14 @@ function EspaceRedaction() {
     return <div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>;
   }
 
-  if (courant) return <Editeur brouillon={courant} surFermeture={() => setOuvert(null)} />;
+  if (courant) {
+    return (
+      <>
+        {bandeau}
+        <Editeur brouillon={courant} surFermeture={() => setOuvert(null)} />
+      </>
+    );
+  }
 
   const arretes = miens.filter((b) => b.statut === "ARRETE").length;
   const assistes = miens.filter((b) => b.assiste).length;
@@ -197,6 +224,8 @@ function EspaceRedaction() {
           <FilePlus2 className="mr-1.5 h-4 w-4" /> Nouveau document
         </Button>
       </PageHeader>
+
+      {bandeau}
 
       <RangeeKpi tuiles={[
         { ton: "cyan", titre: "Mes brouillons", valeur: fmtNum(miens.length), sousTitre: "conservés dans ce navigateur", icon: PenLine },

@@ -31,4 +31,9 @@ export interface ContexteDocument {
   /** Champs saisis par le rédacteur : note de service, ordre de mission. */
   saisie?: Record<string, string>;
   signataire?: { nom?: string; qualite?: string };
+  /**
+   * Combien de sujets désignés par l'adresse ont été retirés faute de
+   * périmètre. Aucun composeur ne s'en sert : c'est l'écran qui le dit.
+   */
+  horsPerimetre?: number;
 }

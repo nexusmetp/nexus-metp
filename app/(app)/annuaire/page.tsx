@@ -6,7 +6,7 @@ import { AtSign, Building2, Contact, Mail, Phone, Users } from "lucide-react";
 import { useAgentsProjetes, useEntites, useUtilisateurs } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, POSITION_LABELS, REGLES_CATEGORIE, ROLE_LABELS,
+  ENTITES, NIVEAUX_PORTEURS, POSITION_LABELS, REGLES_CATEGORIE, ROLE_LABELS,
   cheminDe, descendantsDe, entiteById, gradeById, peut, perimetreVisible, visible,
 } from "@/lib/referentiels";
 import { fmtNum, initiales } from "@/lib/format";
@@ -20,11 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AgentProjete } from "@/lib/types";
-
-const NIVEAUX_FILTRABLES = [
-  "CABINET", "DIRECTION_GENERALE", "DIRECTION", "SERVICE", "BUREAU",
-  "INSPECTION_GENERALE", "DIRECTION_DEPARTEMENTALE", "ETABLISSEMENT",
-];
 
 export default function AnnuairePage() {
   const user = useAuth((s) => s.user)!;
@@ -91,7 +86,7 @@ export default function AnnuairePage() {
   }, [agents]);
 
   const entitesFiltrables = useMemo(
-    () => ENTITES.filter((e) => NIVEAUX_FILTRABLES.includes(e.niveau) && e.actif !== false),
+    () => ENTITES.filter((e) => NIVEAUX_PORTEURS.includes(e.niveau) && e.actif !== false),
     [entitesDb]
   );
 

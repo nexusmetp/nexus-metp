@@ -96,6 +96,30 @@ export const ENFANTS_AUTORISES: Record<NiveauEntite, NiveauEntite[]> = {
  * semis qui les pourvoit, et l'écran qui propose de désigner. Trois copies,
  * c'est trois vérités le jour où l'une bouge.
  */
+/**
+ * Les niveaux où un agent peut être affecté — donc ceux qu'on peut choisir
+ * pour filtrer le fichier, pour y inscrire quelqu'un, ou pour rattacher un
+ * emploi.
+ *
+ * Elle est ici parce qu'elle était ailleurs : trois écrans en portaient trois
+ * versions différentes, écrites de mémoire, et **toutes les trois oubliaient
+ * les mêmes niveaux**. Division, section, secrétariat et antenne
+ * départementale portent ensemble quatre cent soixante-douze agents dans le
+ * jeu de données : ni le filtre du fichier, ni le sélecteur des emplois, ni
+ * l'annuaire ne les proposaient. On voyait bien ces agents dans les listes —
+ * mais on ne pouvait ni les isoler, ni en inscrire un de plus au même endroit.
+ *
+ * Le ministère lui-même n'y figure pas : on n'affecte personne « au
+ * ministère », on l'affecte dans une de ses structures. « Toutes les entités »
+ * dit déjà cela, et mieux.
+ */
+export const NIVEAUX_PORTEURS: NiveauEntite[] = [
+  "CABINET", "INSPECTION_GENERALE", "DIRECTION_GENERALE", "DIRECTION",
+  "SECRETARIAT", "SERVICE", "DIVISION", "BUREAU", "SECTION",
+  "INSPECTION_INTERDEPARTEMENTALE", "ANTENNE_DEPARTEMENTALE",
+  "DIRECTION_DEPARTEMENTALE", "ETABLISSEMENT",
+];
+
 export const NIVEAUX_DE_COMMANDEMENT: NiveauEntite[] = [
   "DIRECTION_GENERALE", "DIRECTION", "DIRECTION_DEPARTEMENTALE",
   "INSPECTION_GENERALE", "INSPECTION_INTERDEPARTEMENTALE",

@@ -117,7 +117,7 @@ export function useFicheStructure(entite: Entite | null) {
       cle: "vacants", gravite: "alerte",
       titre: `${vacants.length} poste${vacants.length > 1 ? "s" : ""} vacant${vacants.length > 1 ? "s" : ""}`,
       detail: "Un poste vacant se pourvoit par un état de besoins, puis par un acte.",
-      lien: `/postes?entite=${entite.id}`,
+      lien: `/postes?entite=${entite.id}&statut=VACANT`,
     });
     /* Le bureau est la maille terminale : son chef relève du service, et
        l'inscrire ici noierait le signal — même règle qu'au tableau de bord,

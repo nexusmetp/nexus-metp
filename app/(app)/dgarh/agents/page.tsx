@@ -8,7 +8,7 @@ import { ArrowRight, GraduationCap, ShieldCheck, UserPlus, Users } from "lucide-
 import { useAgentsProjetes, useEntites, useInscrireAgent } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  CATEGORIES, ENTITES, GRADES, POSITION_LABELS, REGLES_CATEGORIE,
+  CATEGORIES, ENTITES, GRADES, NIVEAUX_PORTEURS, POSITION_LABELS, REGLES_CATEGORIE,
   cheminDe, descendantsDe, entiteById, gradeById, perimetreVisible, peut, visible,
 } from "@/lib/referentiels";
 import { fmtDate, fmtNum, fmtPct } from "@/lib/format";
@@ -31,13 +31,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { AgentProjete, Agent, CategoriePersonnel, Sexe } from "@/lib/types";
 import { SelecteurEntite } from "@/components/nexus/selecteur-entite";
-
-/** Entités susceptibles de porter des agents. */
-const NIVEAUX_PORTEURS = [
-  "DIRECTION_GENERALE", "DIRECTION", "SERVICE", "BUREAU", "SECRETARIAT",
-  "DIRECTION_DEPARTEMENTALE", "INSPECTION_GENERALE",
-  "INSPECTION_INTERDEPARTEMENTALE", "ETABLISSEMENT",
-];
 
 const videAgent = {
   nom: "", prenom: "", sexe: "M" as Sexe, dateNaissance: "1990-01-01",

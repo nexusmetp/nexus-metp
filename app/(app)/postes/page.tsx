@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -10,7 +11,8 @@ import { toast } from "sonner";
 import { useAgentsProjetes, useEnregistrerPoste, useEntites, usePostes } from "@/lib/queries";
 import { useAuth } from "@/lib/store";
 import {
-  ENTITES, GRADES, NIVEAU_LABELS, bornerPerimetre, cheminDe, descendantsDe, entiteById,
+  ENTITES, GRADES, NIVEAUX_PORTEURS, NIVEAU_LABELS, bornerPerimetre, cheminDe,
+  descendantsDe, entiteById,
   gradeById, perimetreVisible, peut, peutDans,
 } from "@/lib/referentiels";
 import { CHART_COLORS, fmtNum, fmtPct } from "@/lib/format";
@@ -48,7 +50,28 @@ const videPoste = {
   intitule: "", entiteId: "", gradeRequisId: "", budgetise: true,
 };
 
+/**
+ * On arrive ici depuis une fiche de structure, pas seulement depuis le menu.
+ *
+ * « 14 postes vacants » sur la fiche de la DOBAS menait au tableau **entier**
+ * des emplois : le lecteur devait retrouver à la main la structure et le
+ * statut qu'il venait de cliquer. Un lien qui ne porte pas ce qu'il annonce
+ * vaut moins qu'une absence de lien. `?entite=` et `?statut=` posent donc les
+ * deux filtres à l'ouverture — et ils ne font que réduire : le périmètre du
+ * lecteur est vérifié avant eux, comme partout.
+ *
+ * `useSearchParams` exige une frontière de suspension : la page est cliente,
+ * mais Next la pré-rend, et la lecture de l'URL n'a lieu qu'au navigateur.
+ */
 export default function TableauDesEmploisPage() {
+  return (
+    <Suspense fallback={<div className="space-y-4"><Skeleton className="h-24 w-full" /><Skeleton className="h-96 w-full" /></div>}>
+      <TableauDesEmplois />
+    </Suspense>
+  );
+}
+
+function TableauDesEmplois() {
   const user = useAuth((s) => s.user)!;
   const { data: postes = [], isLoading } = usePostes();
   const { data: agents, pret } = useAgentsProjetes();
@@ -58,7 +81,12 @@ export default function TableauDesEmploisPage() {
   const redacteur = peutDans(user, "postes", "W");
   const [selection, setSelection] = useState<Poste | null>(null);
   const [formulaire, setFormulaire] = useState<typeof videPoste | null>(null);
-  const [filtres, setFiltres] = useState<Record<string, string>>({ statut: "all", entite: "all", budget: "all" });
+  const parametres = useSearchParams();
+  const [filtres, setFiltres] = useState<Record<string, string>>({
+    statut: parametres?.get("statut") ?? "all",
+    entite: parametres?.get("entite") ?? "all",
+    budget: "all",
+  });
 
   /* Qui occupe quoi : le poste ne porte pas l'agent, c'est l'affectation. */
   const occupantDe = useMemo(() => {
@@ -142,8 +170,7 @@ export default function TableauDesEmploisPage() {
     return ENTITES.filter((e) =>
       (!perimetreDroit || perimetreDroit.has(e.id))
       && porteuses.has(e.id)
-      && ["DIRECTION", "DIRECTION_GENERALE", "CABINET", "INSPECTION_GENERALE",
-          "DIRECTION_DEPARTEMENTALE", "INSPECTION_INTERDEPARTEMENTALE", "SERVICE", "BUREAU", "ETABLISSEMENT"].includes(e.niveau));
+      && NIVEAUX_PORTEURS.includes(e.niveau));
   }, [postes, entitesDb, perimetreDroit]);
 
   const colonnes: Colonne<Poste>[] = [
